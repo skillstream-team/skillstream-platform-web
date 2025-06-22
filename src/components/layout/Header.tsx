@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { 
   Menu, 
@@ -32,6 +32,8 @@ export const Header: React.FC = () => {
   const [currentCall, setCurrentCall] = useState<{ userId: string; userName: string } | null>(null);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showMessagingPopup, setShowMessagingPopup] = useState(false);
+  const videoCallButtonRef = useRef<HTMLButtonElement>(null);
+  const messagingButtonRef = useRef<HTMLButtonElement>(null);
 
   const handleLogout = () => {
     logout();
@@ -139,23 +141,47 @@ export const Header: React.FC = () => {
                 </button>
 
                 {/* Messaging */}
-                <button
-                  onClick={() => setShowMessagingPopup(true)}
-                  className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 relative"
-                >
-                  <MessageCircle className="h-4 w-4" />
-                  <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 bg-green-500 rounded-full text-xs text-white flex items-center justify-center">
-                    2
-                  </span>
-                </button>
+                <div className="relative">
+                  <button
+                    ref={messagingButtonRef}
+                    onClick={() => setShowMessagingPopup(!showMessagingPopup)}
+                    className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 relative"
+                  >
+                    <MessageCircle className="h-4 w-4" />
+                    <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 bg-green-500 rounded-full text-xs text-white flex items-center justify-center">
+                      2
+                    </span>
+                  </button>
+                  
+                  {showMessagingPopup && (
+                    <MessagingPopup 
+                      isOpen={showMessagingPopup}
+                      onClose={() => setShowMessagingPopup(false)}
+                      onExpand={handleExpandToFullScreen}
+                      buttonRef={messagingButtonRef}
+                    />
+                  )}
+                </div>
 
                 {/* Video Call */}
-                <button
-                  onClick={() => setShowVideoCallPopup(true)}
-                  className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                >
-                  <Video className="h-4 w-4" />
-                </button>
+                <div className="relative">
+                  <button
+                    ref={videoCallButtonRef}
+                    onClick={() => setShowVideoCallPopup(!showVideoCallPopup)}
+                    className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                  >
+                    <Video className="h-4 w-4" />
+                  </button>
+                  
+                  {showVideoCallPopup && (
+                    <VideoCallPopup 
+                      isOpen={showVideoCallPopup}
+                      onClose={() => setShowVideoCallPopup(false)}
+                      onStartCall={handleStartVideoCall}
+                      buttonRef={videoCallButtonRef}
+                    />
+                  )}
+                </div>
 
                 {/* Theme Toggle */}
                 <button
@@ -287,14 +313,6 @@ export const Header: React.FC = () => {
       </header>
 
       {/* Overlay Components */}
-      {showVideoCallPopup && (
-        <VideoCallPopup 
-          isOpen={showVideoCallPopup}
-          onClose={() => setShowVideoCallPopup(false)}
-          onStartCall={handleStartVideoCall}
-        />
-      )}
-
       {showVideoCall && currentCall && (
         <VideoCall 
           conferenceId={`call-${currentCall.userId}`}
@@ -312,14 +330,6 @@ export const Header: React.FC = () => {
             duration: 5000
           }}
           onClose={() => setShowNotifications(false)} 
-        />
-      )}
-
-      {showMessagingPopup && (
-        <MessagingPopup 
-          isOpen={showMessagingPopup}
-          onClose={() => setShowMessagingPopup(false)}
-          onExpand={handleExpandToFullScreen}
         />
       )}
     </>

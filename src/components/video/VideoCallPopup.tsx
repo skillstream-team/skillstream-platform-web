@@ -6,17 +6,17 @@ import {
   User, 
   Phone, 
   Clock,
-  Plus,
-  MoreVertical
+  Plus
 } from 'lucide-react';
 import { apiService } from '../../services/api';
-import { User as UserType, DirectMessage } from '../../types';
+import { User as UserType } from '../../types';
 import { useAuthStore } from '../../store/auth';
 
 interface VideoCallPopupProps {
   isOpen: boolean;
   onClose: () => void;
   onStartCall: (userId: string, userName: string) => void;
+  buttonRef?: React.RefObject<HTMLButtonElement>;
 }
 
 interface RecentContact {
@@ -29,7 +29,8 @@ interface RecentContact {
 export const VideoCallPopup: React.FC<VideoCallPopupProps> = ({
   isOpen,
   onClose,
-  onStartCall
+  onStartCall,
+  buttonRef
 }) => {
   const { user } = useAuthStore();
   const [users, setUsers] = useState<UserType[]>([]);
@@ -52,6 +53,23 @@ export const VideoCallPopup: React.FC<VideoCallPopupProps> = ({
     );
     setFilteredContacts(filtered);
   }, [searchQuery, recentContacts]);
+
+  // Close popup when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (buttonRef?.current && !buttonRef.current.contains(event.target as Node)) {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen, onClose, buttonRef]);
 
   const loadUsers = async () => {
     try {
@@ -182,75 +200,78 @@ export const VideoCallPopup: React.FC<VideoCallPopupProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md max-h-[80vh] flex flex-col">
+    <>
+      {/* Backdrop */}
+      <div className="fixed inset-0 z-40" onClick={onClose} />
+      
+      {/* Popup */}
+      <div className="absolute right-0 top-full mt-1 w-80 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-50">
+        {/* Arrow pointing up to the button */}
+        <div className="absolute -top-2 right-4 w-4 h-4 bg-white dark:bg-gray-800 border-l border-t border-gray-200 dark:border-gray-700 transform rotate-45"></div>
+        
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex items-center justify-between p-3 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center space-x-2">
-            <Video className="h-5 w-5 text-blue-600" />
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-              Video Call
-            </h2>
+            <Video className="h-4 w-4 text-blue-600" />
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
+              Recent Calls
+            </h3>
           </div>
           <button
             onClick={onClose}
             className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
           >
-            <X className="h-5 w-5" />
+            <X className="h-4 w-4" />
           </button>
         </div>
 
         {/* Search */}
-        <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+        <div className="p-3 border-b border-gray-200 dark:border-gray-700">
           <div className="relative">
-            <Search className="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+            <Search className="h-3.5 w-3.5 absolute left-2.5 top-1/2 transform -translate-y-1/2 text-gray-400" />
             <input
               type="text"
               placeholder="Search contacts..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-sm"
+              className="w-full pl-8 pr-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-xs"
             />
           </div>
         </div>
 
         {/* New Call Button */}
-        <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+        <div className="p-3 border-b border-gray-200 dark:border-gray-700">
           <button
             onClick={handleNewCall}
-            className="w-full flex items-center justify-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg transition-colors"
+            className="w-full flex items-center justify-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white py-2 px-3 rounded-md transition-colors text-sm"
           >
-            <Plus className="h-4 w-4" />
+            <Plus className="h-3.5 w-3.5" />
             <span>New Call</span>
           </button>
         </div>
 
         {/* Recent Contacts */}
-        <div className="flex-1 overflow-y-auto p-4">
-          <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-            Recent Contacts
-          </h3>
-          
+        <div className="max-h-64 overflow-y-auto">
           {isLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+            <div className="flex items-center justify-center py-6">
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
             </div>
           ) : filteredContacts.length === 0 ? (
-            <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-              <User className="h-12 w-12 mx-auto mb-2 opacity-50" />
-              <p>No recent contacts found</p>
+            <div className="text-center py-6 text-gray-500 dark:text-gray-400">
+              <User className="h-8 w-8 mx-auto mb-2 opacity-50" />
+              <p className="text-xs">No recent contacts</p>
             </div>
           ) : (
-            <div className="space-y-2">
+            <div className="p-1">
               {filteredContacts.map((contact) => (
                 <div
                   key={contact.user.id}
-                  className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors"
+                  className="flex items-center space-x-2 p-2 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors"
                   onClick={() => handleStartCall(contact)}
                 >
                   {/* Avatar */}
-                  <div className="relative">
-                    <div className="w-10 h-10 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center overflow-hidden">
+                  <div className="relative flex-shrink-0">
+                    <div className="w-8 h-8 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center overflow-hidden">
                       {contact.user.avatar ? (
                         <img
                           src={contact.user.avatar}
@@ -258,28 +279,28 @@ export const VideoCallPopup: React.FC<VideoCallPopupProps> = ({
                           className="w-full h-full object-cover"
                         />
                       ) : (
-                        <span className="text-sm font-medium text-gray-600 dark:text-gray-300">
+                        <span className="text-xs font-medium text-gray-600 dark:text-gray-300">
                           {contact.user.name.charAt(0).toUpperCase()}
                         </span>
                       )}
                     </div>
                     {/* Online indicator */}
                     {contact.isOnline && (
-                      <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-gray-800"></div>
+                      <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full border border-white dark:border-gray-800"></div>
                     )}
                   </div>
 
                   {/* Contact Info */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
-                      <h4 className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                      <h4 className="text-xs font-medium text-gray-900 dark:text-white truncate">
                         {contact.user.name}
                       </h4>
                       <div className="flex items-center space-x-1">
                         {contact.contactType === 'call' && (
-                          <Phone className="h-3 w-3 text-blue-600" />
+                          <Phone className="h-2.5 w-2.5 text-blue-600" />
                         )}
-                        <Clock className="h-3 w-3 text-gray-400" />
+                        <Clock className="h-2.5 w-2.5 text-gray-400" />
                         <span className="text-xs text-gray-500 dark:text-gray-400">
                           {formatLastContact(contact.lastContact)}
                         </span>
@@ -296,9 +317,9 @@ export const VideoCallPopup: React.FC<VideoCallPopupProps> = ({
                       e.stopPropagation();
                       handleStartCall(contact);
                     }}
-                    className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                    className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-md transition-colors flex-shrink-0"
                   >
-                    <Video className="h-4 w-4" />
+                    <Video className="h-3.5 w-3.5" />
                   </button>
                 </div>
               ))}
@@ -306,6 +327,6 @@ export const VideoCallPopup: React.FC<VideoCallPopupProps> = ({
           )}
         </div>
       </div>
-    </div>
+    </>
   );
 }; 
