@@ -19,7 +19,7 @@ import { useAuthStore } from '../../store/auth';
 import { useThemeStore } from '../../store/theme';
 import VideoCall from '../video/VideoCall';
 import { VideoCallPopup } from '../video/VideoCallPopup';
-import { NotificationToast } from '../notifications/NotificationToast';
+import { NotificationPopup } from '../notifications/NotificationPopup';
 import { MessagingPopup } from '../messaging/MessagingPopup';
 
 export const Header: React.FC = () => {
@@ -34,6 +34,7 @@ export const Header: React.FC = () => {
   const [showMessagingPopup, setShowMessagingPopup] = useState(false);
   const videoCallButtonRef = useRef<HTMLButtonElement>(null);
   const messagingButtonRef = useRef<HTMLButtonElement>(null);
+  const notificationButtonRef = useRef<HTMLButtonElement>(null);
 
   const handleLogout = () => {
     logout();
@@ -130,15 +131,26 @@ export const Header: React.FC = () => {
               {/* Action Buttons */}
               <div className="flex items-center space-x-1">
                 {/* Notifications */}
-                <button
-                  onClick={() => setShowNotifications(!showNotifications)}
-                  className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 relative"
-                >
-                  <Bell className="h-4 w-4" />
-                  <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 bg-red-500 rounded-full text-xs text-white flex items-center justify-center">
-                    3
-                  </span>
-                </button>
+                <div className="relative">
+                  <button
+                    ref={notificationButtonRef}
+                    onClick={() => setShowNotifications(!showNotifications)}
+                    className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 relative"
+                  >
+                    <Bell className="h-4 w-4" />
+                    <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 bg-red-500 rounded-full text-xs text-white flex items-center justify-center">
+                      3
+                    </span>
+                  </button>
+                  
+                  {showNotifications && (
+                    <NotificationPopup 
+                      isOpen={showNotifications}
+                      onClose={() => setShowNotifications(false)}
+                      buttonRef={notificationButtonRef}
+                    />
+                  )}
+                </div>
 
                 {/* Messaging */}
                 <div className="relative">
@@ -317,19 +329,6 @@ export const Header: React.FC = () => {
         <VideoCall 
           conferenceId={`call-${currentCall.userId}`}
           onLeave={handleLeaveVideoCall}
-        />
-      )}
-
-      {showNotifications && (
-        <NotificationToast 
-          notification={{
-            id: '1',
-            type: 'info',
-            title: 'New Message',
-            message: 'You have a new message',
-            duration: 5000
-          }}
-          onClose={() => setShowNotifications(false)} 
         />
       )}
     </>
