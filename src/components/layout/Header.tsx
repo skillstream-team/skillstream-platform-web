@@ -138,7 +138,7 @@ export const Header: React.FC = () => {
                     className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 relative"
                   >
                     <Bell className="h-4 w-4" />
-                    <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 bg-red-500 rounded-full text-xs text-white flex items-center justify-center">
+                    <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 rounded-full text-xs text-white flex items-center justify-center">
                       3
                     </span>
                   </button>
@@ -160,7 +160,7 @@ export const Header: React.FC = () => {
                     className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 relative"
                   >
                     <MessageCircle className="h-4 w-4" />
-                    <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 bg-green-500 rounded-full text-xs text-white flex items-center justify-center">
+                    <span className="absolute -top-1 -right-1 h-4 w-4 bg-green-500 rounded-full text-xs text-white flex items-center justify-center">
                       2
                     </span>
                   </button>
