@@ -27,6 +27,7 @@ import { PeopleGroupsPage } from './pages/PeopleGroupsPage';
 import AssignmentsPage from './pages/assessments/AssignmentsPage';
 import AssignmentSubmitPage from './pages/assessments/AssignmentSubmitPage';
 import ProfilePage from './pages/ProfilePage';
+import CallsPage from './pages/CallsPage';
 
 // Protected Route Component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -433,6 +434,16 @@ function App() {
                   <Layout>
                     <ProfilePage />
                   </Layout>
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Calls Route */}
+            <Route
+              path="/calls/:contactId"
+              element={
+                <ProtectedRoute>
+                  <CallsPage />
                 </ProtectedRoute>
               }
             />

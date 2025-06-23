@@ -183,6 +183,30 @@ export const MessagingPopup: React.FC<MessagingPopupProps> = ({
     onClose();
   };
 
+  const handlePhoneCall = (contact: MockRecentContact) => {
+    // Navigate to phone call page or initiate call
+    navigate(`/calls/${contact.user.id}`, { 
+      state: { 
+        contactName: contact.user.name,
+        contactId: contact.user.id,
+        callType: 'audio'
+      }
+    });
+    onClose();
+  };
+
+  const handleVideoCall = (contact: MockRecentContact) => {
+    // Navigate to video call page or initiate video call
+    navigate(`/calls/${contact.user.id}`, { 
+      state: { 
+        contactName: contact.user.name,
+        contactId: contact.user.id,
+        callType: 'video'
+      }
+    });
+    onClose();
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -315,18 +339,20 @@ export const MessagingPopup: React.FC<MessagingPopupProps> = ({
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          console.log('Call', contact.user.name);
+                          handlePhoneCall(contact);
                         }}
                         className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
+                        title={`Call ${contact.user.name}`}
                       >
                         <Phone className="h-3 w-3" />
                       </button>
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          console.log('Video call', contact.user.name);
+                          handleVideoCall(contact);
                         }}
                         className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
+                        title={`Video call ${contact.user.name}`}
                       >
                         <Video className="h-3 w-3" />
                       </button>
