@@ -25,6 +25,7 @@ interface FormDataType {
   location: string;
   website: string;
   phone: string;
+  phonePublic: boolean;
   timezone: string;
   language: string;
   notifications: {
@@ -74,6 +75,7 @@ const ProfilePage: React.FC = () => {
     location: 'Nairobi, Kenya',
     website: 'https://stephanie-makwabarara.com',
     phone: '+254 700 123 456',
+    phonePublic: false,
     timezone: 'Africa/Nairobi',
     language: 'English',
     notifications: {
@@ -254,13 +256,37 @@ const ProfilePage: React.FC = () => {
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Phone
             </label>
-            <input
-              type="tel"
-              value={formData.phone}
-              onChange={(e) => handleInputChange('phone', e.target.value)}
-              disabled={!isEditing}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white disabled:bg-gray-100 dark:disabled:bg-gray-600"
-            />
+            <div className="space-y-2">
+              <input
+                type="tel"
+                value={formData.phone}
+                onChange={(e) => handleInputChange('phone', e.target.value)}
+                disabled={!isEditing}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white disabled:bg-gray-100 dark:disabled:bg-gray-600"
+              />
+              {user?.role === 'TEACHER' && (
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <label className="text-sm text-gray-600 dark:text-gray-400">
+                      Make phone number public
+                    </label>
+                    <span className="text-xs text-gray-500 dark:text-gray-500">
+                      (Visible to students and other tutors)
+                    </span>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.phonePublic}
+                      onChange={(e) => handleInputChange('phonePublic', e.target.checked)}
+                      disabled={!isEditing}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"></div>
+                  </label>
+                </div>
+              )}
+            </div>
           </div>
 
           <div>
