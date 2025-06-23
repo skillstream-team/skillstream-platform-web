@@ -229,19 +229,21 @@ export const Header: React.FC = () => {
                       <Link
                         to="/profile"
                         className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                        onClick={() => setIsMobileMenuOpen(false)}
                       >
                         <User className="h-4 w-4 mr-2" />
                         Profile
                       </Link>
                       <Link
-                        to="/settings"
+                        to="/profile?tab=settings"
                         className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                        onClick={() => setIsMobileMenuOpen(false)}
                       >
                         <Settings className="h-4 w-4 mr-2" />
                         Settings
                       </Link>
                       <button
-                        onClick={handleLogout}
+                        onClick={() => { setIsMobileMenuOpen(false); handleLogout(); }}
                         className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                       >
                         <LogOut className="h-4 w-4 mr-2" />

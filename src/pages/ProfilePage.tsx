@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '../store/auth';
 import { BackButton } from '../components/common/BackButton';
 import { 
@@ -15,14 +15,44 @@ import {
   CheckIcon,
   XMarkIcon
 } from '@heroicons/react/24/outline';
+import { useLocation } from 'react-router-dom';
+
+interface FormDataType {
+  name: string;
+  email: string;
+  bio: string;
+  location: string;
+  website: string;
+  phone: string;
+  timezone: string;
+  language: string;
+  notifications: {
+    email: boolean;
+    push: boolean;
+    sms: boolean;
+    courseUpdates: boolean;
+    assignmentReminders: boolean;
+    forumNotifications: boolean;
+  };
+}
 
 const ProfilePage: React.FC = () => {
   const { user } = useAuthStore();
   const [isEditing, setIsEditing] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [activeTab, setActiveTab] = useState('profile');
+  const location = useLocation();
   
-  const [formData, setFormData] = useState({
+  // Update activeTab based on the 'tab' query parameter
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const tab = params.get('tab');
+    if (tab && ['profile', 'settings', 'notifications', 'security'].includes(tab)) {
+      setActiveTab(tab);
+    }
+  }, [location.search]);
+
+  const [formData, setFormData] = useState<FormDataType>({
     name: user?.name || '',
     email: user?.email || '',
     bio: 'Experienced educator passionate about creating engaging learning experiences. Specializing in modern web development and interactive teaching methodologies.',
