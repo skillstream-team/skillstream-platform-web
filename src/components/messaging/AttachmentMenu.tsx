@@ -84,6 +84,8 @@ export const AttachmentMenu: React.FC<AttachmentMenuProps> = ({
       onAttachmentsSelected(attachments);
       onClose();
     }
+    // Reset input value to allow selecting the same file again
+    event.target.value = '';
   };
 
   const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -101,6 +103,8 @@ export const AttachmentMenu: React.FC<AttachmentMenuProps> = ({
       onAttachmentsSelected(attachments);
       onClose();
     }
+    // Reset input value to allow selecting the same file again
+    event.target.value = '';
   };
 
   const requestCameraPermission = async () => {
@@ -121,6 +125,12 @@ export const AttachmentMenu: React.FC<AttachmentMenuProps> = ({
       
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
+        // Wait for video to be ready
+        videoRef.current.onloadedmetadata = () => {
+          if (videoRef.current) {
+            videoRef.current.play();
+          }
+        };
       }
     } catch (err) {
       console.error('Camera permission denied:', err);
@@ -149,7 +159,11 @@ export const AttachmentMenu: React.FC<AttachmentMenuProps> = ({
     canvas.toBlob((blob) => {
       if (blob) {
         const fileName = `photo-${Date.now()}.jpg`;
-        const file = Object.assign(blob, { name: fileName }) as File;
+        // Create a proper File object from the blob
+        const file = Object.assign(blob, { 
+          name: fileName,
+          lastModified: Date.now()
+        }) as File;
         const attachment: Attachment = {
           id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
           file,
@@ -167,6 +181,7 @@ export const AttachmentMenu: React.FC<AttachmentMenuProps> = ({
           streamRef.current.getTracks().forEach(track => track.stop());
           streamRef.current = null;
         }
+        setPermissionStatus(null);
       }
     }, 'image/jpeg', 0.8);
   };
@@ -300,6 +315,7 @@ export const AttachmentMenu: React.FC<AttachmentMenuProps> = ({
                 ref={videoRef}
                 autoPlay
                 playsInline
+                muted
                 className="w-full h-64 bg-gray-900 rounded-lg"
               />
               <canvas ref={canvasRef} className="hidden" />
