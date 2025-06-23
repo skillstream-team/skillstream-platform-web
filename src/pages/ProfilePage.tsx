@@ -199,19 +199,21 @@ const ProfilePage: React.FC = () => {
               Member since {new Date(user?.createdAt || '').toLocaleDateString()}
             </p>
           </div>
-          <button
-            onClick={() => setIsEditing(!isEditing)}
-            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            <PencilIcon className="w-4 h-4 mr-2" />
-            {isEditing ? 'Cancel' : 'Edit Profile'}
-          </button>
         </div>
       </div>
 
       {/* Profile Form */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Personal Information</h3>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Personal Information</h3>
+          <button
+            onClick={() => setIsEditing(!isEditing)}
+            className="flex items-center px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+          >
+            <PencilIcon className="w-3.5 h-3.5 mr-1.5" />
+            {isEditing ? 'Cancel' : 'Edit'}
+          </button>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
