@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Bell, 
   X, 
@@ -37,6 +38,7 @@ export const NotificationPopup: React.FC<NotificationPopupProps> = ({
 }) => {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (isOpen) {
@@ -75,7 +77,10 @@ export const NotificationPopup: React.FC<NotificationPopupProps> = ({
           isRead: false,
           action: {
             label: 'View',
-            onClick: () => console.log('View message')
+            onClick: () => {
+              navigate('/messages');
+              onClose();
+            }
           }
         },
         {
@@ -87,7 +92,10 @@ export const NotificationPopup: React.FC<NotificationPopupProps> = ({
           isRead: false,
           action: {
             label: 'Review',
-            onClick: () => console.log('Review assignment')
+            onClick: () => {
+              navigate('/assignments');
+              onClose();
+            }
           }
         },
         {
@@ -99,7 +107,10 @@ export const NotificationPopup: React.FC<NotificationPopupProps> = ({
           isRead: true,
           action: {
             label: 'Take Quiz',
-            onClick: () => console.log('Take quiz')
+            onClick: () => {
+              navigate('/quiz');
+              onClose();
+            }
           }
         },
         {
@@ -108,7 +119,14 @@ export const NotificationPopup: React.FC<NotificationPopupProps> = ({
           title: 'Course Update',
           message: 'New lesson "State Management with Redux" has been added to your course',
           timestamp: new Date(Date.now() - 7200000).toISOString(), // 2 hours ago
-          isRead: true
+          isRead: true,
+          action: {
+            label: 'View Course',
+            onClick: () => {
+              navigate('/courses');
+              onClose();
+            }
+          }
         },
         {
           id: '5',
@@ -119,7 +137,10 @@ export const NotificationPopup: React.FC<NotificationPopupProps> = ({
           isRead: true,
           action: {
             label: 'View Grade',
-            onClick: () => console.log('View grade')
+            onClick: () => {
+              navigate('/grades');
+              onClose();
+            }
           }
         }
       ];
@@ -312,7 +333,7 @@ export const NotificationPopup: React.FC<NotificationPopupProps> = ({
           <div className="p-3 border-t border-gray-200 dark:border-gray-700">
             <button
               onClick={() => {
-                console.log('View all notifications');
+                navigate('/notifications');
                 onClose();
               }}
               className="w-full text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 text-center"
