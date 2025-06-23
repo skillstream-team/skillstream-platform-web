@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   MessageCircle, 
   Search, 
@@ -18,20 +19,13 @@ import {
 import { apiService } from '../../services/api';
 import { DirectMessage, User as UserType } from '../../types';
 import { useAuthStore } from '../../store/auth';
+import { mockMessagingService, MockRecentContact } from '../../services/mockMessaging';
 
 interface MessagingPopupProps {
   isOpen: boolean;
   onClose: () => void;
   onExpand: () => void;
   buttonRef?: React.RefObject<HTMLButtonElement>;
-}
-
-interface RecentContact {
-  user: UserType;
-  lastMessage: string;
-  lastMessageTime: string;
-  unreadCount: number;
-  isOnline: boolean;
 }
 
 export const MessagingPopup: React.FC<MessagingPopupProps> = ({
@@ -41,25 +35,110 @@ export const MessagingPopup: React.FC<MessagingPopupProps> = ({
   buttonRef
 }) => {
   const { user } = useAuthStore();
-  const [users, setUsers] = useState<UserType[]>([]);
-  const [recentContacts, setRecentContacts] = useState<RecentContact[]>([]);
+  const navigate = useNavigate();
+  const [recentContacts, setRecentContacts] = useState<MockRecentContact[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [filteredContacts, setFilteredContacts] = useState<RecentContact[]>([]);
+  const [filteredContacts, setFilteredContacts] = useState<MockRecentContact[]>([]);
+
+  // Load recent contacts from mock service
+  const loadRecentContacts = async () => {
+    try {
+      setIsLoading(true);
+      const contacts = await mockMessagingService.getRecentContacts();
+      setRecentContacts(contacts);
+    } catch (error) {
+      console.error('Error loading recent contacts:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Search functionality
+  const handleSearch = async (query: string) => {
+    if (!query.trim()) {
+      setFilteredContacts(recentContacts);
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      const searchResults = await mockMessagingService.searchMessages(query);
+      
+      // Create filtered contacts from search results
+      const filtered: MockRecentContact[] = [];
+      
+      // Add matching conversations
+      for (const conversation of searchResults.conversations) {
+        const otherParticipantId = conversation.participants.find(id => id !== 'current-user');
+        if (otherParticipantId) {
+          const user = searchResults.users.find(u => u.id === otherParticipantId);
+          if (user) {
+            filtered.push({
+              user,
+              conversation,
+              lastMessage: conversation.lastMessage,
+              unreadCount: conversation.unreadCount,
+              isOnline: user.isOnline
+            });
+          }
+        }
+      }
+      
+      // Add matching users who aren't in conversations
+      for (const user of searchResults.users) {
+        const existingContact = filtered.find(contact => contact.user.id === user.id);
+        if (!existingContact) {
+          // Create a mock conversation for this user
+          const mockConversation = {
+            id: `search-${user.id}`,
+            participants: ['current-user', user.id],
+            lastMessage: {
+              id: `search-msg-${user.id}`,
+              conversationId: `search-${user.id}`,
+              senderId: 'current-user',
+              content: 'Start a conversation',
+              type: 'text' as const,
+              timestamp: new Date().toISOString(),
+              isRead: true
+            },
+            unreadCount: 0,
+            isGroup: false,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          };
+          
+          filtered.push({
+            user,
+            conversation: mockConversation,
+            lastMessage: mockConversation.lastMessage,
+            unreadCount: 0,
+            isOnline: user.isOnline
+          });
+        }
+      }
+      
+      setFilteredContacts(filtered);
+    } catch (error) {
+      console.error('Error searching messages:', error);
+      setFilteredContacts(recentContacts);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (isOpen) {
-      loadUsers();
       loadRecentContacts();
     }
   }, [isOpen]);
 
   useEffect(() => {
-    const filtered = recentContacts.filter(contact => 
-      contact.user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      contact.user.email.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-    setFilteredContacts(filtered);
+    if (searchQuery) {
+      handleSearch(searchQuery);
+    } else {
+      setFilteredContacts(recentContacts);
+    }
   }, [searchQuery, recentContacts]);
 
   // Close popup when clicking outside
@@ -79,112 +158,6 @@ export const MessagingPopup: React.FC<MessagingPopupProps> = ({
     };
   }, [isOpen, onClose, buttonRef]);
 
-  const loadUsers = async () => {
-    try {
-      const usersData = await apiService.getUsers();
-      setUsers(usersData);
-    } catch (error) {
-      console.error('Error loading users:', error);
-      // Mock data for demonstration
-      setUsers([
-        { 
-          id: '1', 
-          name: 'John Doe', 
-          email: 'john@example.com', 
-          role: 'STUDENT', 
-          avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80',
-          createdAt: '2024-01-01T00:00:00Z', 
-          updatedAt: '2024-01-01T00:00:00Z' 
-        },
-        { 
-          id: '2', 
-          name: 'Jane Smith', 
-          email: 'jane@example.com', 
-          role: 'TEACHER', 
-          avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80',
-          createdAt: '2024-01-01T00:00:00Z', 
-          updatedAt: '2024-01-01T00:00:00Z' 
-        },
-        { 
-          id: '3', 
-          name: 'Mike Johnson', 
-          email: 'mike@example.com', 
-          role: 'STUDENT', 
-          avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80',
-          createdAt: '2024-01-01T00:00:00Z', 
-          updatedAt: '2024-01-01T00:00:00Z' 
-        },
-        { 
-          id: '4', 
-          name: 'Sarah Wilson', 
-          email: 'sarah@example.com', 
-          role: 'TEACHER', 
-          avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80',
-          createdAt: '2024-01-01T00:00:00Z', 
-          updatedAt: '2024-01-01T00:00:00Z' 
-        },
-        { 
-          id: '5', 
-          name: 'Alex Brown', 
-          email: 'alex@example.com', 
-          role: 'STUDENT', 
-          avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80',
-          createdAt: '2024-01-01T00:00:00Z', 
-          updatedAt: '2024-01-01T00:00:00Z' 
-        }
-      ]);
-    }
-  };
-
-  const loadRecentContacts = async () => {
-    try {
-      setIsLoading(true);
-      // Mock recent contacts with messages
-      const mockRecentContacts: RecentContact[] = [
-        {
-          user: users[0] || { id: '1', name: 'John Doe', email: 'john@example.com', role: 'STUDENT', createdAt: '2024-01-01T00:00:00Z', updatedAt: '2024-01-01T00:00:00Z' },
-          lastMessage: 'Thanks for the help with the assignment!',
-          lastMessageTime: new Date(Date.now() - 1800000).toISOString(), // 30 minutes ago
-          unreadCount: 2,
-          isOnline: true
-        },
-        {
-          user: users[1] || { id: '2', name: 'Jane Smith', email: 'jane@example.com', role: 'TEACHER', createdAt: '2024-01-01T00:00:00Z', updatedAt: '2024-01-01T00:00:00Z' },
-          lastMessage: 'When is the next class scheduled?',
-          lastMessageTime: new Date(Date.now() - 3600000).toISOString(), // 1 hour ago
-          unreadCount: 0,
-          isOnline: false
-        },
-        {
-          user: users[2] || { id: '3', name: 'Mike Johnson', email: 'mike@example.com', role: 'STUDENT', createdAt: '2024-01-01T00:00:00Z', updatedAt: '2024-01-01T00:00:00Z' },
-          lastMessage: 'Can you share the study materials?',
-          lastMessageTime: new Date(Date.now() - 7200000).toISOString(), // 2 hours ago
-          unreadCount: 1,
-          isOnline: true
-        },
-        {
-          user: users[3] || { id: '4', name: 'Sarah Wilson', email: 'sarah@example.com', role: 'TEACHER', createdAt: '2024-01-01T00:00:00Z', updatedAt: '2024-01-01T00:00:00Z' },
-          lastMessage: 'Great work on the project!',
-          lastMessageTime: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
-          unreadCount: 0,
-          isOnline: false
-        },
-        {
-          user: users[4] || { id: '5', name: 'Alex Brown', email: 'alex@example.com', role: 'STUDENT', createdAt: '2024-01-01T00:00:00Z', updatedAt: '2024-01-01T00:00:00Z' },
-          lastMessage: 'Let\'s study together tomorrow',
-          lastMessageTime: new Date(Date.now() - 172800000).toISOString(), // 2 days ago
-          unreadCount: 0,
-          isOnline: true
-        }
-      ];
-      setRecentContacts(mockRecentContacts);
-    } catch (error) {
-      console.error('Error loading recent contacts:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const formatLastMessageTime = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
@@ -199,15 +172,15 @@ export const MessagingPopup: React.FC<MessagingPopupProps> = ({
     }
   };
 
-  const handleStartChat = (contact: RecentContact) => {
-    // This would open a chat with the selected user
-    console.log('Start chat with:', contact.user.name);
+  const handleStartChat = (contact: MockRecentContact) => {
+    // Navigate to the conversation
+    navigate(`/messages/${contact.user.id}`);
     onClose();
   };
 
   const handleNewMessage = () => {
-    // This could open a new message interface
-    console.log('Start new message');
+    navigate('/messages/new');
+    onClose();
   };
 
   if (!isOpen) return null;
@@ -280,7 +253,9 @@ export const MessagingPopup: React.FC<MessagingPopupProps> = ({
           ) : filteredContacts.length === 0 ? (
             <div className="text-center py-6 text-gray-500 dark:text-gray-400">
               <User className="h-8 w-8 mx-auto mb-2 opacity-50" />
-              <p className="text-xs">No recent messages</p>
+              <p className="text-xs">
+                {searchQuery ? 'No messages found' : 'No recent messages'}
+              </p>
             </div>
           ) : (
             <div className="p-1">
@@ -320,12 +295,12 @@ export const MessagingPopup: React.FC<MessagingPopupProps> = ({
                       <div className="flex items-center space-x-1">
                         <Clock className="h-2.5 w-2.5 text-gray-400" />
                         <span className="text-xs text-gray-500 dark:text-gray-400">
-                          {formatLastMessageTime(contact.lastMessageTime)}
+                          {formatLastMessageTime(contact.lastMessage.timestamp)}
                         </span>
                       </div>
                     </div>
                     <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                      {contact.lastMessage}
+                      {contact.lastMessage.content}
                     </p>
                   </div>
 
