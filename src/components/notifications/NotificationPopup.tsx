@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Bell, 
@@ -39,6 +39,7 @@ export const NotificationPopup: React.FC<NotificationPopupProps> = ({
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const popupRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -49,7 +50,11 @@ export const NotificationPopup: React.FC<NotificationPopupProps> = ({
   // Close popup when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (buttonRef?.current && !buttonRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      const isClickOnButton = buttonRef?.current?.contains(target);
+      const isClickInPopup = popupRef?.current?.contains(target);
+      
+      if (!isClickOnButton && !isClickInPopup) {
         onClose();
       }
     };
@@ -207,11 +212,11 @@ export const NotificationPopup: React.FC<NotificationPopupProps> = ({
 
   return (
     <>
-      {/* Backdrop */}
-      <div className="fixed inset-0 z-40" onClick={onClose} />
-      
       {/* Popup */}
-      <div className="absolute right-0 top-full mt-1 w-80 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-50">
+      <div 
+        ref={popupRef}
+        className="absolute right-0 top-full mt-1 w-80 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-50"
+      >
         {/* Arrow pointing up to the button */}
         <div className="absolute -top-2 right-4 w-4 h-4 bg-white dark:bg-gray-800 border-l border-t border-gray-200 dark:border-gray-700 transform rotate-45"></div>
         
