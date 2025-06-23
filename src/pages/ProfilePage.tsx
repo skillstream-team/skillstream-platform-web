@@ -17,6 +17,11 @@ import {
   XMarkIcon
 } from '@heroicons/react/24/outline';
 import { useLocation } from 'react-router-dom';
+import { 
+  PhotoIcon,
+  FolderIcon,
+  XMarkIcon as XMarkIconSolid
+} from '@heroicons/react/24/solid';
 
 interface FormDataType {
   name: string;
@@ -49,6 +54,9 @@ const ProfilePage: React.FC = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [activeTab, setActiveTab] = useState('profile');
+  const [showPhotoModal, setShowPhotoModal] = useState(false);
+  const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const location = useLocation();
   
   // Update activeTab based on the 'tab' query parameter
@@ -162,6 +170,52 @@ const ProfilePage: React.FC = () => {
     // For 'auto' theme, you might need additional logic
   };
 
+  const handlePhotoSelection = async (type: 'camera' | 'gallery' | 'files') => {
+    try {
+      if (type === 'camera') {
+        // Request camera permission and take photo
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        // Here you would implement camera capture logic
+        console.log('Camera access granted');
+        stream.getTracks().forEach(track => track.stop());
+      } else if (type === 'gallery' || type === 'files') {
+        // Create file input for gallery/files selection
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.multiple = false;
+        
+        input.onchange = (e) => {
+          const file = (e.target as HTMLInputElement).files?.[0];
+          if (file) {
+            setSelectedPhoto(file);
+            const reader = new FileReader();
+            reader.onload = (e) => {
+              setPhotoPreview(e.target?.result as string);
+            };
+            reader.readAsDataURL(file);
+          }
+        };
+        
+        input.click();
+      }
+      setShowPhotoModal(false);
+    } catch (error) {
+      console.error('Error accessing camera/gallery:', error);
+      alert('Permission denied or error accessing camera/gallery');
+    }
+  };
+
+  const handleSavePhoto = () => {
+    if (selectedPhoto) {
+      // Here you would typically upload the photo to your backend
+      console.log('Saving photo:', selectedPhoto);
+      // Update user avatar in the store or make API call
+      setSelectedPhoto(null);
+      setPhotoPreview(null);
+    }
+  };
+
   const tabs = [
     { id: 'profile', name: 'Profile', icon: UserIcon },
     { id: 'settings', name: 'Settings', icon: Cog6ToothIcon },
@@ -180,7 +234,10 @@ const ProfilePage: React.FC = () => {
               alt="Profile"
               className="w-24 h-24 rounded-full object-cover border-4 border-white dark:border-gray-700 shadow-lg"
             />
-            <button className="absolute bottom-0 right-0 bg-blue-600 text-white p-2 rounded-full hover:bg-blue-700 transition-colors">
+            <button 
+              onClick={() => setShowPhotoModal(true)}
+              className="absolute bottom-0 right-0 bg-blue-600 text-white p-2 rounded-full hover:bg-blue-700 transition-colors"
+            >
               <CameraIcon className="w-4 h-4" />
             </button>
           </div>
@@ -540,6 +597,78 @@ const ProfilePage: React.FC = () => {
         {activeTab === 'settings' && renderSettingsTab()}
         {activeTab === 'notifications' && renderNotificationsTab()}
         {activeTab === 'security' && renderSecurityTab()}
+
+        {/* Photo Selection Modal */}
+        {showPhotoModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  Update Profile Photo
+                </h3>
+                <button
+                  onClick={() => setShowPhotoModal(false)}
+                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                >
+                  <XMarkIconSolid className="w-5 h-5" />
+                </button>
+              </div>
+              
+              {photoPreview ? (
+                <div className="space-y-4">
+                  <div className="flex justify-center">
+                    <img
+                      src={photoPreview}
+                      alt="Preview"
+                      className="w-32 h-32 rounded-full object-cover border-4 border-gray-200 dark:border-gray-700"
+                    />
+                  </div>
+                  <div className="flex space-x-3">
+                    <button
+                      onClick={handleSavePhoto}
+                      className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                      Save Photo
+                    </button>
+                    <button
+                      onClick={() => {
+                        setSelectedPhoto(null);
+                        setPhotoPreview(null);
+                      }}
+                      className="flex-1 px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500 transition-colors"
+                    >
+                      Choose Different
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <button
+                    onClick={() => handlePhotoSelection('camera')}
+                    className="w-full flex items-center px-4 py-3 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
+                  >
+                    <CameraIcon className="w-5 h-5 mr-3" />
+                    Take a Picture
+                  </button>
+                  <button
+                    onClick={() => handlePhotoSelection('gallery')}
+                    className="w-full flex items-center px-4 py-3 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors"
+                  >
+                    <PhotoIcon className="w-5 h-5 mr-3" />
+                    Choose from Gallery
+                  </button>
+                  <button
+                    onClick={() => handlePhotoSelection('files')}
+                    className="w-full flex items-center px-4 py-3 bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 rounded-lg hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors"
+                  >
+                    <FolderIcon className="w-5 h-5 mr-3" />
+                    Choose from Files
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
