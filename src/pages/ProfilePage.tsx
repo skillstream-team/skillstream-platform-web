@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '../store/auth';
+import { useThemeStore } from '../store/theme';
 import { BackButton } from '../components/common/BackButton';
 import { 
   UserIcon,
@@ -36,8 +37,14 @@ interface FormDataType {
   };
 }
 
+interface SettingsDataType {
+  language: string;
+  theme: string;
+}
+
 const ProfilePage: React.FC = () => {
   const { user } = useAuthStore();
+  const { theme, toggleTheme } = useThemeStore();
   const [isEditing, setIsEditing] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [activeTab, setActiveTab] = useState('profile');
@@ -51,6 +58,14 @@ const ProfilePage: React.FC = () => {
       setActiveTab(tab);
     }
   }, [location.search]);
+
+  // Initialize settings data with current theme
+  useEffect(() => {
+    setSettingsData(prev => ({
+      ...prev,
+      theme: theme
+    }));
+  }, [theme]);
 
   const [formData, setFormData] = useState<FormDataType>({
     name: user?.name || '',
@@ -75,6 +90,11 @@ const ProfilePage: React.FC = () => {
     currentPassword: '',
     newPassword: '',
     confirmPassword: ''
+  });
+
+  const [settingsData, setSettingsData] = useState<SettingsDataType>({
+    language: 'en',
+    theme: 'auto'
   });
 
   const handleInputChange = (field: string, value: string | boolean) => {
@@ -113,6 +133,31 @@ const ProfilePage: React.FC = () => {
       newPassword: '',
       confirmPassword: ''
     });
+  };
+
+  const handleSettingsSave = () => {
+    // Here you would typically make an API call to update the user settings
+    console.log('Saving settings:', settingsData);
+    // You could also update the theme store here
+    // toggleTheme(settingsData.theme);
+  };
+
+  const handleLanguageChange = (language: string) => {
+    setSettingsData(prev => ({ ...prev, language }));
+    // Apply language change immediately
+    console.log('Language changed to:', language);
+    // Here you would typically update the app's language context
+  };
+
+  const handleThemeChange = (newTheme: string) => {
+    setSettingsData(prev => ({ ...prev, theme: newTheme }));
+    // Apply theme change immediately
+    if (newTheme === 'dark' && theme !== 'dark') {
+      toggleTheme();
+    } else if (newTheme === 'light' && theme !== 'light') {
+      toggleTheme();
+    }
+    // For 'auto' theme, you might need additional logic
   };
 
   const tabs = [
@@ -293,7 +338,11 @@ const ProfilePage: React.FC = () => {
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Language
             </label>
-            <select className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white">
+            <select 
+              value={settingsData.language}
+              onChange={(e) => handleLanguageChange(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+            >
               <option value="en">English</option>
               <option value="es">Spanish</option>
               <option value="fr">French</option>
@@ -305,12 +354,25 @@ const ProfilePage: React.FC = () => {
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Theme
             </label>
-            <select className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white">
+            <select 
+              value={settingsData.theme}
+              onChange={(e) => handleThemeChange(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+            >
               <option value="light">Light</option>
               <option value="dark">Dark</option>
               <option value="auto">Auto</option>
             </select>
           </div>
+        </div>
+        <div className="mt-6 flex space-x-3">
+          <button
+            onClick={handleSettingsSave}
+            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            <CheckIcon className="w-4 h-4 mr-2" />
+            Save Settings
+          </button>
         </div>
       </div>
     </div>
