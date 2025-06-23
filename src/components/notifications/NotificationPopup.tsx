@@ -14,6 +14,7 @@ import {
   Search
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
+import { mockNotificationService, MockNotification } from '../../services/mockDatabase';
 
 interface NotificationPopupProps {
   isOpen: boolean;
@@ -21,259 +22,100 @@ interface NotificationPopupProps {
   buttonRef?: React.RefObject<HTMLButtonElement>;
 }
 
-interface NotificationItem {
-  id: string;
-  type: 'success' | 'error' | 'info' | 'warning';
-  title: string;
-  message: string;
-  timestamp: string;
-  isRead: boolean;
-  action?: {
-    label: string;
-    onClick: () => void;
-  };
-}
-
 export const NotificationPopup: React.FC<NotificationPopupProps> = ({
   isOpen,
   onClose,
   buttonRef
 }) => {
-  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [notifications, setNotifications] = useState<MockNotification[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showAllNotifications, setShowAllNotifications] = useState(false);
   const [filterType, setFilterType] = useState<'all' | 'unread' | 'read'>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [total, setTotal] = useState(0);
   const navigate = useNavigate();
   const popupRef = useRef<HTMLDivElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
 
+  // Fetch notifications for popup (show top 5)
+  const fetchPopupNotifications = async () => {
+    setIsLoading(true);
+    const { notifications: notifs } = await mockNotificationService.getNotifications({ limit: 5 });
+    setNotifications(notifs);
+    setIsLoading(false);
+  };
+
+  // Fetch notifications for modal (with search/filter)
+  const fetchModalNotifications = async () => {
+    setIsLoading(true);
+    let filters: any = {};
+    if (filterType === 'unread') filters.isRead = false;
+    if (filterType === 'read') filters.isRead = true;
+    if (searchQuery) filters.search = searchQuery;
+    const { notifications: notifs, total } = await mockNotificationService.getNotifications(filters);
+    setNotifications(notifs);
+    setTotal(total);
+    setIsLoading(false);
+  };
+
   useEffect(() => {
-    if (isOpen) {
-      loadNotifications();
+    if (isOpen && !showAllNotifications) {
+      fetchPopupNotifications();
     }
-  }, [isOpen]);
+  }, [isOpen, showAllNotifications]);
 
-  // Close popup when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as Node;
-      const isClickOnButton = buttonRef?.current?.contains(target);
-      const isClickInPopup = popupRef?.current?.contains(target);
-      
-      if (!isClickOnButton && !isClickInPopup) {
-        onClose();
-      }
-    };
-
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [isOpen, onClose, buttonRef]);
-
-  // Handle body scroll lock for modal
   useEffect(() => {
     if (showAllNotifications) {
-      document.body.style.overflow = 'hidden';
+      fetchModalNotifications();
     }
+    // eslint-disable-next-line
+  }, [showAllNotifications, filterType, searchQuery]);
 
-    return () => {
-      document.body.style.overflow = 'unset';
-    };
-  }, [showAllNotifications]);
+  // Mark as read
+  const markAsRead = async (id: string) => {
+    await mockNotificationService.markAsRead(id);
+    if (showAllNotifications) fetchModalNotifications();
+    else fetchPopupNotifications();
+  };
 
-  const handleActionClick = (notification: NotificationItem) => {
-    // Mark as read first
+  // Mark all as read
+  const markAllAsRead = async () => {
+    await mockNotificationService.markAllAsRead();
+    if (showAllNotifications) fetchModalNotifications();
+    else fetchPopupNotifications();
+  };
+
+  // Delete notification
+  const deleteNotification = async (id: string) => {
+    await mockNotificationService.deleteNotification(id);
+    if (showAllNotifications) fetchModalNotifications();
+    else fetchPopupNotifications();
+  };
+
+  // Action click handler for modal
+  const handleModalActionClick = (notification: MockNotification) => {
     markAsRead(notification.id);
-    
-    // Close the modal immediately
     setShowAllNotifications(false);
-    
-    // Execute the action after modal closes
-    if (notification.action?.onClick) {
-      // Use setTimeout to ensure modal closes first
+    if (notification.action?.route) {
       setTimeout(() => {
-        notification.action!.onClick();
+        navigate({ pathname: notification.action!.route, search: notification.action?.params ? '?' + new URLSearchParams(notification.action.params).toString() : '' });
       }, 150);
     }
   };
 
-  const handleModalActionClick = (notification: NotificationItem) => {
-    // Mark as read first
+  // Action click handler for popup
+  const handleActionClick = (notification: MockNotification) => {
     markAsRead(notification.id);
-    
-    // Close the modal immediately
-    setShowAllNotifications(false);
-    
-    // Execute the action after modal closes
-    if (notification.action?.onClick) {
-      // Use setTimeout to ensure modal closes first
+    if (notification.action?.route) {
       setTimeout(() => {
-        notification.action!.onClick();
+        navigate({ pathname: notification.action!.route, search: notification.action?.params ? '?' + new URLSearchParams(notification.action.params).toString() : '' });
+        onClose();
       }, 150);
     }
-  };
-
-  const loadNotifications = async () => {
-    try {
-      setIsLoading(true);
-      // Mock notifications data
-      const mockNotifications: NotificationItem[] = [
-        {
-          id: '1',
-          type: 'info',
-          title: 'New Message',
-          message: 'John Doe sent you a message about the course assignment. He mentioned that he has some questions about the React hooks implementation and would like to discuss it during the next study session.',
-          timestamp: new Date(Date.now() - 300000).toISOString(), // 5 minutes ago
-          isRead: false,
-          action: {
-            label: 'View',
-            onClick: () => {
-              navigate('/messages');
-              onClose();
-            }
-          }
-        },
-        {
-          id: '2',
-          type: 'success',
-          title: 'Assignment Submitted',
-          message: 'Your assignment for "Advanced React" has been successfully submitted. The system has confirmed receipt and your work is now under review by the instructor.',
-          timestamp: new Date(Date.now() - 1800000).toISOString(), // 30 minutes ago
-          isRead: false,
-          action: {
-            label: 'Review',
-            onClick: () => {
-              navigate('/assignments');
-              onClose();
-            }
-          }
-        },
-        {
-          id: '3',
-          type: 'warning',
-          title: 'Upcoming Deadline',
-          message: 'Quiz for "JavaScript Fundamentals" is due in 2 hours. Make sure to complete all sections including the bonus questions for extra credit.',
-          timestamp: new Date(Date.now() - 3600000).toISOString(), // 1 hour ago
-          isRead: true,
-          action: {
-            label: 'Take Quiz',
-            onClick: () => {
-              navigate('/quiz');
-              onClose();
-            }
-          }
-        },
-        {
-          id: '4',
-          type: 'info',
-          title: 'Course Update',
-          message: 'New lesson "State Management with Redux" has been added to your course. This lesson covers advanced concepts including middleware, async actions, and best practices.',
-          timestamp: new Date(Date.now() - 7200000).toISOString(), // 2 hours ago
-          isRead: true,
-          action: {
-            label: 'View Course',
-            onClick: () => {
-              navigate('/courses');
-              onClose();
-            }
-          }
-        },
-        {
-          id: '5',
-          type: 'success',
-          title: 'Grade Posted',
-          message: 'Your grade for "Web Development Basics" has been posted. You received an A- (92%) for your final project. Great work on the responsive design implementation!',
-          timestamp: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
-          isRead: true,
-          action: {
-            label: 'View Grade',
-            onClick: () => {
-              navigate('/grades');
-              onClose();
-            }
-          }
-        },
-        {
-          id: '6',
-          type: 'error',
-          title: 'System Maintenance',
-          message: 'Scheduled maintenance will occur tonight from 2:00 AM to 4:00 AM. During this time, the platform may be temporarily unavailable.',
-          timestamp: new Date(Date.now() - 172800000).toISOString(), // 2 days ago
-          isRead: true,
-          action: {
-            label: 'Learn More',
-            onClick: () => {
-              navigate('/announcements');
-              onClose();
-            }
-          }
-        },
-        {
-          id: '7',
-          type: 'info',
-          title: 'Study Group Invitation',
-          message: 'You have been invited to join the "Advanced JavaScript" study group. The group meets every Tuesday and Thursday at 7 PM.',
-          timestamp: new Date(Date.now() - 259200000).toISOString(), // 3 days ago
-          isRead: false,
-          action: {
-            label: 'Join Group',
-            onClick: () => {
-              navigate('/study-groups');
-              onClose();
-            }
-          }
-        },
-        {
-          id: '8',
-          type: 'success',
-          title: 'Certificate Earned',
-          message: 'Congratulations! You have earned the "Frontend Development Fundamentals" certificate. Your certificate is now available for download.',
-          timestamp: new Date(Date.now() - 345600000).toISOString(), // 4 days ago
-          isRead: true,
-          action: {
-            label: 'Download',
-            onClick: () => {
-              navigate('/certificates');
-              onClose();
-            }
-          }
-        }
-      ];
-      setNotifications(mockNotifications);
-    } catch (error) {
-      console.error('Error loading notifications:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const markAsRead = (id: string) => {
-    setNotifications(prev => 
-      prev.map(notification => 
-        notification.id === id 
-          ? { ...notification, isRead: true }
-          : notification
-      )
-    );
-  };
-
-  const markAllAsRead = () => {
-    setNotifications(prev => 
-      prev.map(notification => ({ ...notification, isRead: true }))
-    );
-  };
-
-  const deleteNotification = (id: string) => {
-    setNotifications(prev => prev.filter(notification => notification.id !== id));
   };
 
   const getIcon = (type: string) => {
-    switch (type) {
+    switch (type.toLowerCase()) {
       case 'success':
         return <CheckCircle className="w-4 h-4 text-green-500" />;
       case 'error':
@@ -291,7 +133,6 @@ export const NotificationPopup: React.FC<NotificationPopupProps> = ({
     const date = new Date(dateString);
     const now = new Date();
     const diffInMinutes = (now.getTime() - date.getTime()) / (1000 * 60);
-
     if (diffInMinutes < 60) {
       return `${Math.floor(diffInMinutes)}m ago`;
     } else if (diffInMinutes < 1440) {
@@ -312,19 +153,6 @@ export const NotificationPopup: React.FC<NotificationPopupProps> = ({
       minute: '2-digit'
     });
   };
-
-  const filteredNotifications = notifications.filter(notification => {
-    const matchesFilter = 
-      filterType === 'all' ||
-      (filterType === 'unread' && !notification.isRead) ||
-      (filterType === 'read' && notification.isRead);
-    
-    const matchesSearch = 
-      notification.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      notification.message.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    return matchesFilter && matchesSearch;
-  });
 
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
@@ -384,7 +212,7 @@ export const NotificationPopup: React.FC<NotificationPopupProps> = ({
             </div>
           ) : (
             <div className="p-1">
-              {notifications.slice(0, 5).map((notification) => (
+              {notifications.map((notification) => (
                 <div
                   key={notification.id}
                   className={cn(
@@ -408,7 +236,7 @@ export const NotificationPopup: React.FC<NotificationPopupProps> = ({
                       <div className="flex items-center space-x-1">
                         <Clock className="h-2.5 w-2.5 text-gray-400" />
                         <span className="text-xs text-gray-500 dark:text-gray-400">
-                          {formatTimestamp(notification.timestamp)}
+                          {formatTimestamp(notification.createdAt)}
                         </span>
                       </div>
                     </div>
@@ -480,7 +308,7 @@ export const NotificationPopup: React.FC<NotificationPopupProps> = ({
                     All Notifications
                   </h2>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
-                    {notifications.length} total • {unreadCount} unread
+                    {total} total • {unreadCount} unread
                   </p>
                 </div>
               </div>
@@ -535,7 +363,11 @@ export const NotificationPopup: React.FC<NotificationPopupProps> = ({
 
             {/* Notifications List */}
             <div className="flex-1 overflow-y-auto p-6">
-              {filteredNotifications.length === 0 ? (
+              {isLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                </div>
+              ) : notifications.length === 0 ? (
                 <div className="text-center py-12 text-gray-500 dark:text-gray-400">
                   <Bell className="h-12 w-12 mx-auto mb-4 opacity-50" />
                   <p className="text-lg font-medium">No notifications found</p>
@@ -543,7 +375,7 @@ export const NotificationPopup: React.FC<NotificationPopupProps> = ({
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {filteredNotifications.map((notification) => (
+                  {notifications.map((notification) => (
                     <div
                       key={notification.id}
                       className={cn(
@@ -568,12 +400,12 @@ export const NotificationPopup: React.FC<NotificationPopupProps> = ({
                             <div className="flex items-center space-x-2">
                               <div className="flex items-center space-x-1 text-sm text-gray-500 dark:text-gray-400">
                                 <Clock className="h-4 w-4" />
-                                <span>{formatFullTimestamp(notification.timestamp)}</span>
+                                <span>{formatFullTimestamp(notification.createdAt)}</span>
                               </div>
                               <div className="flex items-center space-x-1">
                                 {!notification.isRead && (
                                   <button
-                                    onClick={() => handleModalActionClick(notification)}
+                                    onClick={() => markAsRead(notification.id)}
                                     className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors"
                                     title="Mark as read"
                                   >
