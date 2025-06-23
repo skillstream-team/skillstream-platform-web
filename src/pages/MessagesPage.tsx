@@ -11,12 +11,15 @@ import {
   User,
   Clock,
   CheckCheck,
-  Plus
+  Plus,
+  File,
+  X
 } from 'lucide-react';
 import { apiService } from '../services/api';
 import { DirectMessage, User as UserType } from '../types';
 import { useAuthStore } from '../store/auth';
 import { BackButton } from '../components/common/BackButton';
+import { AttachmentMenu, Attachment } from '../components/messaging/AttachmentMenu';
 
 export const MessagesPage: React.FC = () => {
   const { user } = useAuthStore();
@@ -29,6 +32,9 @@ export const MessagesPage: React.FC = () => {
   const [isSending, setIsSending] = useState(false);
   const [filteredUsers, setFilteredUsers] = useState<UserType[]>([]);
   const [recentConversations, setRecentConversations] = useState<DirectMessage[]>([]);
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
+  const attachmentButtonRef = React.useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     loadUsers();
@@ -171,6 +177,22 @@ export const MessagesPage: React.FC = () => {
       (msg.senderId === userId && msg.receiverId === user?.id)
     );
     return userMessages[userMessages.length - 1];
+  };
+
+  const handleAttachmentsSelected = (selectedAttachments: Attachment[]) => {
+    setAttachments(prev => [...prev, ...selectedAttachments]);
+  };
+
+  const removeAttachment = (attachmentId: string) => {
+    setAttachments(prev => prev.filter(att => att.id !== attachmentId));
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
   return (
@@ -338,10 +360,62 @@ export const MessagesPage: React.FC = () => {
 
                 {/* Message Input */}
                 <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+                  {/* Attachments Preview */}
+                  {attachments.length > 0 && (
+                    <div className="mb-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                      <div className="flex flex-wrap gap-2">
+                        {attachments.map((attachment) => (
+                          <div
+                            key={attachment.id}
+                            className="flex items-center space-x-2 p-2 bg-white dark:bg-gray-600 rounded-lg border"
+                          >
+                            {attachment.preview ? (
+                              <img
+                                src={attachment.preview}
+                                alt={attachment.name}
+                                className="w-8 h-8 object-cover rounded"
+                              />
+                            ) : (
+                              <div className="w-8 h-8 bg-gray-200 dark:bg-gray-500 rounded flex items-center justify-center">
+                                <File className="h-4 w-4 text-gray-500" />
+                              </div>
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-medium text-gray-900 dark:text-white truncate">
+                                {attachment.name}
+                              </p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400">
+                                {formatFileSize(attachment.size)}
+                              </p>
+                            </div>
+                            <button
+                              onClick={() => removeAttachment(attachment.id)}
+                              className="text-gray-400 hover:text-red-500"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   <div className="flex items-center space-x-2">
-                    <button className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
-                      <Paperclip className="h-4 w-4" />
-                    </button>
+                    <div className="relative">
+                      <button
+                        ref={attachmentButtonRef}
+                        onClick={() => setShowAttachmentMenu(!showAttachmentMenu)}
+                        className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+                      >
+                        <Paperclip className="h-4 w-4" />
+                      </button>
+                      <AttachmentMenu
+                        isOpen={showAttachmentMenu}
+                        onClose={() => setShowAttachmentMenu(false)}
+                        onAttachmentsSelected={handleAttachmentsSelected}
+                        buttonRef={attachmentButtonRef}
+                      />
+                    </div>
                     <div className="flex-1 relative">
                       <input
                         type="text"
@@ -357,7 +431,7 @@ export const MessagesPage: React.FC = () => {
                     </div>
                     <button
                       onClick={sendMessage}
-                      disabled={!newMessage.trim() || isSending}
+                      disabled={(!newMessage.trim() && attachments.length === 0) || isSending}
                       className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <Send className="h-4 w-4" />
