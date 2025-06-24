@@ -28,6 +28,7 @@ import AssignmentsPage from './pages/assessments/AssignmentsPage';
 import AssignmentSubmitPage from './pages/assessments/AssignmentSubmitPage';
 import ProfilePage from './pages/ProfilePage';
 import CallsPage from './pages/CallsPage';
+import WatchtowerDashboard from './pages/WatchtowerDashboard';
 
 // Protected Route Component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -268,6 +269,14 @@ function App() {
                   <Layout>
                     <AnalyticsPage />
                   </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/watchtower"
+              element={
+                <ProtectedRoute>
+                  <WatchtowerDashboard />
                 </ProtectedRoute>
               }
             />

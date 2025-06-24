@@ -1,4 +1,4 @@
-import { Course, Lesson, Material, User } from '../types';
+import { Course, Lesson, Material } from '../types';
 
 export const dummyCourses: Course[] = [
   {
@@ -47,9 +47,9 @@ export const dummyCourses: Course[] = [
     teacher: {
       id: 'instructor-2',
       name: 'Mike Rodriguez',
-      email: 'mike.rodriguez@skillstream.com',
+      email: 'mike.rodriguez@watchtower.com',
       role: 'TEACHER',
-      avatarUrl: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face',
+      avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
       createdAt: '2024-01-01T00:00:00Z',
       updatedAt: '2024-01-01T00:00:00Z'
     },
@@ -76,7 +76,7 @@ export const dummyCourses: Course[] = [
     teacher: {
       id: 'instructor-3',
       name: 'Dr. Emily Watson',
-      email: 'emily.watson@skillstream.com',
+      email: 'emily.watson@watchtower.com',
       role: 'TEACHER',
       avatarUrl: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=face',
       createdAt: '2024-01-01T00:00:00Z',
@@ -105,7 +105,7 @@ export const dummyCourses: Course[] = [
     teacher: {
       id: 'instructor-4',
       name: 'Alex Thompson',
-      email: 'alex.thompson@skillstream.com',
+      email: 'alex.thompson@watchtower.com',
       role: 'TEACHER',
       avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face',
       createdAt: '2024-01-01T00:00:00Z',
@@ -134,7 +134,7 @@ export const dummyCourses: Course[] = [
     teacher: {
       id: 'instructor-5',
       name: 'Lisa Park',
-      email: 'lisa.park@skillstream.com',
+      email: 'lisa.park@watchtower.com',
       role: 'TEACHER',
       avatarUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&h=100&fit=crop&crop=face',
       createdAt: '2024-01-01T00:00:00Z',

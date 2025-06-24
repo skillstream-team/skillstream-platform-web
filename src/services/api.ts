@@ -19,8 +19,6 @@ import {
   VideoParticipant,
   VideoSession,
   CalendarEvent,
-  ApiResponse,
-  PaginatedResponse,
   ForumCategory,
   ForumThread,
   ForumReply,
@@ -39,7 +37,7 @@ interface FilePermission {
 }
 
 // API Configuration
-const API_BASE_URL = 'http://localhost:3001/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
 class ApiService {
   private api: AxiosInstance;
@@ -56,18 +54,18 @@ class ApiService {
     this.api.interceptors.request.use(
       (config) => {
         const token = localStorage.getItem('token');
-        if (token) {
-          config.headers.Authorization = `Bearer ${token}`;
+        if (token && config.headers) {
+          (config.headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
         }
         return config;
       },
-      (error) => Promise.reject(error)
+      (error: any) => Promise.reject(error)
     );
 
     // Response interceptor for error handling
     this.api.interceptors.response.use(
-      (response) => response,
-      (error) => {
+      (response: any) => response,
+      (error: any) => {
         if (error.response?.status === 401) {
           localStorage.removeItem('token');
           localStorage.removeItem('user');
@@ -366,6 +364,47 @@ class ApiService {
     return response.data;
   }
 
+  // NEW: Business Intelligence Endpoints for The Watchtower
+  async getRevenueStats(timeframe: string = 'month'): Promise<any> {
+    const response: AxiosResponse<any> = await this.api.get(`/analytics/payments/stats?timeframe=${timeframe}`);
+    return response.data;
+  }
+
+  async getTopEarningCourses(limit: number = 10, timeframe: string = 'month'): Promise<any> {
+    const response: AxiosResponse<any> = await this.api.get(`/analytics/courses/top-earning?limit=${limit}&timeframe=${timeframe}`);
+    return response.data;
+  }
+
+  async getTopEarningTutors(limit: number = 10, timeframe: string = 'month'): Promise<any> {
+    const response: AxiosResponse<any> = await this.api.get(`/analytics/tutors/top-earning?limit=${limit}&timeframe=${timeframe}`);
+    return response.data;
+  }
+
+  async getPaymentTrends(timeframe: string = 'month', interval: string = 'day'): Promise<any> {
+    const response: AxiosResponse<any> = await this.api.get(`/analytics/payments/trends?timeframe=${timeframe}&interval=${interval}`);
+    return response.data;
+  }
+
+  async getRevenueDistribution(timeframe: string = 'month'): Promise<any> {
+    const response: AxiosResponse<any> = await this.api.get(`/analytics/revenue/distribution?timeframe=${timeframe}`);
+    return response.data;
+  }
+
+  async getUserEngagement(userId: string): Promise<any> {
+    const response: AxiosResponse<any> = await this.api.get(`/analytics/engagement/${userId}`);
+    return response.data;
+  }
+
+  async getCoursePerformance(courseId: string): Promise<any> {
+    const response: AxiosResponse<any> = await this.api.get(`/analytics/courses/${courseId}/performance`);
+    return response.data;
+  }
+
+  async exportCourseReport(courseId: string): Promise<any> {
+    const response: AxiosResponse<any> = await this.api.get(`/analytics/courses/${courseId}/export`);
+    return response.data;
+  }
+
   // AI Services
   async getAIRecommendations(): Promise<any[]> {
     const response: AxiosResponse<any[]> = await this.api.get('/ai/recommendations');
@@ -373,7 +412,53 @@ class ApiService {
   }
 
   async askAI(question: string, courseId?: string): Promise<any> {
-    const response: AxiosResponse<any> = await this.api.post('/ai/chat', { question, courseId });
+    const response: AxiosResponse<any> = await this.api.post('/ai/ask', { question, courseId });
+    return response.data;
+  }
+
+  // NEW: Enhanced AI Services for The Watchtower
+  async getAISummary(content: string): Promise<any> {
+    const response: AxiosResponse<any> = await this.api.post('/ai/summarize', { content });
+    return response.data;
+  }
+
+  async getLearningPath(): Promise<any> {
+    const response: AxiosResponse<any> = await this.api.get('/ai/learning-path');
+    return response.data;
+  }
+
+  async generateContent(topic: string, type: string): Promise<any> {
+    const response: AxiosResponse<any> = await this.api.post('/ai/generate-content', { topic, type });
+    return response.data;
+  }
+
+  async getAITutoring(question: string, context: string): Promise<any> {
+    const response: AxiosResponse<any> = await this.api.post('/ai/tutoring', { question, context });
+    return response.data;
+  }
+
+  async getAIGrading(submission: any, rubric: any): Promise<any> {
+    const response: AxiosResponse<any> = await this.api.post('/ai/grade', { submission, rubric });
+    return response.data;
+  }
+
+  async getLearningStyle(): Promise<any> {
+    const response: AxiosResponse<any> = await this.api.get('/ai/learning-style');
+    return response.data;
+  }
+
+  async adaptContent(content: string, learningStyle: string): Promise<any> {
+    const response: AxiosResponse<any> = await this.api.post('/ai/adapt-content', { content, learningStyle });
+    return response.data;
+  }
+
+  async predictProgress(courseId: string): Promise<any> {
+    const response: AxiosResponse<any> = await this.api.get(`/ai/progress/${courseId}`);
+    return response.data;
+  }
+
+  async reviewCode(code: string, language: string): Promise<any> {
+    const response: AxiosResponse<any> = await this.api.post('/ai/code-review', { code, language });
     return response.data;
   }
 
