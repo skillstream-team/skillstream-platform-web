@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { 
   Menu, 
   X, 
@@ -11,9 +11,7 @@ import {
   User,
   Settings,
   LogOut,
-  Search,
-  Folder,
-  Maximize2
+  Search
 } from 'lucide-react';
 import { useAuthStore } from '../../store/auth';
 import { useThemeStore } from '../../store/theme';
@@ -43,7 +41,9 @@ export const Header: React.FC = () => {
 
   const handleExpandToFullScreen = () => {
     setShowMessagingPopup(false);
-    navigate('/messages');
+    setTimeout(() => {
+      navigate('/messages');
+    }, 100);
   };
 
   const handleStartVideoCall = (userId: string, userName: string) => {

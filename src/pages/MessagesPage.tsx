@@ -8,8 +8,6 @@ import {
   Video, 
   Paperclip, 
   Smile,
-  User,
-  Clock,
   CheckCheck,
   Plus,
   File,
@@ -31,7 +29,6 @@ export const MessagesPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [filteredUsers, setFilteredUsers] = useState<UserType[]>([]);
-  const [recentConversations, setRecentConversations] = useState<DirectMessage[]>([]);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
   const attachmentButtonRef = React.useRef<HTMLButtonElement>(null);

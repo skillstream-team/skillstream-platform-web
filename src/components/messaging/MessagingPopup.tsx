@@ -1,24 +1,16 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   MessageCircle, 
   Search, 
-  Send, 
   Phone, 
   Video, 
-  Paperclip, 
-  Smile,
   X,
-  User,
   Clock,
-  Check,
-  CheckCheck,
+  Plus,
   Maximize2,
-  Plus
+  User
 } from 'lucide-react';
-import { apiService } from '../../services/api';
-import { DirectMessage, User as UserType } from '../../types';
-import { useAuthStore } from '../../store/auth';
 import { mockMessagingService, MockRecentContact } from '../../services/mockMessaging';
 
 interface MessagingPopupProps {
@@ -34,12 +26,12 @@ export const MessagingPopup: React.FC<MessagingPopupProps> = ({
   onExpand,
   buttonRef
 }) => {
-  const { user } = useAuthStore();
   const navigate = useNavigate();
   const [recentContacts, setRecentContacts] = useState<MockRecentContact[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [filteredContacts, setFilteredContacts] = useState<MockRecentContact[]>([]);
+  const [isTransitioning, setIsTransitioning] = useState(false);
 
   // Load recent contacts from mock service
   const loadRecentContacts = async () => {
@@ -207,6 +199,11 @@ export const MessagingPopup: React.FC<MessagingPopupProps> = ({
     onClose();
   };
 
+  const handleExpand = () => {
+    setIsTransitioning(true);
+    onExpand();
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -215,7 +212,7 @@ export const MessagingPopup: React.FC<MessagingPopupProps> = ({
       <div className="fixed inset-0 z-40" onClick={onClose} />
       
       {/* Popup */}
-      <div className="absolute right-0 top-full mt-1 w-80 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-50">
+      <div className={`absolute right-0 top-full mt-1 w-80 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-50 ${isTransitioning ? 'pointer-events-none opacity-50' : ''}`}>
         {/* Arrow pointing up to the button */}
         <div className="absolute -top-2 right-4 w-4 h-4 bg-white dark:bg-gray-800 border-l border-t border-gray-200 dark:border-gray-700 transform rotate-45"></div>
         
@@ -226,17 +223,22 @@ export const MessagingPopup: React.FC<MessagingPopupProps> = ({
             <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
               Messages
             </h3>
+            {isTransitioning && (
+              <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600"></div>
+            )}
           </div>
           <div className="flex items-center space-x-1">
             <button
-              onClick={onExpand}
-              className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              onClick={handleExpand}
+              disabled={isTransitioning}
+              className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Maximize2 className="h-4 w-4" />
             </button>
             <button
               onClick={onClose}
-              className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              disabled={isTransitioning}
+              className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <X className="h-4 w-4" />
             </button>
@@ -252,7 +254,8 @@ export const MessagingPopup: React.FC<MessagingPopupProps> = ({
               placeholder="Search messages..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-8 pr-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-xs"
+              disabled={isTransitioning}
+              className="w-full pl-8 pr-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-xs disabled:opacity-50 disabled:cursor-not-allowed"
             />
           </div>
         </div>
@@ -261,7 +264,8 @@ export const MessagingPopup: React.FC<MessagingPopupProps> = ({
         <div className="p-3 border-b border-gray-200 dark:border-gray-700">
           <button
             onClick={handleNewMessage}
-            className="w-full flex items-center justify-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white py-2 px-3 rounded-md transition-colors text-sm"
+            disabled={isTransitioning}
+            className="w-full flex items-center justify-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white py-2 px-3 rounded-md transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Plus className="h-3.5 w-3.5" />
             <span>New Message</span>
@@ -286,8 +290,8 @@ export const MessagingPopup: React.FC<MessagingPopupProps> = ({
               {filteredContacts.map((contact) => (
                 <div
                   key={contact.user.id}
-                  className="flex items-center space-x-2 p-2 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors"
-                  onClick={() => handleStartChat(contact)}
+                  className={`flex items-center space-x-2 p-2 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${isTransitioning ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
+                  onClick={() => !isTransitioning && handleStartChat(contact)}
                 >
                   {/* Avatar */}
                   <div className="relative flex-shrink-0">
@@ -339,9 +343,12 @@ export const MessagingPopup: React.FC<MessagingPopupProps> = ({
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          handlePhoneCall(contact);
+                          if (!isTransitioning) {
+                            handlePhoneCall(contact);
+                          }
                         }}
-                        className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
+                        disabled={isTransitioning}
+                        className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         title={`Call ${contact.user.name}`}
                       >
                         <Phone className="h-3 w-3" />
@@ -349,9 +356,12 @@ export const MessagingPopup: React.FC<MessagingPopupProps> = ({
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleVideoCall(contact);
+                          if (!isTransitioning) {
+                            handleVideoCall(contact);
+                          }
                         }}
-                        className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
+                        disabled={isTransitioning}
+                        className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         title={`Video call ${contact.user.name}`}
                       >
                         <Video className="h-3 w-3" />
