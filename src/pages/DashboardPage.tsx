@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { DashboardWidgets } from '../components/dashboard/DashboardWidgets';
 import { useAuthStore } from '../store/auth';
 import { Activity } from 'lucide-react';
@@ -27,10 +28,13 @@ export const DashboardPage: React.FC = () => {
               </div>
             </div>
             <div className="flex items-center space-x-3">
-              <button className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+              <Link
+                to="/analytics"
+                className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
                 <Activity className="h-4 w-4 mr-2" />
                 View Reports
-              </button>
+              </Link>
             </div>
           </div>
         </div>
