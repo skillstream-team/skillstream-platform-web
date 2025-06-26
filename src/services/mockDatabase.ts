@@ -1182,3 +1182,77 @@ export class MockNotificationService {
 // Export singleton instances
 export const mockNotificationService = new MockNotificationService();
 export const mockMessagingService = new MockMessagingService();
+
+// Mock assignments data
+export const mockAssignments = [
+  {
+    id: 'assign-1',
+    title: 'React Fundamentals - Final Project',
+    description: 'Create a complete React application demonstrating all concepts learned',
+    courseId: 'course-1',
+    courseTitle: 'Web Development',
+    dueDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days ago
+    totalStudents: 15,
+    pendingSubmissions: 12,
+    submittedSubmissions: 3,
+    gradedSubmissions: 0,
+    status: 'overdue',
+    priority: 'high'
+  },
+  {
+    id: 'assign-2',
+    title: 'JavaScript Quiz #3',
+    description: 'Assessment on JavaScript fundamentals and ES6 features',
+    courseId: 'course-2',
+    courseTitle: 'Programming Basics',
+    dueDate: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), // 1 day ago
+    totalStudents: 12,
+    pendingSubmissions: 8,
+    submittedSubmissions: 4,
+    gradedSubmissions: 0,
+    status: 'overdue',
+    priority: 'high'
+  },
+  {
+    id: 'assign-3',
+    title: 'CSS Layout Assignment',
+    description: 'Create responsive layouts using CSS Grid and Flexbox',
+    courseId: 'course-3',
+    courseTitle: 'Frontend Design',
+    dueDate: new Date().toISOString(), // Today
+    totalStudents: 10,
+    pendingSubmissions: 3,
+    submittedSubmissions: 7,
+    gradedSubmissions: 0,
+    status: 'due-today',
+    priority: 'medium'
+  },
+  {
+    id: 'assign-4',
+    title: 'Database Design Essay',
+    description: 'Write an essay on database normalization and design principles',
+    courseId: 'course-4',
+    courseTitle: 'Database Systems',
+    dueDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // Tomorrow
+    totalStudents: 8,
+    pendingSubmissions: 5,
+    submittedSubmissions: 3,
+    gradedSubmissions: 0,
+    status: 'upcoming',
+    priority: 'medium'
+  },
+  {
+    id: 'assign-5',
+    title: 'API Integration Project',
+    description: 'Build a full-stack application with REST API integration',
+    courseId: 'course-1',
+    courseTitle: 'Web Development',
+    dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(), // 3 days from now
+    totalStudents: 15,
+    pendingSubmissions: 15,
+    submittedSubmissions: 0,
+    gradedSubmissions: 0,
+    status: 'upcoming',
+    priority: 'low'
+  }
+];

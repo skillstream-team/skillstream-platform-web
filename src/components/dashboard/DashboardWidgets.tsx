@@ -17,11 +17,12 @@ import {
   Eye,
   BarChart3
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/auth';
 import { apiService } from '../../services/api';
-import { CalendarEvent, Course, Progress } from '../../types';
+import { CalendarEvent, Course } from '../../types';
 import { MessagingWidget } from './MessagingWidget';
+import { mockAssignments } from '../../services/mockDatabase';
 
 interface DashboardWidgetsProps {
   className?: string;
@@ -29,6 +30,7 @@ interface DashboardWidgetsProps {
 
 export const DashboardWidgets: React.FC<DashboardWidgetsProps> = ({ className = '' }) => {
   const { user } = useAuthStore();
+  const navigate = useNavigate();
   const [upcomingEvents, setUpcomingEvents] = useState<CalendarEvent[]>([]);
   const [recentCourses, setRecentCourses] = useState<Course[]>([]);
   const [teacherStats, setTeacherStats] = useState({
@@ -57,10 +59,11 @@ export const DashboardWidgets: React.FC<DashboardWidgetsProps> = ({ className = 
 
       // Mock teacher stats - replace with actual API calls
       if (user?.role === 'TEACHER') {
+        const pendingCount = mockAssignments.reduce((total, assignment) => total + assignment.pendingSubmissions, 0);
         setTeacherStats({
           totalCourses: 4,
           totalStudents: 127,
-          pendingAssignments: 23,
+          pendingAssignments: pendingCount,
           averageCompletionRate: 78,
           activeStudents: 89,
           totalLessons: 45
@@ -94,6 +97,28 @@ export const DashboardWidgets: React.FC<DashboardWidgetsProps> = ({ className = 
     }
   };
 
+  const handleEventClick = (event: CalendarEvent) => {
+    // Navigate based on event type
+    switch (event.type) {
+      case 'quiz':
+        navigate(`/quiz/${event.id}`);
+        break;
+      case 'assignment':
+        navigate(`/assignments/${event.id}`);
+        break;
+      case 'lesson':
+        // For lessons, navigate to calendar to show the event details
+        navigate('/calendar');
+        break;
+      default:
+        navigate('/calendar');
+    }
+  };
+
+  const handleAssignmentClick = (assignmentId: string) => {
+    navigate(`/assignments/${assignmentId}`);
+  };
+
   const getEventIcon = (type: string) => {
     switch (type) {
       case 'lesson': return <BookOpen className="h-4 w-4" />;
@@ -117,13 +142,31 @@ export const DashboardWidgets: React.FC<DashboardWidgetsProps> = ({ className = 
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
-    const diffTime = date.getTime() - now.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
-    if (diffDays === 0) return 'Today';
-    if (diffDays === 1) return 'Tomorrow';
-    if (diffDays < 7) return `In ${diffDays} days`;
-    return date.toLocaleDateString();
+    const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
+
+    if (diffInHours < 24) {
+      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } else if (diffInHours < 48) {
+      return 'Yesterday';
+    } else {
+      return date.toLocaleDateString();
+    }
+  };
+
+  const getDueDateText = (dueDate: string) => {
+    const date = new Date(dueDate);
+    const now = new Date();
+    const diffInDays = Math.floor((date.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+
+    if (diffInDays < 0) {
+      return `${Math.abs(diffInDays)} day${Math.abs(diffInDays) === 1 ? '' : 's'} ago`;
+    } else if (diffInDays === 0) {
+      return 'today';
+    } else if (diffInDays === 1) {
+      return 'tomorrow';
+    } else {
+      return `in ${diffInDays} days`;
+    }
   };
 
   if (loading) {
@@ -287,7 +330,8 @@ export const DashboardWidgets: React.FC<DashboardWidgetsProps> = ({ className = 
             upcomingEvents.map(event => (
               <div
                 key={event.id}
-                className="flex items-start space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
+                onClick={() => handleEventClick(event)}
+                className="flex items-start space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer transition-colors"
               >
                 <div className={`p-2 rounded-lg bg-gray-100 dark:bg-gray-600 ${getEventColor(event.type)}`}>
                   {getEventIcon(event.type)}
@@ -331,87 +375,50 @@ export const DashboardWidgets: React.FC<DashboardWidgetsProps> = ({ className = 
             </Link>
           </div>
           <div className="space-y-3">
-            <div className="flex items-start space-x-3 p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
-              <div className="p-2 rounded-lg bg-orange-100 dark:bg-orange-800">
-                <FileText className="h-4 w-4 text-orange-600 dark:text-orange-400" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <h4 className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                  React Fundamentals - Final Project
-                </h4>
-                <p className="text-xs text-gray-600 dark:text-gray-300 truncate">
-                  12 submissions pending • Due 2 days ago
-                </p>
-                <div className="flex items-center mt-1">
-                  <Users className="h-3 w-3 text-gray-400 mr-1" />
-                  <span className="text-xs text-gray-500 dark:text-gray-400">
-                    Course: Web Development
-                  </span>
+            {mockAssignments.slice(0, 4).map(assignment => (
+              <div
+                key={assignment.id}
+                onClick={() => handleAssignmentClick(assignment.id)}
+                className={`flex items-start space-x-3 p-3 rounded-lg cursor-pointer transition-colors ${
+                  assignment.status === 'overdue' ? 'bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30' :
+                  assignment.status === 'due-today' ? 'bg-yellow-50 dark:bg-yellow-900/20 hover:bg-yellow-100 dark:hover:bg-yellow-900/30' :
+                  'bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30'
+                }`}
+              >
+                <div className={`p-2 rounded-lg ${
+                  assignment.status === 'overdue' ? 'bg-red-100 dark:bg-red-800' :
+                  assignment.status === 'due-today' ? 'bg-yellow-100 dark:bg-yellow-800' :
+                  'bg-blue-100 dark:bg-blue-800'
+                }`}>
+                  <FileText className={`h-4 w-4 ${
+                    assignment.status === 'overdue' ? 'text-red-600 dark:text-red-400' :
+                    assignment.status === 'due-today' ? 'text-yellow-600 dark:text-yellow-400' :
+                    'text-blue-600 dark:text-blue-400'
+                  }`} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h4 className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                    {assignment.title}
+                  </h4>
+                  <p className="text-xs text-gray-600 dark:text-gray-300 truncate">
+                    {assignment.pendingSubmissions} submissions pending • Due {getDueDateText(assignment.dueDate)}
+                  </p>
+                  <div className="flex items-center mt-1">
+                    <Users className="h-3 w-3 text-gray-400 mr-1" />
+                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                      Course: {assignment.courseTitle}
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
-            <div className="flex items-start space-x-3 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
-              <div className="p-2 rounded-lg bg-red-100 dark:bg-red-800">
-                <AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <h4 className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                  JavaScript Quiz #3
-                </h4>
-                <p className="text-xs text-gray-600 dark:text-gray-300 truncate">
-                  8 submissions pending • Due yesterday
-                </p>
-                <div className="flex items-center mt-1">
-                  <Users className="h-3 w-3 text-gray-400 mr-1" />
-                  <span className="text-xs text-gray-500 dark:text-gray-400">
-                    Course: Programming Basics
-                  </span>
-                </div>
-              </div>
-            </div>
-            <div className="flex items-start space-x-3 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
-              <div className="p-2 rounded-lg bg-yellow-100 dark:bg-yellow-800">
-                <FileText className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <h4 className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                  CSS Layout Assignment
-                </h4>
-                <p className="text-xs text-gray-600 dark:text-gray-300 truncate">
-                  3 submissions pending • Due today
-                </p>
-                <div className="flex items-center mt-1">
-                  <Users className="h-3 w-3 text-gray-400 mr-1" />
-                  <span className="text-xs text-gray-500 dark:text-gray-400">
-                    Course: Frontend Design
-                  </span>
-                </div>
-              </div>
-            </div>
-            <div className="flex items-start space-x-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-              <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-800">
-                <FileText className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <h4 className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                  Database Design Essay
-                </h4>
-                <p className="text-xs text-gray-600 dark:text-gray-300 truncate">
-                  5 submissions pending • Due tomorrow
-                </p>
-                <div className="flex items-center mt-1">
-                  <Users className="h-3 w-3 text-gray-400 mr-1" />
-                  <span className="text-xs text-gray-500 dark:text-gray-400">
-                    Course: Database Systems
-                  </span>
-                </div>
-              </div>
-            </div>
+            ))}
           </div>
           <div className="mt-4 pt-3 border-t border-gray-200 dark:border-gray-700">
             <div className="flex items-center justify-between text-sm">
               <span className="text-gray-600 dark:text-gray-400">Total Pending:</span>
-              <span className="font-semibold text-orange-600 dark:text-orange-400">28 submissions</span>
+              <span className="font-semibold text-orange-600 dark:text-orange-400">
+                {mockAssignments.reduce((total, assignment) => total + assignment.pendingSubmissions, 0)} submissions
+              </span>
             </div>
           </div>
         </div>
