@@ -23,6 +23,8 @@ import { apiService } from '../../services/api';
 import { CalendarEvent, Course } from '../../types';
 import { MessagingWidget } from './MessagingWidget';
 import { mockAssignments } from '../../services/mockDatabase';
+import { mockNotificationService, MockNotification } from '../../services/mockDatabase';
+import { NotificationPopup } from '../notifications/NotificationPopup';
 
 interface DashboardWidgetsProps {
   className?: string;
@@ -33,6 +35,8 @@ export const DashboardWidgets: React.FC<DashboardWidgetsProps> = ({ className = 
   const navigate = useNavigate();
   const [upcomingEvents, setUpcomingEvents] = useState<CalendarEvent[]>([]);
   const [recentCourses, setRecentCourses] = useState<Course[]>([]);
+  const [recentNotifications, setRecentNotifications] = useState<MockNotification[]>([]);
+  const [isNotificationPopupOpen, setIsNotificationPopupOpen] = useState(false);
   const [teacherStats, setTeacherStats] = useState({
     totalCourses: 0,
     totalStudents: 0,
@@ -56,6 +60,10 @@ export const DashboardWidgets: React.FC<DashboardWidgetsProps> = ({ className = 
       // Load recent courses
       const courses = await apiService.getMyCourses();
       setRecentCourses(courses.slice(0, 3));
+
+      // Load recent notifications
+      const { notifications } = await mockNotificationService.getNotifications({ limit: 3 });
+      setRecentNotifications(notifications);
 
       // Mock teacher stats - replace with actual API calls
       if (user?.role === 'TEACHER') {
@@ -119,6 +127,18 @@ export const DashboardWidgets: React.FC<DashboardWidgetsProps> = ({ className = 
     navigate(`/assignments/${assignmentId}`);
   };
 
+  const handleNotificationClick = (notification: MockNotification) => {
+    // Mark as read first
+    mockNotificationService.markAsRead(notification.id);
+    
+    // Navigate based on notification action
+    if (notification.action?.route) {
+      const params = notification.action.params ? new URLSearchParams(notification.action.params).toString() : '';
+      const url = params ? `${notification.action.route}?${params}` : notification.action.route;
+      navigate(url);
+    }
+  };
+
   const getEventIcon = (type: string) => {
     switch (type) {
       case 'lesson': return <BookOpen className="h-4 w-4" />;
@@ -166,6 +186,51 @@ export const DashboardWidgets: React.FC<DashboardWidgetsProps> = ({ className = 
       return 'tomorrow';
     } else {
       return `in ${diffInDays} days`;
+    }
+  };
+
+  const getNotificationIcon = (type: string) => {
+    switch (type.toLowerCase()) {
+      case 'success':
+        return <CheckCircle className="h-3 w-3 text-green-600 dark:text-green-400" />;
+      case 'error':
+        return <AlertCircle className="h-3 w-3 text-red-600 dark:text-red-400" />;
+      case 'warning':
+        return <AlertCircle className="h-3 w-3 text-yellow-600 dark:text-yellow-400" />;
+      case 'info':
+        return <CheckCircle className="h-3 w-3 text-blue-600 dark:text-blue-400" />;
+      default:
+        return <CheckCircle className="h-3 w-3 text-gray-600 dark:text-gray-400" />;
+    }
+  };
+
+  const getNotificationBgColor = (type: string) => {
+    switch (type.toLowerCase()) {
+      case 'success':
+        return 'bg-green-50 dark:bg-green-900/20';
+      case 'error':
+        return 'bg-red-50 dark:bg-red-900/20';
+      case 'warning':
+        return 'bg-yellow-50 dark:bg-yellow-900/20';
+      case 'info':
+        return 'bg-blue-50 dark:bg-blue-900/20';
+      default:
+        return 'bg-gray-50 dark:bg-gray-700';
+    }
+  };
+
+  const getNotificationIconBgColor = (type: string) => {
+    switch (type.toLowerCase()) {
+      case 'success':
+        return 'bg-green-100 dark:bg-green-800';
+      case 'error':
+        return 'bg-red-100 dark:bg-red-800';
+      case 'warning':
+        return 'bg-yellow-100 dark:bg-yellow-800';
+      case 'info':
+        return 'bg-blue-100 dark:bg-blue-800';
+      default:
+        return 'bg-gray-100 dark:bg-gray-600';
     }
   };
 
@@ -558,50 +623,52 @@ export const DashboardWidgets: React.FC<DashboardWidgetsProps> = ({ className = 
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Recent Notifications</h3>
-          <Bell className="h-5 w-5 text-gray-400" />
+          <div className="flex items-center space-x-2">
+            <Bell className="h-5 w-5 text-gray-400" />
+            <button
+              onClick={() => setIsNotificationPopupOpen(true)}
+              className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 text-sm flex items-center"
+            >
+              View All
+              <ArrowRight className="h-4 w-4 ml-1" />
+            </button>
+          </div>
         </div>
         <div className="space-y-3">
-          <div className="flex items-start space-x-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-            <div className="p-1 bg-blue-100 dark:bg-blue-800 rounded">
-              <CheckCircle className="h-3 w-3 text-blue-600 dark:text-blue-400" />
+          {recentNotifications.length > 0 ? (
+            recentNotifications.map(notification => (
+              <div
+                key={notification.id}
+                onClick={() => handleNotificationClick(notification)}
+                className={`flex items-start space-x-3 p-3 ${getNotificationBgColor(notification.type)} rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer transition-colors`}
+              >
+                <div className={`p-1 ${getNotificationIconBgColor(notification.type)} rounded`}>
+                  {getNotificationIcon(notification.type)}
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm text-gray-900 dark:text-white">
+                    {notification.title}
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    {notification.message}
+                  </p>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="text-center py-4">
+              <Bell className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+              <p className="text-sm text-gray-500 dark:text-gray-400">No notifications</p>
             </div>
-            <div className="flex-1">
-              <p className="text-sm text-gray-900 dark:text-white">
-                You completed "React Fundamentals - Lesson 3"
-              </p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                2 hours ago
-              </p>
-            </div>
-          </div>
-          <div className="flex items-start space-x-3 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
-            <div className="p-1 bg-yellow-100 dark:bg-yellow-800 rounded">
-              <AlertCircle className="h-3 w-3 text-yellow-600 dark:text-yellow-400" />
-            </div>
-            <div className="flex-1">
-              <p className="text-sm text-gray-900 dark:text-white">
-                Quiz deadline approaching: JavaScript Basics
-              </p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                1 day ago
-              </p>
-            </div>
-          </div>
-          <div className="flex items-start space-x-3 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
-            <div className="p-1 bg-green-100 dark:bg-green-800 rounded">
-              <Trophy className="h-3 w-3 text-green-600 dark:text-green-400" />
-            </div>
-            <div className="flex-1">
-              <p className="text-sm text-gray-900 dark:text-white">
-                Achievement unlocked: "First Assignment"
-              </p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                3 days ago
-              </p>
-            </div>
-          </div>
+          )}
         </div>
       </div>
+
+      {/* Notification Popup */}
+      <NotificationPopup
+        isOpen={isNotificationPopupOpen}
+        onClose={() => setIsNotificationPopupOpen(false)}
+      />
     </div>
   );
 }; 
