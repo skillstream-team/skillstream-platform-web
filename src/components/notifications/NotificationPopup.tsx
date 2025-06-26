@@ -300,7 +300,17 @@ export const NotificationPopup: React.FC<NotificationPopupProps> = ({
 
       {/* All Notifications Modal */}
       {showAllNotifications && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4">
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowAllNotifications(false);
+              if (openToExpanded) {
+                onClose();
+              }
+            }
+          }}
+        >
           <div 
             ref={modalRef}
             className="bg-white dark:bg-gray-800 rounded-lg shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col"
@@ -319,7 +329,12 @@ export const NotificationPopup: React.FC<NotificationPopupProps> = ({
                 </div>
               </div>
               <button
-                onClick={() => setShowAllNotifications(false)}
+                onClick={() => {
+                  setShowAllNotifications(false);
+                  if (openToExpanded) {
+                    onClose();
+                  }
+                }}
                 className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
               >
                 <X className="h-5 w-5" />
