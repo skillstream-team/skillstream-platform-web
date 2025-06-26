@@ -1,22 +1,34 @@
 import React, { useEffect, useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useParams } from 'react-router-dom';
 import { useAuthStore } from './store/auth';
 import { useThemeStore } from './store/theme';
 import { Layout } from './components/layout/Layout';
 import { LoginPage } from './pages/auth/LoginPage';
 import { RegisterPage } from './pages/auth/RegisterPage';
+import { DashboardPage } from './pages/DashboardPage';
+import { CoursesPage } from './pages/courses/CoursesPage';
+import { CourseDetailPage } from './pages/courses/CourseDetailPage';
+import { CourseLearningPage } from './pages/courses/CourseLearningPage';
+import CourseAnnouncementsPage from './pages/courses/CourseAnnouncementsPage';
+import QuizPage from './pages/assessments/QuizPage';
 import { AnalyticsPage } from './pages/admin/AnalyticsPage';
 import { NotificationManager } from './components/notifications/NotificationToast';
 import { AIChatAssistant } from './components/ai/AIChatAssistant';
 import websocketService from './services/websocket';
 import { WebSocketMessage } from './types';
+import CalendarPage from './pages/CalendarPage';
+import { ProgressTracker } from './components/progress/ProgressTracker';
+import { StudyGroups } from './components/collaboration/StudyGroups';
+import { CourseBuilder } from './components/course-builder/CourseBuilder';
+import { ForumBoard } from './components/forum/ForumBoard';
 import { FileManagementPage } from './pages/FileManagementPage';
 import { MessagesPage } from './pages/MessagesPage';
 import { PeopleGroupsPage } from './pages/PeopleGroupsPage';
+import AssignmentsPage from './pages/assessments/AssignmentsPage';
+import AssignmentSubmitPage from './pages/assessments/AssignmentSubmitPage';
 import ProfilePage from './pages/ProfilePage';
-import { WatchtowerDashboard } from './pages/WatchtowerDashboard';
-import { CalendarView } from './components/calendar/CalendarView';
-import { TodoList } from './components/calendar/TodoList';
+import CallsPage from './pages/CallsPage';
+import WatchtowerDashboard from './pages/WatchtowerDashboard';
 
 // Protected Route Component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -34,6 +46,12 @@ const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuthStore();
   return user ? <Navigate to="/dashboard" replace /> : <>{children}</>;
+};
+
+// Forum Route Wrapper Component
+const ForumRoute: React.FC = () => {
+  const { courseId } = useParams<{ courseId: string }>();
+  return <ForumBoard courseId={courseId || ''} />;
 };
 
 function App() {
@@ -69,6 +87,35 @@ function App() {
               message: message.data.message || 'You have a new notification',
               duration: 5000
             });
+            break;
+          
+          case 'CHAT':
+            // Show chat notification
+            (window as any).addNotification?.({
+              type: 'info',
+              title: 'New Message',
+              message: `New message in ${message.data.courseId || 'course'}`,
+              duration: 3000
+            });
+            break;
+          
+          case 'VIDEO':
+            // Handle video call updates
+            if (message.data.action === 'join') {
+              (window as any).addNotification?.({
+                type: 'info',
+                title: 'Video Call',
+                message: `${message.data.userName || 'Someone'} joined the video call`,
+                duration: 3000
+              });
+            } else if (message.data.action === 'leave') {
+              (window as any).addNotification?.({
+                type: 'info',
+                title: 'Video Call',
+                message: `${message.data.userName || 'Someone'} left the video call`,
+                duration: 3000
+              });
+            }
             break;
           
           case 'MESSAGE':
@@ -160,7 +207,57 @@ function App() {
               element={
                 <ProtectedRoute>
                   <Layout>
-                    <WatchtowerDashboard />
+                    <DashboardPage />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/courses"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <CoursesPage />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/courses/:id"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <CourseDetailPage />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/courses/:id/learning"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <CourseLearningPage />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/courses/:id/announcements"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <CourseAnnouncementsPage />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/quiz/:id"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <QuizPage />
                   </Layout>
                 </ProtectedRoute>
               }
@@ -180,6 +277,80 @@ function App() {
               element={
                 <ProtectedRoute>
                   <WatchtowerDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/calendar"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <CalendarPage />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/progress"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+                      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                        <div className="mb-8">
+                          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">My Progress</h1>
+                          <p className="mt-2 text-gray-600 dark:text-gray-300">
+                            Track your learning journey and achievements
+                          </p>
+                        </div>
+                        <ProgressTracker />
+                      </div>
+                    </div>
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/study-groups"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+                      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                        <StudyGroups />
+                      </div>
+                    </div>
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/course-builder"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <CourseBuilder />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/course-builder/:id"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <CourseBuilder />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/courses/:courseId/forum"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <ForumRoute />
+                  </Layout>
                 </ProtectedRoute>
               }
             />
@@ -220,6 +391,38 @@ function App() {
               }
             />
 
+            {/* Assignments Route */}
+            <Route
+              path="/assignments"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <AssignmentsPage />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/assignments/:assignmentId"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <AssignmentSubmitPage />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/assignments/:assignmentId/submit"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <AssignmentSubmitPage />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+
             {/* Admin Routes */}
             <Route
               path="/admin/analytics"
@@ -244,46 +447,12 @@ function App() {
               }
             />
 
-            {/* Calendar Route */}
+            {/* Calls Route */}
             <Route
-              path="/calendar"
+              path="/calls/:contactId"
               element={
                 <ProtectedRoute>
-                  <Layout>
-                    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-                      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                        <div className="mb-8">
-                          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Business Calendar</h1>
-                          <p className="mt-2 text-gray-600 dark:text-gray-300">
-                            Manage meetings, deadlines, and business events
-                          </p>
-                        </div>
-                        <CalendarView />
-                      </div>
-                    </div>
-                  </Layout>
-                </ProtectedRoute>
-              }
-            />
-
-            {/* Tasks Route */}
-            <Route
-              path="/tasks"
-              element={
-                <ProtectedRoute>
-                  <Layout>
-                    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-                      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                        <div className="mb-8">
-                          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Business Tasks</h1>
-                          <p className="mt-2 text-gray-600 dark:text-gray-300">
-                            Track and manage business tasks and projects
-                          </p>
-                        </div>
-                        <TodoList />
-                      </div>
-                    </div>
-                  </Layout>
+                  <CallsPage />
                 </ProtectedRoute>
               }
             />

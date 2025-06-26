@@ -1,47 +1,57 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
+  Menu,
+  X,
   Bell, 
-  Search, 
+  MessageCircle, 
+  Video, 
+  Sun, 
+  Moon,
   User,
   Settings,
   LogOut,
-  Menu, 
-  X,
-  MessageSquare,
-  MessageCircle,
-  FileText,
-  BarChart3,
-  Crown,
-  Shield,
-  Sun,
-  Moon
+  Search
 } from 'lucide-react';
 import { useAuthStore } from '../../store/auth';
 import { useThemeStore } from '../../store/theme';
-import { NotificationManager } from '../notifications/NotificationToast';
+import VideoCall from '../video/VideoCall';
+import { VideoCallPopup } from '../video/VideoCallPopup';
+import { NotificationPopup } from '../notifications/NotificationPopup';
 import { MessagingPopup } from '../messaging/MessagingPopup';
-import { FileUploadModal } from '../file-management/FileUploadModal';
-import { FileSharingModal } from '../file-management/FileSharingModal';
-import { OfflineManager } from '../offline/OfflineManager';
 
 export const Header: React.FC = () => {
   const { user, logout } = useAuthStore();
   const { theme, toggleTheme } = useThemeStore();
   const navigate = useNavigate();
-  
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [showVideoCallPopup, setShowVideoCallPopup] = useState(false);
+  const [showVideoCall, setShowVideoCall] = useState(false);
+  const [currentCall, setCurrentCall] = useState<{ userId: string; userName: string } | null>(null);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [showMessagingPopup, setShowMessagingPopup] = useState(false);
+  const videoCallButtonRef = useRef<HTMLButtonElement>(null);
+  const messagingButtonRef = useRef<HTMLButtonElement>(null);
+  const notificationButtonRef = useRef<HTMLButtonElement>(null);
 
   const handleLogout = () => {
     logout();
     navigate('/login');
   };
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Implement search functionality
-    console.log('Searching for:', searchQuery);
+  const handleExpandToFullScreen = () => {
+    setShowMessagingPopup(false);
+    navigate('/messages');
+  };
+
+  const handleStartVideoCall = (userId: string, userName: string) => {
+    setCurrentCall({ userId, userName });
+    setShowVideoCall(true);
+  };
+
+  const handleLeaveVideoCall = () => {
+    setShowVideoCall(false);
+    setCurrentCall(null);
   };
 
   if (!user) return null;
@@ -81,14 +91,14 @@ export const Header: React.FC = () => {
               >
                 Calendar
               </Link>
-              {(user?.role === 'MANAGER' || user?.role === 'ADMIN') ? (
+              {(user?.role === 'TEACHER' || user?.role === 'ADMIN') ? (
                 <>
-                <Link
-                  to="/analytics"
-                  className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium text-sm"
-                >
-                  Analytics
-                </Link>
+                  <Link
+                    to="/analytics"
+                    className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium text-sm"
+                  >
+                    Analytics
+                  </Link>
                   {user?.role === 'ADMIN' && (
                     <Link
                       to="/watchtower"
@@ -132,46 +142,66 @@ export const Header: React.FC = () => {
                 {/* Notifications */}
                 <div className="relative">
                   <button
+                    ref={notificationButtonRef}
+                    onClick={() => setShowNotifications(!showNotifications)}
                     className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 relative"
                   >
                     <Bell className="h-4 w-4" />
+                    <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 rounded-full text-xs text-white flex items-center justify-center">
+                      3
+                    </span>
                   </button>
+                  
+                  {showNotifications && (
+                    <NotificationPopup 
+                      isOpen={showNotifications}
+                      onClose={() => setShowNotifications(false)}
+                      buttonRef={notificationButtonRef}
+                    />
+                  )}
                 </div>
 
                 {/* Messaging */}
                 <div className="relative">
                   <button
+                    ref={messagingButtonRef}
+                    onClick={() => setShowMessagingPopup(!showMessagingPopup)}
                     className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 relative"
                   >
                     <MessageCircle className="h-4 w-4" />
+                    <span className="absolute -top-1 -right-1 h-4 w-4 bg-green-500 rounded-full text-xs text-white flex items-center justify-center">
+                      2
+                    </span>
                   </button>
+                  
+                  {showMessagingPopup && (
+                    <MessagingPopup 
+                      isOpen={showMessagingPopup}
+                      onClose={() => setShowMessagingPopup(false)}
+                      onExpand={handleExpandToFullScreen}
+                      buttonRef={messagingButtonRef}
+                    />
+                  )}
                 </div>
 
-                {/* File Upload */}
+                {/* Video Call */}
                 <div className="relative">
                   <button
-                    className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 relative"
+                    ref={videoCallButtonRef}
+                    onClick={() => setShowVideoCallPopup(!showVideoCallPopup)}
+                    className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
                   >
-                    <FileText className="h-4 w-4" />
+                    <Video className="h-4 w-4" />
                   </button>
-                </div>
-
-                {/* File Sharing */}
-                <div className="relative">
-                  <button
-                    className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 relative"
-                  >
-                    <FileText className="h-4 w-4" />
-                  </button>
-                </div>
-
-                {/* Offline Manager */}
-                <div className="relative">
-                  <button
-                    className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 relative"
-                  >
-                    <BarChart3 className="h-4 w-4" />
-                  </button>
+                  
+                  {showVideoCallPopup && (
+                    <VideoCallPopup 
+                      isOpen={showVideoCallPopup}
+                      onClose={() => setShowVideoCallPopup(false)}
+                      onStartCall={handleStartVideoCall}
+                      buttonRef={videoCallButtonRef}
+                    />
+                  )}
                 </div>
 
                 {/* Theme Toggle */}
@@ -185,7 +215,7 @@ export const Header: React.FC = () => {
                 {/* User Menu */}
                 <div className="relative">
                   <button
-                    onClick={() => setIsMenuOpen(!isMenuOpen)}
+                    onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                     className="flex items-center space-x-2 p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                   >
                     <div className="w-7 h-7 bg-blue-600 rounded-full flex items-center justify-center">
@@ -199,7 +229,7 @@ export const Header: React.FC = () => {
                   </button>
 
                   {/* Dropdown Menu */}
-                  {isMenuOpen && (
+                  {isMobileMenuOpen && (
                     <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-2 z-50">
                       <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700">
                         <p className="text-sm font-medium text-gray-900 dark:text-white">{user.name}</p>
@@ -208,7 +238,7 @@ export const Header: React.FC = () => {
                       <Link
                         to="/profile"
                         className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                        onClick={() => setIsMenuOpen(false)}
+                        onClick={() => setIsMobileMenuOpen(false)}
                       >
                         <User className="h-4 w-4 mr-2" />
                         Profile
@@ -216,13 +246,13 @@ export const Header: React.FC = () => {
                       <Link
                         to="/profile?tab=settings"
                         className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                        onClick={() => setIsMenuOpen(false)}
+                        onClick={() => setIsMobileMenuOpen(false)}
                       >
                         <Settings className="h-4 w-4 mr-2" />
                         Settings
                       </Link>
                       <button
-                        onClick={() => { setIsMenuOpen(false); handleLogout(); }}
+                        onClick={() => { setIsMobileMenuOpen(false); handleLogout(); }}
                         className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                       >
                         <LogOut className="h-4 w-4 mr-2" />
@@ -234,45 +264,45 @@ export const Header: React.FC = () => {
 
                 {/* Mobile Menu Button */}
                 <button
-                  onClick={() => setIsMenuOpen(!isMenuOpen)}
+                  onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                   className="lg:hidden p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
                 >
-                  {isMenuOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+                  {isMobileMenuOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
                 </button>
               </div>
             </div>
           </div>
 
           {/* Mobile Navigation */}
-          {isMenuOpen && (
+          {isMobileMenuOpen && (
             <div className="lg:hidden border-t border-gray-200 dark:border-gray-700 py-3">
               <div className="space-y-1">
                 <Link
                   to="/dashboard"
                   className="block px-3 py-1.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-sm"
-                  onClick={() => setIsMenuOpen(false)}
+                  onClick={() => setIsMobileMenuOpen(false)}
                 >
                   Dashboard
                 </Link>
                 <Link
                   to="/courses"
                   className="block px-3 py-1.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-sm"
-                  onClick={() => setIsMenuOpen(false)}
+                  onClick={() => setIsMobileMenuOpen(false)}
                 >
                   Courses
                 </Link>
                 <Link
                   to="/calendar"
                   className="block px-3 py-1.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-sm"
-                  onClick={() => setIsMenuOpen(false)}
+                  onClick={() => setIsMobileMenuOpen(false)}
                 >
                   Calendar
                 </Link>
-                {(user?.role === 'MANAGER' || user?.role === 'ADMIN') ? (
+                {(user?.role === 'TEACHER' || user?.role === 'ADMIN') ? (
                   <Link
                     to="/analytics"
                     className="block px-3 py-1.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-sm"
-                    onClick={() => setIsMenuOpen(false)}
+                    onClick={() => setIsMobileMenuOpen(false)}
                   >
                     Analytics
                   </Link>
@@ -280,7 +310,7 @@ export const Header: React.FC = () => {
                   <Link
                     to="/progress"
                     className="block px-3 py-1.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-sm"
-                    onClick={() => setIsMenuOpen(false)}
+                    onClick={() => setIsMobileMenuOpen(false)}
                   >
                     Progress
                   </Link>
@@ -288,14 +318,14 @@ export const Header: React.FC = () => {
                 <Link
                   to="/study-groups"
                   className="block px-3 py-1.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-sm"
-                  onClick={() => setIsMenuOpen(false)}
+                  onClick={() => setIsMobileMenuOpen(false)}
                 >
                   People & Groups
                 </Link>
                 <Link
                   to="/profile"
                   className="block px-3 py-1.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-sm"
-                  onClick={() => setIsMenuOpen(false)}
+                  onClick={() => setIsMobileMenuOpen(false)}
                 >
                   Profile
                 </Link>
@@ -304,6 +334,14 @@ export const Header: React.FC = () => {
           )}
         </div>
       </header>
+
+      {/* Overlay Components */}
+      {showVideoCall && currentCall && (
+        <VideoCall 
+          conferenceId={`call-${currentCall.userId}`}
+          onLeave={handleLeaveVideoCall}
+        />
+      )}
     </>
   );
 }; 

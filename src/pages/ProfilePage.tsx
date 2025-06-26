@@ -326,7 +326,7 @@ const ProfilePage: React.FC = () => {
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{user?.name}</h2>
             <p className="text-gray-600 dark:text-gray-300 flex items-center">
               <AcademicCapIcon className="w-4 h-4 mr-2" />
-              {user?.role === 'ADMIN' ? 'Administrator' : user?.role}
+              {user?.role === 'TEACHER' ? 'Instructor' : user?.role}
             </p>
             <p className="text-gray-500 dark:text-gray-400 flex items-center">
               <EnvelopeIcon className="w-4 h-4 mr-2" />
@@ -404,7 +404,7 @@ const ProfilePage: React.FC = () => {
                 disabled={!isEditing}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white disabled:bg-gray-100 dark:disabled:bg-gray-600"
               />
-              {user?.role === 'ADMIN' && (
+              {user?.role === 'TEACHER' && (
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
                     <label className="text-sm text-gray-600 dark:text-gray-400">

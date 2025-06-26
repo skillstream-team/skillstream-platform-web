@@ -1,14 +1,12 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { BarChart3, Bot, FileText, Bell, Users, Settings, Home, Crown, Calendar, CheckSquare } from 'lucide-react';
+import { BarChart3, Bot, FileText, Bell, Users, Settings, Home, Crown } from 'lucide-react';
 
 const navItems = [
   { to: '/dashboard', label: 'Dashboard', icon: <Home className="w-5 h-5" /> },
   { to: '/analytics', label: 'Analytics', icon: <BarChart3 className="w-5 h-5" /> },
   { to: '/ai', label: 'AI Assistant', icon: <Bot className="w-5 h-5" /> },
   { to: '/reports', label: 'Reports', icon: <FileText className="w-5 h-5" /> },
-  { to: '/calendar', label: 'Calendar', icon: <Calendar className="w-5 h-5" /> },
-  { to: '/tasks', label: 'Tasks', icon: <CheckSquare className="w-5 h-5" /> },
   { to: '/alerts', label: 'Alerts', icon: <Bell className="w-5 h-5" /> },
   { to: '/users', label: 'Users', icon: <Users className="w-5 h-5" /> },
   { to: '/settings', label: 'Settings', icon: <Settings className="w-5 h-5" /> },
