@@ -14,12 +14,9 @@ import { FileManagementPage } from './pages/FileManagementPage';
 import { MessagesPage } from './pages/MessagesPage';
 import { PeopleGroupsPage } from './pages/PeopleGroupsPage';
 import ProfilePage from './pages/ProfilePage';
-<<<<<<< HEAD
 import { WatchtowerDashboard } from './pages/WatchtowerDashboard';
 import { CalendarView } from './components/calendar/CalendarView';
 import { TodoList } from './components/calendar/TodoList';
-=======
->>>>>>> parent of c9bf081 (Fix messaging popup buttons to navigate to calls page and create comprehensive calls functionality)
 
 // Protected Route Component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -247,7 +244,6 @@ function App() {
               }
             />
 
-<<<<<<< HEAD
             {/* Calendar Route */}
             <Route
               path="/calendar"
@@ -292,8 +288,6 @@ function App() {
               }
             />
 
-=======
->>>>>>> parent of c9bf081 (Fix messaging popup buttons to navigate to calls page and create comprehensive calls functionality)
             {/* Default redirect */}
             <Route
               path="/"
