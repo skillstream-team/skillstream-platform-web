@@ -556,6 +556,31 @@ export const AnalyticsPage: React.FC = () => {
     }
   };
 
+  const getCompletionColor = (percentage: number) => {
+    if (percentage >= 75) {
+      return {
+        text: 'text-green-600 dark:text-green-400',
+        icon: 'text-green-500',
+        bg: 'bg-green-50 dark:bg-green-900/20',
+        border: 'border-green-200 dark:border-green-700'
+      };
+    } else if (percentage >= 65) {
+      return {
+        text: 'text-orange-600 dark:text-orange-400',
+        icon: 'text-orange-500',
+        bg: 'bg-orange-50 dark:bg-orange-900/20',
+        border: 'border-orange-200 dark:border-orange-700'
+      };
+    } else {
+      return {
+        text: 'text-red-600 dark:text-red-400',
+        icon: 'text-red-500',
+        bg: 'bg-red-50 dark:bg-red-900/20',
+        border: 'border-red-200 dark:border-red-700'
+      };
+    }
+  };
+
   const handleTakeAction = (item: NeedsAttentionItem) => {
     switch (item.type) {
       case 'assignment':
@@ -787,18 +812,25 @@ export const AnalyticsPage: React.FC = () => {
               <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
                 <div className="flex items-center">
                   <div className="flex-shrink-0">
-                    <Target className="h-8 w-8 text-purple-600 dark:text-purple-400" />
+                    <Target className={`h-8 w-8 ${getCompletionColor(analytics.averageCompletionRate).icon}`} />
                   </div>
                   <div className="ml-4 flex-1">
                     <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Avg. Completion</p>
-                    <p className="text-2xl font-semibold text-gray-900 dark:text-white">
+                    <p className={`text-2xl font-semibold ${getCompletionColor(analytics.averageCompletionRate).text}`}>
                       {formatPercentage(analytics.averageCompletionRate)}
                     </p>
-                    <div className="flex items-center mt-1">
-                      <ArrowUpRight className="w-4 h-4 text-green-500" />
-                      <span className="text-sm text-green-600 dark:text-green-400">
-                        +5.2% vs last month
-                      </span>
+                    <div className="flex items-center justify-between mt-2">
+                      <div className="flex items-center">
+                        <ArrowUpRight className="w-4 h-4 text-green-500" />
+                        <span className="text-sm text-green-600 dark:text-green-400">
+                          +5.2% vs last month
+                        </span>
+                      </div>
+                      {analytics.averageCompletionRate < 75 && (
+                        <button className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-1 rounded hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors">
+                          How to increase completion
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
