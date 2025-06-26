@@ -160,7 +160,16 @@ export const AnalyticsPage: React.FC = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    // Scroll to top when component mounts
+    window.scrollTo(0, 0);
     loadAnalytics();
+  }, []);
+
+  useEffect(() => {
+    // Reload analytics when timeRange changes
+    if (analytics) {
+      loadAnalytics();
+    }
   }, [timeRange]);
 
   const loadAnalytics = async () => {
