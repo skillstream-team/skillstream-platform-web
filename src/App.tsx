@@ -369,6 +369,26 @@ function App() {
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/messages/new"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <MessagesPage />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/messages/:userId"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <MessagesPage />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
 
             {/* People Route */}
             <Route

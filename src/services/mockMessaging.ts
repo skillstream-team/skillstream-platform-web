@@ -1,4 +1,4 @@
-import { User } from '../types';
+// import { User } from '../types';
 
 // Mock database for messages and conversations
 export interface MockUser {
@@ -225,6 +225,182 @@ const mockConversationsDatabase: MockConversation[] = [
   }
 ];
 
+// Mock messages database for each conversation
+const mockMessagesDatabase: { [conversationId: string]: MockMessage[] } = {
+  'conv-1': [
+    {
+      id: 'msg-1-1',
+      conversationId: 'conv-1',
+      senderId: '1',
+      content: 'Hi! How are you doing with the course?',
+      type: 'text',
+      timestamp: new Date(Date.now() - 3600000).toISOString(),
+      isRead: true
+    },
+    {
+      id: 'msg-1-2',
+      conversationId: 'conv-1',
+      senderId: 'current-user',
+      content: 'I\'m doing great! The course is really helpful.',
+      type: 'text',
+      timestamp: new Date(Date.now() - 1800000).toISOString(),
+      isRead: true
+    },
+    {
+      id: 'msg-1-3',
+      conversationId: 'conv-1',
+      senderId: '1',
+      content: 'That\'s wonderful to hear! Do you have any questions about the latest assignment?',
+      type: 'text',
+      timestamp: new Date(Date.now() - 900000).toISOString(),
+      isRead: true
+    },
+    {
+      id: 'msg-1-4',
+      conversationId: 'conv-1',
+      senderId: 'current-user',
+      content: 'Actually, I was wondering about the deadline for the project.',
+      type: 'text',
+      timestamp: new Date(Date.now() - 600000).toISOString(),
+      isRead: true
+    },
+    {
+      id: 'msg-1-5',
+      conversationId: 'conv-1',
+      senderId: '1',
+      content: 'Thanks for the help with the assignment!',
+      type: 'text',
+      timestamp: new Date(Date.now() - 1800000).toISOString(),
+      isRead: false
+    }
+  ],
+  'conv-2': [
+    {
+      id: 'msg-2-1',
+      conversationId: 'conv-2',
+      senderId: 'current-user',
+      content: 'Hello Professor Smith, I hope you\'re doing well.',
+      type: 'text',
+      timestamp: new Date(Date.now() - 7200000).toISOString(),
+      isRead: true
+    },
+    {
+      id: 'msg-2-2',
+      conversationId: 'conv-2',
+      senderId: '2',
+      content: 'Hello! Yes, I\'m doing well. How can I help you today?',
+      type: 'text',
+      timestamp: new Date(Date.now() - 5400000).toISOString(),
+      isRead: true
+    },
+    {
+      id: 'msg-2-3',
+      conversationId: 'conv-2',
+      senderId: 'current-user',
+      content: 'When is the next class scheduled?',
+      type: 'text',
+      timestamp: new Date(Date.now() - 3600000).toISOString(),
+      isRead: true
+    }
+  ],
+  'conv-3': [
+    {
+      id: 'msg-3-1',
+      conversationId: 'conv-3',
+      senderId: '3',
+      content: 'Hey! Are you free to study together this weekend?',
+      type: 'text',
+      timestamp: new Date(Date.now() - 86400000).toISOString(),
+      isRead: true
+    },
+    {
+      id: 'msg-3-2',
+      conversationId: 'conv-3',
+      senderId: 'current-user',
+      content: 'Sure! That sounds great. What time works for you?',
+      type: 'text',
+      timestamp: new Date(Date.now() - 72000000).toISOString(),
+      isRead: true
+    },
+    {
+      id: 'msg-3-3',
+      conversationId: 'conv-3',
+      senderId: '3',
+      content: 'How about Saturday at 2 PM? We can meet at the library.',
+      type: 'text',
+      timestamp: new Date(Date.now() - 7200000).toISOString(),
+      isRead: true
+    },
+    {
+      id: 'msg-3-4',
+      conversationId: 'conv-3',
+      senderId: '3',
+      content: 'Can you share the study materials?',
+      type: 'text',
+      timestamp: new Date(Date.now() - 7200000).toISOString(),
+      isRead: false
+    }
+  ],
+  'conv-4': [
+    {
+      id: 'msg-4-1',
+      conversationId: 'conv-4',
+      senderId: 'current-user',
+      content: 'Professor Wilson, I\'ve submitted my project. Could you take a look when you have time?',
+      type: 'text',
+      timestamp: new Date(Date.now() - 172800000).toISOString(),
+      isRead: true
+    },
+    {
+      id: 'msg-4-2',
+      conversationId: 'conv-4',
+      senderId: '4',
+      content: 'Of course! I\'ll review it and get back to you by the end of the week.',
+      type: 'text',
+      timestamp: new Date(Date.now() - 86400000).toISOString(),
+      isRead: true
+    },
+    {
+      id: 'msg-4-3',
+      conversationId: 'conv-4',
+      senderId: '4',
+      content: 'Great work on the project!',
+      type: 'text',
+      timestamp: new Date(Date.now() - 86400000).toISOString(),
+      isRead: true
+    }
+  ],
+  'conv-5': [
+    {
+      id: 'msg-5-1',
+      conversationId: 'conv-5',
+      senderId: '5',
+      content: 'Hey! I heard you\'re also taking the web development course.',
+      type: 'text',
+      timestamp: new Date(Date.now() - 259200000).toISOString(),
+      isRead: true
+    },
+    {
+      id: 'msg-5-2',
+      conversationId: 'conv-5',
+      senderId: 'current-user',
+      content: 'Yes, I am! Are you enjoying it so far?',
+      type: 'text',
+      timestamp: new Date(Date.now() - 172800000).toISOString(),
+      isRead: true
+    },
+    {
+      id: 'msg-5-3',
+      conversationId: 'conv-5',
+      senderId: '5',
+      content: 'It\'s challenging but really interesting. Let\'s study together tomorrow',
+      type: 'text',
+      timestamp: new Date(Date.now() - 172800000).toISOString(),
+      isRead: true
+    }
+  ]
+};
+
 // Mock messaging service
 export class MockMessagingService {
   private users: MockUser[] = [...mockUsersDatabase];
@@ -373,6 +549,66 @@ export class MockMessagingService {
 
     // Simulate API delay
     await new Promise(resolve => setTimeout(resolve, 50 + Math.random() * 100));
+  }
+
+  // Get messages for a specific conversation
+  async getMessages(conversationId: string): Promise<MockMessage[]> {
+    const messages = mockMessagesDatabase[conversationId] || [];
+    
+    // Sort messages by timestamp (oldest first)
+    const sortedMessages = messages.sort((a, b) => 
+      new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+    );
+
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 100 + Math.random() * 200));
+    
+    return sortedMessages;
+  }
+
+  // Find conversation between two users
+  async findConversation(userId1: string, userId2: string): Promise<MockConversation | null> {
+    const conversation = this.conversations.find(conv => 
+      conv.participants.includes(userId1) && 
+      conv.participants.includes(userId2) &&
+      conv.participants.length === 2
+    );
+    
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 100 + Math.random() * 200));
+    
+    return conversation || null;
+  }
+
+  // Send a message to a conversation
+  async sendMessage(conversationId: string, senderId: string, content: string): Promise<MockMessage> {
+    const newMessage: MockMessage = {
+      id: `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      conversationId,
+      senderId,
+      content,
+      type: 'text',
+      timestamp: new Date().toISOString(),
+      isRead: false
+    };
+
+    // Add message to the conversation's message history
+    if (!mockMessagesDatabase[conversationId]) {
+      mockMessagesDatabase[conversationId] = [];
+    }
+    mockMessagesDatabase[conversationId].push(newMessage);
+
+    // Update the conversation's last message
+    const conversation = this.conversations.find(conv => conv.id === conversationId);
+    if (conversation) {
+      conversation.lastMessage = newMessage;
+      conversation.updatedAt = new Date().toISOString();
+    }
+
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 150 + Math.random() * 300));
+
+    return newMessage;
   }
 }
 
