@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { BackButton } from '../../components/common/BackButton';
-import { Link } from 'react-router-dom';
 import { 
   Users, 
   BookOpen, 
@@ -8,24 +7,16 @@ import {
   Award, 
   Clock, 
   BarChart3,
-  Calendar,
   Target,
-  Activity,
-  Eye,
   Download,
-  MessageCircle,
   DollarSign,
   FileText,
-  GraduationCap,
   CheckCircle,
   AlertCircle,
   Star,
   ArrowUpRight,
-  ArrowDownRight,
-  Home
+  Info
 } from 'lucide-react';
-import { useAuthStore } from '../../store/auth';
-import { apiService } from '../../services/api';
 
 interface TeacherAnalytics {
   totalCourses: number;
@@ -79,16 +70,92 @@ interface AssignmentAnalytics {
   status: 'pending' | 'graded' | 'overdue';
 }
 
+interface NeedsAttentionItem {
+  id: string;
+  type: 'assignment' | 'student' | 'course' | 'revenue' | 'engagement';
+  title: string;
+  description: string;
+  priority: 'high' | 'medium' | 'low';
+  actionRequired: string;
+  impact: string;
+  dueDate?: string;
+  courseId?: string;
+  studentId?: string;
+  assignmentId?: string;
+}
+
+interface RevenueAnalytics {
+  totalRevenue: number;
+  monthlyRevenue: number;
+  monthlyGrowth: number;
+  averageRevenuePerCourse: number;
+  averageRevenuePerStudent: number;
+  revenueByCourse: Array<{
+    courseId: string;
+    courseTitle: string;
+    revenue: number;
+    enrollmentCount: number;
+    price: number;
+  }>;
+  revenueTrend: Array<{
+    month: string;
+    revenue: number;
+    growth: number;
+  }>;
+  topRevenueGenerators: Array<{
+    courseId: string;
+    courseTitle: string;
+    revenue: number;
+    growth: number;
+  }>;
+}
+
+interface PerformanceMetrics {
+  overallCompletionRate: number;
+  averageStudentScore: number;
+  averageTimeToComplete: number;
+  studentSatisfaction: number;
+  courseEffectiveness: Array<{
+    courseId: string;
+    courseTitle: string;
+    effectiveness: number;
+    completionRate: number;
+    averageScore: number;
+  }>;
+  studentProgress: Array<{
+    studentId: string;
+    studentName: string;
+    progress: number;
+    coursesCompleted: number;
+    averageScore: number;
+  }>;
+}
+
+interface InsightItem {
+  id: string;
+  type: 'trend' | 'anomaly' | 'opportunity' | 'warning';
+  title: string;
+  description: string;
+  impact: 'positive' | 'negative' | 'neutral';
+  confidence: number;
+  actionable: boolean;
+  action?: string;
+  data: any;
+}
+
 export const AnalyticsPage: React.FC = () => {
-  const { user } = useAuthStore();
   const [analytics, setAnalytics] = useState<TeacherAnalytics | null>(null);
   const [courseAnalytics, setCourseAnalytics] = useState<CourseAnalytics[]>([]);
   const [studentAnalytics, setStudentAnalytics] = useState<StudentAnalytics[]>([]);
   const [assignmentAnalytics, setAssignmentAnalytics] = useState<AssignmentAnalytics[]>([]);
+  const [needsAttentionItems, setNeedsAttentionItems] = useState<NeedsAttentionItem[]>([]);
+  const [revenueAnalytics, setRevenueAnalytics] = useState<RevenueAnalytics | null>(null);
+  const [performanceMetrics, setPerformanceMetrics] = useState<PerformanceMetrics | null>(null);
+  const [insights, setInsights] = useState<InsightItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d' | '1y'>('30d');
-  const [activeTab, setActiveTab] = useState<'overview' | 'courses' | 'students' | 'assignments'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'needs-attention' | 'revenue' | 'performance' | 'insights' | 'courses' | 'students' | 'assignments'>('overview');
 
   useEffect(() => {
     loadAnalytics();
@@ -239,6 +306,157 @@ export const AnalyticsPage: React.FC = () => {
       setCourseAnalytics(mockCourseAnalytics);
       setStudentAnalytics(mockStudentAnalytics);
       setAssignmentAnalytics(mockAssignmentAnalytics);
+
+      // Mock data for needs attention items
+      const mockNeedsAttentionItems: NeedsAttentionItem[] = [
+        {
+          id: '1',
+          type: 'assignment',
+          title: 'Overdue Assignments',
+          description: '5 assignments are overdue and need immediate grading',
+          priority: 'high',
+          actionRequired: 'Grade overdue assignments',
+          impact: 'Student satisfaction and course completion rates',
+          dueDate: '2024-01-10',
+          assignmentId: 'assign-1'
+        },
+        {
+          id: '2',
+          type: 'student',
+          title: 'Struggling Students',
+          description: '3 students have below 60% completion rate',
+          priority: 'medium',
+          actionRequired: 'Reach out to struggling students',
+          impact: 'Student retention and course success',
+          studentId: 'student-1'
+        },
+        {
+          id: '3',
+          type: 'course',
+          title: 'Low Enrollment Course',
+          description: 'Database Design course has only 8 active students',
+          priority: 'medium',
+          actionRequired: 'Review course content and marketing',
+          impact: 'Revenue and course viability',
+          courseId: 'course-3'
+        },
+        {
+          id: '4',
+          type: 'revenue',
+          title: 'Revenue Decline',
+          description: 'Monthly revenue decreased by 8% compared to last month',
+          priority: 'high',
+          actionRequired: 'Analyze pricing and marketing strategies',
+          impact: 'Business sustainability',
+        },
+        {
+          id: '5',
+          type: 'engagement',
+          title: 'Low Student Engagement',
+          description: 'Average time spent on courses decreased by 15%',
+          priority: 'medium',
+          actionRequired: 'Improve course interactivity',
+          impact: 'Learning outcomes and retention',
+        }
+      ];
+
+      // Mock data for revenue analytics
+      const mockRevenueAnalytics: RevenueAnalytics = {
+        totalRevenue: 15420,
+        monthlyRevenue: 3240,
+        monthlyGrowth: 12.5,
+        averageRevenuePerCourse: 3855,
+        averageRevenuePerStudent: 121.4,
+        revenueByCourse: [
+          { courseId: '1', courseTitle: 'Web Development Fundamentals', revenue: 1000, enrollmentCount: 45, price: 20 },
+          { courseId: '2', courseTitle: 'JavaScript Programming', revenue: 800, enrollmentCount: 32, price: 25 },
+          { courseId: '3', courseTitle: 'Database Design', revenue: 700, enrollmentCount: 28, price: 22 },
+          { courseId: '4', courseTitle: 'Frontend Design', revenue: 900, enrollmentCount: 22, price: 28 }
+        ],
+        revenueTrend: [
+          { month: 'Oct', revenue: 2800, growth: 5.2 },
+          { month: 'Nov', revenue: 3100, growth: 10.7 },
+          { month: 'Dec', revenue: 2900, growth: -6.5 },
+          { month: 'Jan', revenue: 3240, growth: 11.7 }
+        ],
+        topRevenueGenerators: [
+          { courseId: '1', courseTitle: 'Web Development Fundamentals', revenue: 1000, growth: 15.2 },
+          { courseId: '4', courseTitle: 'Frontend Design', revenue: 900, growth: 22.1 },
+          { courseId: '2', courseTitle: 'JavaScript Programming', revenue: 800, growth: 8.5 }
+        ]
+      };
+
+      // Mock data for performance metrics
+      const mockPerformanceMetrics: PerformanceMetrics = {
+        overallCompletionRate: 78,
+        averageStudentScore: 84.5,
+        averageTimeToComplete: 45,
+        studentSatisfaction: 4.2,
+        courseEffectiveness: [
+          { courseId: '1', courseTitle: 'Web Development Fundamentals', effectiveness: 92, completionRate: 82, averageScore: 87.3 },
+          { courseId: '2', courseTitle: 'JavaScript Programming', effectiveness: 85, completionRate: 75, averageScore: 81.2 },
+          { courseId: '3', courseTitle: 'Database Design', effectiveness: 78, completionRate: 68, averageScore: 79.8 },
+          { courseId: '4', courseTitle: 'Frontend Design', effectiveness: 95, completionRate: 91, averageScore: 89.1 }
+        ],
+        studentProgress: [
+          { studentId: '1', studentName: 'Alex Johnson', progress: 95, coursesCompleted: 3, averageScore: 92.5 },
+          { studentId: '2', studentName: 'Sarah Chen', progress: 88, coursesCompleted: 2, averageScore: 88.7 },
+          { studentId: '3', studentName: 'Michael Rodriguez', progress: 92, coursesCompleted: 4, averageScore: 85.2 }
+        ]
+      };
+
+      // Mock data for insights
+      const mockInsights: InsightItem[] = [
+        {
+          id: '1',
+          type: 'trend',
+          title: 'Growing Interest in Frontend Development',
+          description: 'Frontend Design course shows 22% growth in enrollments',
+          impact: 'positive',
+          confidence: 85,
+          actionable: true,
+          action: 'Consider creating advanced frontend courses',
+          data: { growth: 22, courseId: '4' }
+        },
+        {
+          id: '2',
+          type: 'anomaly',
+          title: 'Unusual Drop in Database Course Engagement',
+          description: 'Database Design course engagement dropped 15% this week',
+          impact: 'negative',
+          confidence: 78,
+          actionable: true,
+          action: 'Review course content and student feedback',
+          data: { drop: 15, courseId: '3' }
+        },
+        {
+          id: '3',
+          type: 'opportunity',
+          title: 'High Demand for JavaScript Content',
+          description: 'Students are requesting more advanced JavaScript topics',
+          impact: 'positive',
+          confidence: 92,
+          actionable: true,
+          action: 'Create advanced JavaScript course',
+          data: { demand: 'high', topic: 'advanced-javascript' }
+        },
+        {
+          id: '4',
+          type: 'warning',
+          title: 'Assignment Grading Delays',
+          description: 'Average grading time increased to 4.2 days',
+          impact: 'negative',
+          confidence: 88,
+          actionable: true,
+          action: 'Implement grading automation tools',
+          data: { avgTime: 4.2, threshold: 3.0 }
+        }
+      ];
+
+      setNeedsAttentionItems(mockNeedsAttentionItems);
+      setRevenueAnalytics(mockRevenueAnalytics);
+      setPerformanceMetrics(mockPerformanceMetrics);
+      setInsights(mockInsights);
     } catch (error) {
       console.error('Failed to load analytics:', error);
       setError('Failed to load analytics data');
@@ -276,13 +494,54 @@ export const AnalyticsPage: React.FC = () => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'pending':
-        return 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200';
+        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
       case 'graded':
         return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
       case 'overdue':
         return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
       default:
         return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
+    }
+  };
+
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'high':
+        return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
+      case 'medium':
+        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
+      case 'low':
+        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+      default:
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
+    }
+  };
+
+  const getInsightIcon = (type: string) => {
+    switch (type) {
+      case 'trend':
+        return <TrendingUp className="h-5 w-5 text-blue-500" />;
+      case 'anomaly':
+        return <AlertCircle className="h-5 w-5 text-orange-500" />;
+      case 'opportunity':
+        return <Target className="h-5 w-5 text-green-500" />;
+      case 'warning':
+        return <AlertCircle className="h-5 w-5 text-red-500" />;
+      default:
+        return <Info className="h-5 w-5 text-gray-500" />;
+    }
+  };
+
+  const getInsightColor = (impact: string) => {
+    switch (impact) {
+      case 'positive':
+        return 'border-green-200 bg-green-50 dark:border-green-700 dark:bg-green-900/20';
+      case 'negative':
+        return 'border-red-200 bg-red-50 dark:border-red-700 dark:bg-red-900/20';
+      case 'neutral':
+        return 'border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-900/20';
+      default:
+        return 'border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-900/20';
     }
   };
 
@@ -378,6 +637,10 @@ export const AnalyticsPage: React.FC = () => {
           <nav className="flex space-x-8">
             {[
               { id: 'overview', label: 'Overview', icon: BarChart3 },
+              { id: 'needs-attention', label: 'Needs Attention', icon: AlertCircle },
+              { id: 'revenue', label: 'Revenue', icon: DollarSign },
+              { id: 'performance', label: 'Performance', icon: Target },
+              { id: 'insights', label: 'Insights', icon: TrendingUp },
               { id: 'courses', label: 'Courses', icon: BookOpen },
               { id: 'students', label: 'Students', icon: Users },
               { id: 'assignments', label: 'Assignments', icon: FileText }
@@ -600,6 +863,450 @@ export const AnalyticsPage: React.FC = () => {
               </div>
             </div>
           </>
+        )}
+
+        {/* Needs Attention Tab */}
+        {activeTab === 'needs-attention' && (
+          <div className="space-y-6">
+            {/* Priority Summary */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <AlertCircle className="h-8 w-8 text-red-600 dark:text-red-400" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">High Priority</p>
+                    <p className="text-2xl font-semibold text-gray-900 dark:text-white">
+                      {needsAttentionItems.filter(item => item.priority === 'high').length}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <AlertCircle className="h-8 w-8 text-yellow-600 dark:text-yellow-400" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Medium Priority</p>
+                    <p className="text-2xl font-semibold text-gray-900 dark:text-white">
+                      {needsAttentionItems.filter(item => item.priority === 'medium').length}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <CheckCircle className="h-8 w-8 text-green-600 dark:text-green-400" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Low Priority</p>
+                    <p className="text-2xl font-semibold text-gray-900 dark:text-white">
+                      {needsAttentionItems.filter(item => item.priority === 'low').length}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Needs Attention Items */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white">Items Requiring Attention</h3>
+              </div>
+              <div className="divide-y divide-gray-200 dark:divide-gray-700">
+                {needsAttentionItems.map((item) => (
+                  <div key={item.id} className="p-6 hover:bg-gray-50 dark:hover:bg-gray-700">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-3 mb-2">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getPriorityColor(item.priority)}`}>
+                            {item.priority.charAt(0).toUpperCase() + item.priority.slice(1)} Priority
+                          </span>
+                          <span className="text-sm text-gray-500 dark:text-gray-400 capitalize">
+                            {item.type}
+                          </span>
+                        </div>
+                        <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                          {item.title}
+                        </h4>
+                        <p className="text-gray-600 dark:text-gray-300 mb-3">
+                          {item.description}
+                        </p>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                          <div>
+                            <span className="font-medium text-gray-900 dark:text-white">Action Required:</span>
+                            <p className="text-gray-600 dark:text-gray-300">{item.actionRequired}</p>
+                          </div>
+                          <div>
+                            <span className="font-medium text-gray-900 dark:text-white">Impact:</span>
+                            <p className="text-gray-600 dark:text-gray-300">{item.impact}</p>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="ml-6 flex flex-col space-y-2">
+                        <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium">
+                          Take Action
+                        </button>
+                        <button className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors text-sm">
+                          Dismiss
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Revenue Tab */}
+        {activeTab === 'revenue' && revenueAnalytics && (
+          <div className="space-y-6">
+            {/* Revenue Overview */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <DollarSign className="h-8 w-8 text-emerald-600 dark:text-emerald-400" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Revenue</p>
+                    <p className="text-2xl font-semibold text-gray-900 dark:text-white">
+                      {formatCurrency(revenueAnalytics.totalRevenue)}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <TrendingUp className="h-8 w-8 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Monthly Revenue</p>
+                    <p className="text-2xl font-semibold text-gray-900 dark:text-white">
+                      {formatCurrency(revenueAnalytics.monthlyRevenue)}
+                    </p>
+                    <div className="flex items-center mt-1">
+                      <ArrowUpRight className="w-4 h-4 text-green-500" />
+                      <span className="text-sm text-green-600 dark:text-green-400">
+                        +{revenueAnalytics.monthlyGrowth}%
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <BookOpen className="h-8 w-8 text-purple-600 dark:text-purple-400" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Avg per Course</p>
+                    <p className="text-2xl font-semibold text-gray-900 dark:text-white">
+                      {formatCurrency(revenueAnalytics.averageRevenuePerCourse)}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <Users className="h-8 w-8 text-orange-600 dark:text-orange-400" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Avg per Student</p>
+                    <p className="text-2xl font-semibold text-gray-900 dark:text-white">
+                      {formatCurrency(revenueAnalytics.averageRevenuePerStudent)}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Revenue by Course */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Revenue by Course</h3>
+                <div className="space-y-4">
+                  {revenueAnalytics.revenueByCourse.map((course) => (
+                    <div key={course.courseId} className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <h4 className="text-sm font-medium text-gray-900 dark:text-white">
+                          {course.courseTitle}
+                        </h4>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          {course.enrollmentCount} students • ${course.price} each
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+                          {formatCurrency(course.revenue)}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Top Revenue Generators</h3>
+                <div className="space-y-4">
+                  {revenueAnalytics.topRevenueGenerators.map((course) => (
+                    <div key={course.courseId} className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <h4 className="text-sm font-medium text-gray-900 dark:text-white">
+                          {course.courseTitle}
+                        </h4>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          Revenue growth
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+                          {formatCurrency(course.revenue)}
+                        </p>
+                        <div className="flex items-center">
+                          <ArrowUpRight className="w-3 h-3 text-green-500" />
+                          <span className="text-xs text-green-600 dark:text-green-400">
+                            +{course.growth}%
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Performance Tab */}
+        {activeTab === 'performance' && performanceMetrics && (
+          <div className="space-y-6">
+            {/* Performance Overview */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <Target className="h-8 w-8 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Completion Rate</p>
+                    <p className="text-2xl font-semibold text-gray-900 dark:text-white">
+                      {formatPercentage(performanceMetrics.overallCompletionRate)}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <Award className="h-8 w-8 text-green-600 dark:text-green-400" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Avg Score</p>
+                    <p className="text-2xl font-semibold text-gray-900 dark:text-white">
+                      {performanceMetrics.averageStudentScore.toFixed(1)}%
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <Clock className="h-8 w-8 text-purple-600 dark:text-purple-400" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Avg Time to Complete</p>
+                    <p className="text-2xl font-semibold text-gray-900 dark:text-white">
+                      {performanceMetrics.averageTimeToComplete} days
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <Star className="h-8 w-8 text-yellow-600 dark:text-yellow-400" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Satisfaction</p>
+                    <p className="text-2xl font-semibold text-gray-900 dark:text-white">
+                      {performanceMetrics.studentSatisfaction}/5
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Course Effectiveness */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white">Course Effectiveness</h3>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                  <thead className="bg-gray-50 dark:bg-gray-700">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        Course
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        Effectiveness
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        Completion Rate
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        Avg Score
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                    {performanceMetrics.courseEffectiveness.map((course) => (
+                      <tr key={course.courseId} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-medium text-gray-900 dark:text-white">
+                            {course.courseTitle}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900 dark:text-white">
+                            {course.effectiveness}%
+                          </div>
+                          <div className="w-16 bg-gray-200 dark:bg-gray-700 rounded-full h-2 mt-1">
+                            <div 
+                              className="bg-blue-600 h-2 rounded-full" 
+                              style={{ width: `${course.effectiveness}%` }}
+                            ></div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                          {formatPercentage(course.completionRate)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                          {course.averageScore.toFixed(1)}%
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Insights Tab */}
+        {activeTab === 'insights' && (
+          <div className="space-y-6">
+            {/* Insights Overview */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <TrendingUp className="h-8 w-8 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Trends</p>
+                    <p className="text-2xl font-semibold text-gray-900 dark:text-white">
+                      {insights.filter(insight => insight.type === 'trend').length}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <Target className="h-8 w-8 text-green-600 dark:text-green-400" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Opportunities</p>
+                    <p className="text-2xl font-semibold text-gray-900 dark:text-white">
+                      {insights.filter(insight => insight.type === 'opportunity').length}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <AlertCircle className="h-8 w-8 text-orange-600 dark:text-orange-400" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Warnings</p>
+                    <p className="text-2xl font-semibold text-gray-900 dark:text-white">
+                      {insights.filter(insight => insight.type === 'warning').length}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <AlertCircle className="h-8 w-8 text-red-600 dark:text-red-400" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Anomalies</p>
+                    <p className="text-2xl font-semibold text-gray-900 dark:text-white">
+                      {insights.filter(insight => insight.type === 'anomaly').length}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Insights List */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white">AI-Generated Insights</h3>
+              </div>
+              <div className="divide-y divide-gray-200 dark:divide-gray-700">
+                {insights.map((insight) => (
+                  <div key={insight.id} className={`p-6 border-l-4 ${getInsightColor(insight.impact)}`}>
+                    <div className="flex items-start space-x-4">
+                      <div className="flex-shrink-0 mt-1">
+                        {getInsightIcon(insight.type)}
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-3 mb-2">
+                          <h4 className="text-lg font-medium text-gray-900 dark:text-white">
+                            {insight.title}
+                          </h4>
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            insight.impact === 'positive' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
+                            insight.impact === 'negative' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' :
+                            'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
+                          }`}>
+                            {insight.impact.charAt(0).toUpperCase() + insight.impact.slice(1)}
+                          </span>
+                          <span className="text-sm text-gray-500 dark:text-gray-400">
+                            {insight.confidence}% confidence
+                          </span>
+                        </div>
+                        <p className="text-gray-600 dark:text-gray-300 mb-3">
+                          {insight.description}
+                        </p>
+                        {insight.actionable && insight.action && (
+                          <div className="flex items-center space-x-3">
+                            <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium">
+                              {insight.action}
+                            </button>
+                            <button className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors text-sm">
+                              Learn More
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
         )}
 
         {/* Courses Tab */}
