@@ -1,23 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { 
+  ChevronLeft, 
+  ChevronRight, 
+  Plus, 
   Calendar as CalendarIcon, 
   Clock, 
-  Video, 
-  BookOpen, 
-  Plus,
-  ChevronLeft,
-  ChevronRight,
-  MapPin,
   Users,
-  Bell,
-  CheckSquare,
+  MapPin,
   List,
-  Flag,
-  AlertCircle
+  Grid,
+  Mail,
+  MoreVertical
 } from 'lucide-react';
+import { CalendarEvent } from '../../types';
 import { useAuthStore } from '../../store/auth';
 import { apiService } from '../../services/api';
-import { CalendarEvent, VideoConference } from '../../types';
 import { TodoList } from './TodoList';
 
 interface TodoItem {
@@ -95,35 +92,49 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     } catch (error) {
       console.error('Error loading calendar events:', error);
       // Mock data for demo
-      setEvents([
+      const mockEvents: CalendarEvent[] = [
         {
           id: '1',
-          userId: user?.id || '',
-          title: 'React Fundamentals - Lesson 1',
-          description: 'Introduction to React components and JSX',
-          startTime: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
-          endTime: new Date(Date.now() + 3 * 60 * 60 * 1000).toISOString(),
-          type: 'lesson'
+          userId: user?.id || '1',
+          title: 'Board Meeting',
+          description: 'Quarterly board meeting to review business performance',
+          startTime: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
+          endTime: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000).toISOString(),
+          type: 'meeting',
+          location: 'Conference Room A',
+          attendees: ['user1', 'user2', 'user3'],
+          priority: 'high',
+          category: 'Business',
+          tags: ['board', 'quarterly', 'performance']
         },
         {
           id: '2',
-          userId: user?.id || '',
-          title: 'JavaScript Quiz',
-          description: 'Assessment on JavaScript fundamentals',
-          startTime: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-          endTime: new Date(Date.now() + 24 * 60 * 60 * 1000 + 60 * 60 * 1000).toISOString(),
-          type: 'quiz'
+          userId: user?.id || '1',
+          title: 'Analytics Report Deadline',
+          description: 'Submit monthly analytics report to stakeholders',
+          startTime: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000).toISOString(),
+          endTime: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000 + 1 * 60 * 60 * 1000).toISOString(),
+          type: 'deadline',
+          priority: 'urgent',
+          category: 'Analytics',
+          tags: ['report', 'deadline', 'stakeholders']
         },
         {
           id: '3',
-          userId: user?.id || '',
-          title: 'Team Study Session',
-          description: 'Group study session for advanced topics',
-          startTime: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(),
-          endTime: new Date(Date.now() + 48 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000).toISOString(),
-          type: 'study'
+          userId: user?.id || '1',
+          title: 'Team Planning Session',
+          description: 'Weekly team planning and strategy session',
+          startTime: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+          endTime: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000 + 1.5 * 60 * 60 * 1000).toISOString(),
+          type: 'planning',
+          location: 'Virtual Meeting',
+          attendees: ['team1', 'team2', 'team3'],
+          priority: 'medium',
+          category: 'Planning',
+          tags: ['team', 'strategy', 'weekly']
         }
-      ]);
+      ];
+      setEvents(mockEvents);
     } finally {
       setLoading(false);
     }
@@ -170,11 +181,11 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
 
   const getEventIcon = (type: string) => {
     switch (type) {
-      case 'lesson': return <BookOpen className="h-3 w-3" />;
-      case 'quiz': return <Clock className="h-3 w-3" />;
-      case 'video': return <Video className="h-3 w-3" />;
+      case 'lesson': return <List className="h-3 w-3" />;
+      case 'quiz': return <Mail className="h-3 w-3" />;
+      case 'video': return <Grid className="h-3 w-3" />;
       case 'study': return <Users className="h-3 w-3" />;
-      case 'todo': return <CheckSquare className="h-3 w-3" />;
+      case 'todo': return <List className="h-3 w-3" />;
       default: return <CalendarIcon className="h-3 w-3" />;
     }
   };
@@ -255,7 +266,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                     : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                 }`}
               >
-                <CheckSquare className="h-4 w-4 mr-1" />
+                <List className="h-4 w-4 mr-1" />
                 To-Do List
               </button>
             </div>
@@ -411,10 +422,10 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                             event.priority === 'medium' ? 'text-yellow-600 dark:text-yellow-400 bg-yellow-100 dark:bg-yellow-900' :
                             'text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900'
                           }`}>
-                            {event.priority === 'urgent' ? <AlertCircle className="h-3 w-3 mr-1" /> :
-                             event.priority === 'high' ? <Flag className="h-3 w-3 mr-1" /> :
-                             event.priority === 'medium' ? <Clock className="h-3 w-3 mr-1" /> :
-                             <CheckSquare className="h-3 w-3 mr-1" />}
+                            {event.priority === 'urgent' ? <MoreVertical className="h-3 w-3 mr-1" /> :
+                             event.priority === 'high' ? <MoreVertical className="h-3 w-3 mr-1" /> :
+                             event.priority === 'medium' ? <MoreVertical className="h-3 w-3 mr-1" /> :
+                             <MoreVertical className="h-3 w-3 mr-1" />}
                             <span className="capitalize">{event.priority}</span>
                           </div>
                         )}
@@ -448,7 +459,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                       )}
                     </div>
                     <button className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
-                      <Bell className="h-4 w-4" />
+                      <MoreVertical className="h-4 w-4" />
                     </button>
                   </div>
                 ))}

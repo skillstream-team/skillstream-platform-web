@@ -65,7 +65,7 @@ export const TodoList: React.FC<TodoListProps> = ({
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [loading, setLoading] = useState(true);
 
-  const categories = ['Study', 'Assignment', 'Project', 'Meeting', 'Personal', 'Work'];
+  const categories = ['Business', 'Analytics', 'Project', 'Meeting', 'Personal', 'Report', 'Strategy', 'Operations'];
   const priorities = ['low', 'medium', 'high', 'urgent'];
 
   useEffect(() => {
@@ -83,65 +83,65 @@ export const TodoList: React.FC<TodoListProps> = ({
 
   const loadTodos = async () => {
     try {
-      // Mock data for demo - replace with actual API calls
+      // Mock data for business intelligence platform
       const mockTodos: TodoItem[] = [
         {
           id: '1',
-          title: 'Complete React Assignment',
-          description: 'Finish the component library project for React Fundamentals course',
+          title: 'Review Q4 Revenue Analytics',
+          description: 'Analyze quarterly revenue data and prepare executive summary',
           completed: false,
           priority: 'high',
           dueDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
-          category: 'Assignment',
-          tags: ['react', 'frontend', 'project'],
+          category: 'Analytics',
+          tags: ['revenue', 'quarterly', 'executive'],
           assignedTo: user?.id,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
           estimatedTime: 120,
-          notes: 'Need to implement responsive design and add unit tests'
+          notes: 'Focus on year-over-year growth and market trends'
         },
         {
           id: '2',
-          title: 'Study for JavaScript Quiz',
-          description: 'Review ES6 features and async programming concepts',
+          title: 'Prepare Board Meeting Presentation',
+          description: 'Create slides for upcoming board meeting on business performance',
           completed: false,
           priority: 'medium',
           dueDate: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000).toISOString(),
-          category: 'Study',
-          tags: ['javascript', 'quiz', 'es6'],
-          assignedTo: user?.id,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          estimatedTime: 60
-        },
-        {
-          id: '3',
-          title: 'Team Study Session',
-          description: 'Weekly group study session for advanced topics',
-          completed: true,
-          priority: 'low',
-          dueDate: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
           category: 'Meeting',
-          tags: ['study-group', 'collaboration'],
-          assignedTo: user?.id,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          estimatedTime: 90,
-          actualTime: 85
-        },
-        {
-          id: '4',
-          title: 'Prepare Presentation',
-          description: 'Create slides for the final project presentation',
-          completed: false,
-          priority: 'urgent',
-          dueDate: new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString(),
-          category: 'Project',
-          tags: ['presentation', 'final-project'],
+          tags: ['board', 'presentation', 'performance'],
           assignedTo: user?.id,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
           estimatedTime: 180
+        },
+        {
+          id: '3',
+          title: 'Weekly Team Standup',
+          description: 'Daily standup meeting with analytics team',
+          completed: true,
+          priority: 'low',
+          dueDate: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+          category: 'Meeting',
+          tags: ['standup', 'team', 'daily'],
+          assignedTo: user?.id,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          estimatedTime: 30,
+          actualTime: 25
+        },
+        {
+          id: '4',
+          title: 'Update Business Intelligence Dashboard',
+          description: 'Refresh KPIs and add new metrics to executive dashboard',
+          completed: false,
+          priority: 'urgent',
+          dueDate: new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString(),
+          category: 'Analytics',
+          tags: ['dashboard', 'kpis', 'metrics'],
+          assignedTo: user?.id,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          estimatedTime: 90
         }
       ];
 
@@ -573,7 +573,7 @@ export const TodoList: React.FC<TodoListProps> = ({
                     </label>
                     <select
                       name="category"
-                      defaultValue={editingTodo?.category || 'Study'}
+                      defaultValue={editingTodo?.category || 'Business'}
                       className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded focus:ring-1 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
                     >
                       {categories.map(category => (

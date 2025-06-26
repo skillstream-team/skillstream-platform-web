@@ -127,7 +127,7 @@ const FALLBACK_DATA = {
   ]
 };
 
-export const WatchtowerDashboard: React.FC = () => {
+export const WatchtowerDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [isOffline, setIsOffline] = useState(false);
