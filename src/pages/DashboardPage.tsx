@@ -1,40 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { DashboardWidgets } from '../components/dashboard/DashboardWidgets';
 import { useAuthStore } from '../store/auth';
-import { 
-  BarChart3, 
-  TrendingUp, 
-  Users, 
-  BookOpen, 
-  Calendar, 
-  Target,
-  Award,
-  Clock,
-  Star,
-  Activity
-} from 'lucide-react';
+import { Activity } from 'lucide-react';
 
 export const DashboardPage: React.FC = () => {
   const { user } = useAuthStore();
-  const [stats, setStats] = useState({
-    totalCourses: 0,
-    completedLessons: 0,
-    totalLessons: 0,
-    averageScore: 0,
-    timeSpent: 0,
-    streak: 0
-  });
 
   useEffect(() => {
     // Mock data - replace with actual API call
-    setStats({
-      totalCourses: 5,
-      completedLessons: 23,
-      totalLessons: 45,
-      averageScore: 87,
-      timeSpent: 1560, // in minutes
-      streak: 7
-    });
   }, []);
 
   return (
@@ -49,7 +22,7 @@ export const DashboardPage: React.FC = () => {
                   Dashboard
                 </h1>
                 <p className="text-gray-600 dark:text-gray-300">
-                  Welcome back, {user?.name}! Here's your learning overview
+                  Welcome back, {user?.name}! {user?.role === 'TEACHER' ? "Here's your creation overview!" : "Here's your learning overview"}
                 </p>
               </div>
             </div>
