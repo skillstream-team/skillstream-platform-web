@@ -857,39 +857,39 @@ export const AnalyticsPage: React.FC = () => {
                 <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Revenue Summary</h3>
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <h4 className="text-sm font-medium text-gray-900 dark:text-white">Total Revenue</h4>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-sm font-medium text-gray-900 dark:text-white truncate">Total Revenue</h4>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
                         All time earnings
                       </p>
                     </div>
-                    <div className="text-right">
+                    <div className="text-right ml-4 flex-shrink-0">
                       <p className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
                         {formatCurrency(analytics.totalRevenue)}
                       </p>
                     </div>
                   </div>
                   <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <h4 className="text-sm font-medium text-gray-900 dark:text-white">Avg Revenue per Course</h4>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-sm font-medium text-gray-900 dark:text-white truncate">Avg Revenue per Course</h4>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
                         Across all courses
                       </p>
                     </div>
-                    <div className="text-right">
+                    <div className="text-right ml-4 flex-shrink-0">
                       <p className="text-sm font-semibold text-gray-900 dark:text-white">
                         {formatCurrency(analytics.averageRevenuePerCourse)}
                       </p>
                     </div>
                   </div>
                   <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <h4 className="text-sm font-medium text-gray-900 dark:text-white">Avg Revenue per Student</h4>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-sm font-medium text-gray-900 dark:text-white truncate">Avg Revenue per Student</h4>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
                         Per enrolled student
                       </p>
                     </div>
-                    <div className="text-right">
+                    <div className="text-right ml-4 flex-shrink-0">
                       <p className="text-sm font-semibold text-gray-900 dark:text-white">
                         {formatCurrency(analytics.averageRevenuePerStudent)}
                       </p>
