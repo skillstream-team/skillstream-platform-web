@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BackButton } from '../../components/common/BackButton';
+import { useNavigate } from 'react-router-dom';
 import { 
   Users, 
   BookOpen, 
@@ -156,6 +157,7 @@ export const AnalyticsPage: React.FC = () => {
   const [error, setError] = useState('');
   const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d' | '1y'>('30d');
   const [activeTab, setActiveTab] = useState<'overview' | 'needs-attention' | 'revenue' | 'performance' | 'insights' | 'courses' | 'students' | 'assignments'>('overview');
+  const navigate = useNavigate();
 
   useEffect(() => {
     loadAnalytics();
@@ -542,6 +544,50 @@ export const AnalyticsPage: React.FC = () => {
         return 'border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-900/20';
       default:
         return 'border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-900/20';
+    }
+  };
+
+  const handleTakeAction = (item: NeedsAttentionItem) => {
+    switch (item.type) {
+      case 'assignment':
+        // Navigate to assignments page with focus on the specific assignment
+        if (item.assignmentId) {
+          navigate(`/assignments/${item.assignmentId}`);
+        } else {
+          navigate('/assignments');
+        }
+        break;
+      case 'student':
+        // Navigate to student profile or people page
+        if (item.studentId) {
+          navigate(`/people?studentId=${item.studentId}`);
+        } else {
+          navigate('/people');
+        }
+        break;
+      case 'course':
+        // Navigate to specific course or courses page
+        if (item.courseId) {
+          navigate(`/courses/${item.courseId}`);
+        } else {
+          navigate('/courses');
+        }
+        break;
+      case 'revenue':
+        // Navigate to revenue analytics tab
+        setActiveTab('revenue');
+        break;
+      case 'engagement':
+        // Navigate to course for engagement issues
+        if (item.courseId) {
+          navigate(`/courses/${item.courseId}`);
+        } else {
+          navigate('/courses');
+        }
+        break;
+      default:
+        // Default to dashboard
+        navigate('/dashboard');
     }
   };
 
@@ -947,7 +993,7 @@ export const AnalyticsPage: React.FC = () => {
                         </div>
                       </div>
                       <div className="ml-6 flex flex-col space-y-2">
-                        <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium">
+                        <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium" onClick={() => handleTakeAction(item)}>
                           Take Action
                         </button>
                         <button className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors text-sm">
