@@ -20,16 +20,18 @@ interface NotificationPopupProps {
   isOpen: boolean;
   onClose: () => void;
   buttonRef?: React.RefObject<HTMLButtonElement>;
+  openToExpanded?: boolean;
 }
 
 export const NotificationPopup: React.FC<NotificationPopupProps> = ({
   isOpen,
   onClose,
-  buttonRef
+  buttonRef,
+  openToExpanded = false
 }) => {
   const [notifications, setNotifications] = useState<MockNotification[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [showAllNotifications, setShowAllNotifications] = useState(false);
+  const [showAllNotifications, setShowAllNotifications] = useState(openToExpanded);
   const [filterType, setFilterType] = useState<'all' | 'unread' | 'read'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [total, setTotal] = useState(0);
@@ -59,10 +61,14 @@ export const NotificationPopup: React.FC<NotificationPopupProps> = ({
   };
 
   useEffect(() => {
-    if (isOpen && !showAllNotifications) {
-      fetchPopupNotifications();
+    if (isOpen) {
+      if (openToExpanded) {
+        setShowAllNotifications(true);
+      } else if (!showAllNotifications) {
+        fetchPopupNotifications();
+      }
     }
-  }, [isOpen, showAllNotifications]);
+  }, [isOpen, openToExpanded, showAllNotifications]);
 
   useEffect(() => {
     if (showAllNotifications) {

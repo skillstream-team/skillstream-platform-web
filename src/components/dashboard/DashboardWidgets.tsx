@@ -668,6 +668,7 @@ export const DashboardWidgets: React.FC<DashboardWidgetsProps> = ({ className = 
       <NotificationPopup
         isOpen={isNotificationPopupOpen}
         onClose={() => setIsNotificationPopupOpen(false)}
+        openToExpanded={true}
       />
     </div>
   );
