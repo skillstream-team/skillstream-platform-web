@@ -1,8 +1,8 @@
 import React, { useState, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { 
-  Menu,
-  X,
+  Menu, 
+  X, 
   Bell, 
   MessageCircle, 
   Video, 
@@ -11,7 +11,9 @@ import {
   User,
   Settings,
   LogOut,
-  Search
+  Search,
+  Folder,
+  Maximize2
 } from 'lucide-react';
 import { useAuthStore } from '../../store/auth';
 import { useThemeStore } from '../../store/theme';
@@ -65,9 +67,9 @@ export const Header: React.FC = () => {
             <div className="flex items-center">
               <Link to="/dashboard" className="flex items-center space-x-2">
                 <div className="w-7 h-7 bg-blue-600 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-base">W</span>
+                  <span className="text-white font-bold text-base">S</span>
                 </div>
-                <span className="text-lg font-bold text-gray-900 dark:text-white">The Watchtower</span>
+                <span className="text-lg font-bold text-gray-900 dark:text-white">SkillStream</span>
               </Link>
             </div>
 
@@ -92,23 +94,12 @@ export const Header: React.FC = () => {
                 Calendar
               </Link>
               {(user?.role === 'TEACHER' || user?.role === 'ADMIN') ? (
-                <>
-                  <Link
-                    to="/analytics"
-                    className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium text-sm"
-                  >
-                    Analytics
-                  </Link>
-                  {user?.role === 'ADMIN' && (
-                    <Link
-                      to="/watchtower"
-                      className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium text-sm flex items-center space-x-1"
-                    >
-                      <span>Watchtower</span>
-                      <span className="px-1.5 py-0.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-xs rounded-full">BI</span>
-                    </Link>
-                  )}
-                </>
+                <Link
+                  to="/analytics"
+                  className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium text-sm"
+                >
+                  Analytics
+                </Link>
               ) : (
                 <Link
                   to="/progress"
