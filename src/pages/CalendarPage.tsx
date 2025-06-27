@@ -9,20 +9,32 @@ import {
   ClockIcon,
   MapPinIcon,
   UserGroupIcon,
-  ExclamationTriangleIcon,
   CheckCircleIcon,
   AcademicCapIcon,
   DocumentTextIcon,
   VideoCameraIcon,
   BookOpenIcon,
-  FlagIcon
+  FlagIcon,
+  FunnelIcon
 } from '@heroicons/react/24/outline';
+
+interface FilterState {
+  eventTypes: Set<string>;
+  priorities: Set<string>;
+  categories: Set<string>;
+}
 
 const CalendarPage: React.FC = () => {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [showEventModal, setShowEventModal] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
+  const [filters, setFilters] = useState<FilterState>({
+    eventTypes: new Set(['lesson', 'quiz', 'video', 'study', 'assignment', 'exam', 'todo']),
+    priorities: new Set(['low', 'medium', 'high', 'urgent']),
+    categories: new Set()
+  });
   const [newEvent, setNewEvent] = useState({
     title: '',
     description: '',
@@ -49,6 +61,75 @@ const CalendarPage: React.FC = () => {
     } catch (error) {
       console.error('Failed to load events:', error);
       setError('Failed to load calendar events');
+      // Mock data for demo
+      setEvents([
+        {
+          id: '1',
+          userId: 'current-user-id',
+          title: 'React Fundamentals - Lesson 1',
+          description: 'Introduction to React components and JSX',
+          startTime: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
+          endTime: new Date(Date.now() + 3 * 60 * 60 * 1000).toISOString(),
+          type: 'lesson',
+          category: 'Programming',
+          priority: 'high'
+        },
+        {
+          id: '2',
+          userId: 'current-user-id',
+          title: 'JavaScript Quiz',
+          description: 'Assessment on JavaScript fundamentals',
+          startTime: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+          endTime: new Date(Date.now() + 24 * 60 * 60 * 1000 + 60 * 60 * 1000).toISOString(),
+          type: 'quiz',
+          category: 'Assessment',
+          priority: 'urgent'
+        },
+        {
+          id: '3',
+          userId: 'current-user-id',
+          title: 'Team Study Session',
+          description: 'Group study session for advanced topics',
+          startTime: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(),
+          endTime: new Date(Date.now() + 48 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000).toISOString(),
+          type: 'study',
+          category: 'Collaboration',
+          priority: 'medium'
+        },
+        {
+          id: '4',
+          userId: 'current-user-id',
+          title: 'Personal Project Review',
+          description: 'Review personal coding project',
+          startTime: new Date(Date.now() + 72 * 60 * 60 * 1000).toISOString(),
+          endTime: new Date(Date.now() + 72 * 60 * 60 * 1000 + 90 * 60 * 1000).toISOString(),
+          type: 'assignment',
+          category: 'Personal',
+          priority: 'low'
+        },
+        {
+          id: '5',
+          userId: 'current-user-id',
+          title: 'Video Conference - Q&A',
+          description: 'Live Q&A session with instructor',
+          startTime: new Date(Date.now() + 96 * 60 * 60 * 1000).toISOString(),
+          endTime: new Date(Date.now() + 96 * 60 * 60 * 1000 + 60 * 60 * 1000).toISOString(),
+          type: 'video',
+          category: 'Live Session',
+          priority: 'high'
+        },
+        {
+          id: '6',
+          userId: 'current-user-id',
+          title: 'Final Exam Preparation',
+          description: 'Comprehensive exam covering all topics',
+          startTime: new Date(Date.now() + 120 * 60 * 60 * 1000).toISOString(),
+          endTime: new Date(Date.now() + 120 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000).toISOString(),
+          type: 'exam',
+          category: 'Assessment',
+          priority: 'urgent'
+        }
+      ]);
     } finally {
       setLoading(false);
     }
@@ -99,8 +180,51 @@ const CalendarPage: React.FC = () => {
   const getEventsForDate = (date: Date) => {
     return events.filter(event => {
       const eventDate = new Date(event.startTime);
-      return eventDate.toDateString() === date.toDateString();
+      const dateMatch = eventDate.toDateString() === date.toDateString();
+      
+      if (!dateMatch) return false;
+      
+      // Apply filters
+      const typeMatch = filters.eventTypes.has(event.type);
+      const priorityMatch = !event.priority || filters.priorities.has(event.priority);
+      const categoryMatch = !event.category || filters.categories.size === 0 || filters.categories.has(event.category);
+      
+      return typeMatch && priorityMatch && categoryMatch;
     });
+  };
+
+  const toggleFilter = (filterType: 'eventTypes' | 'priorities' | 'categories', value: string) => {
+    setFilters(prev => {
+      const newFilters = { ...prev };
+      const currentSet = new Set(newFilters[filterType]);
+      
+      if (currentSet.has(value)) {
+        currentSet.delete(value);
+      } else {
+        currentSet.add(value);
+      }
+      
+      newFilters[filterType] = currentSet;
+      return newFilters;
+    });
+  };
+
+  const clearAllFilters = () => {
+    setFilters({
+      eventTypes: new Set(['lesson', 'quiz', 'video', 'study', 'assignment', 'exam', 'todo']),
+      priorities: new Set(['low', 'medium', 'high', 'urgent']),
+      categories: new Set()
+    });
+  };
+
+  const getEventTypes = () => {
+    const types = new Set(events.map(event => event.type));
+    return Array.from(types);
+  };
+
+  const getCategories = () => {
+    const categories = new Set(events.map(event => event.category).filter((category): category is string => Boolean(category)));
+    return Array.from(categories);
   };
 
   const getEventTypeIcon = (type: CalendarEvent['type']) => {
@@ -257,13 +381,100 @@ const CalendarPage: React.FC = () => {
                   →
                 </button>
               </div>
-              <button
-                onClick={() => setCurrentDate(new Date())}
-                className="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-500"
-              >
-                Today
-              </button>
+              <div className="flex items-center space-x-4">
+                <button
+                  onClick={() => setShowFilters(!showFilters)}
+                  className={`flex items-center px-3 py-2 rounded-lg transition-colors ${
+                    showFilters 
+                      ? 'bg-indigo-600 text-white' 
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  <FunnelIcon className="h-4 w-4 mr-2" />
+                  Filters
+                </button>
+                <button
+                  onClick={() => setCurrentDate(new Date())}
+                  className="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-500"
+                >
+                  Today
+                </button>
+              </div>
             </div>
+
+            {/* Interactive Legend and Filters */}
+            {showFilters && (
+              <div className="mb-6 p-4 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-900">
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="text-sm font-medium text-gray-900 dark:text-white">Filter Events</h4>
+                  <button
+                    onClick={clearAllFilters}
+                    className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline"
+                  >
+                    Clear All
+                  </button>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Event Types */}
+                  <div>
+                    <h5 className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">Event Types</h5>
+                    <div className="space-y-1">
+                      {getEventTypes().map(type => (
+                        <label key={type} className="flex items-center space-x-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={filters.eventTypes.has(type)}
+                            onChange={() => toggleFilter('eventTypes', type)}
+                            className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                          />
+                          <span className="text-xs text-gray-700 dark:text-gray-300 capitalize">{type}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Priorities */}
+                  <div>
+                    <h5 className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">Priorities</h5>
+                    <div className="space-y-1">
+                      {['urgent', 'high', 'medium', 'low'].map(priority => (
+                        <label key={priority} className="flex items-center space-x-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={filters.priorities.has(priority)}
+                            onChange={() => toggleFilter('priorities', priority)}
+                            className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                          />
+                          <span className="text-xs text-gray-700 dark:text-gray-300 capitalize">{priority}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Categories */}
+                  <div>
+                    <h5 className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">Categories</h5>
+                    <div className="space-y-1">
+                      {getCategories().map(category => (
+                        <label key={category} className="flex items-center space-x-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={filters.categories.has(category)}
+                            onChange={() => toggleFilter('categories', category)}
+                            className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                          />
+                          <span className="text-xs text-gray-700 dark:text-gray-300">{category}</span>
+                        </label>
+                      ))}
+                      {getCategories().length === 0 && (
+                        <span className="text-xs text-gray-500 dark:text-gray-400">No categories available</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Calendar Grid */}
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden flex-1">
@@ -283,6 +494,8 @@ const CalendarPage: React.FC = () => {
                   const isCurrentMonth = day.getMonth() === currentDate.getMonth();
                   const isToday = day.toDateString() === new Date().toDateString();
                   const isSelected = selectedDate && day.toDateString() === selectedDate.toDateString();
+                  const hasUrgentEvents = dayEvents.some(event => event.priority === 'urgent');
+                  const hasHighPriorityEvents = dayEvents.some(event => event.priority === 'high');
 
                   return (
                     <div
@@ -292,17 +505,36 @@ const CalendarPage: React.FC = () => {
                         !isCurrentMonth ? 'bg-gray-50 dark:bg-gray-900 text-gray-400' : ''
                       } ${isToday ? 'bg-blue-50 dark:bg-blue-900/20' : ''} ${
                         isSelected ? 'ring-2 ring-indigo-500' : ''
+                      } ${
+                        hasUrgentEvents 
+                          ? 'bg-red-50 dark:bg-red-900/10 border-red-200 dark:border-red-700' 
+                          : hasHighPriorityEvents 
+                          ? 'bg-orange-50 dark:bg-orange-900/10 border-orange-200 dark:border-orange-700' 
+                          : ''
                       }`}
                     >
-                      <div className="text-sm font-medium mb-1">
-                        {day.getDate()}
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="text-sm font-medium">
+                          {day.getDate()}
+                        </div>
+                        {hasUrgentEvents && (
+                          <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                        )}
+                        {!hasUrgentEvents && hasHighPriorityEvents && (
+                          <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+                        )}
                       </div>
                       <div className="space-y-1 flex-1">
                         {dayEvents.slice(0, 3).map((event) => (
                           <div
                             key={event.id}
-                            className={`text-xs p-1 rounded truncate ${getEventTypeColor(event.type)}`}
-                            title={event.title}
+                            className={`text-xs p-1 rounded truncate ${getEventTypeColor(event.type)} ${
+                              event.priority === 'urgent' ? 'border-l-2 border-red-500' :
+                              event.priority === 'high' ? 'border-l-2 border-orange-500' :
+                              event.priority === 'medium' ? 'border-l-2 border-yellow-500' :
+                              event.priority === 'low' ? 'border-l-2 border-green-500' : ''
+                            }`}
+                            title={`${event.title}${event.priority ? ` (${event.priority} priority)` : ''}`}
                           >
                             <div className="flex items-center space-x-1">
                               {getEventTypeIcon(event.type)}
