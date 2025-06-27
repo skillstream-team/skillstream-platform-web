@@ -172,12 +172,6 @@ export const CoursesPage: React.FC = () => {
 
   const handleCreateCourse = async () => {
     try {
-      const courseData = {
-        ...newCourse,
-        teacherId: user?.id || '',
-        isPublished: false,
-        isActive: false
-      };
       
       // In a real app, this would call the API
       const newCourseId = `course-${Date.now()}`;

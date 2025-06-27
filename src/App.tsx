@@ -28,6 +28,7 @@ import AssignmentSubmitPage from './pages/assessments/AssignmentSubmitPage';
 import ProfilePage from './pages/ProfilePage';
 import CallsPage from './pages/CallsPage';
 import { MarketingGuidePage } from './pages/MarketingGuidePage';
+import { EarningsReportPage } from './pages/EarningsReportPage';
 
 // Protected Route Component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -455,6 +456,30 @@ function App() {
                 <ProtectedRoute>
                   <Layout>
                     <MarketingGuidePage />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Earnings Report Route */}
+            <Route
+              path="/earnings-report"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <EarningsReportPage />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Revenue Growth Guide Route */}
+            <Route
+              path="/revenue-growth"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <MarketingGuidePage guideType="revenue" />
                   </Layout>
                 </ProtectedRoute>
               }

@@ -19,8 +19,6 @@ import {
   VideoParticipant,
   VideoSession,
   CalendarEvent,
-  ApiResponse,
-  PaginatedResponse,
   ForumCategory,
   ForumThread,
   ForumReply,
@@ -764,4 +762,295 @@ class ApiService {
 
 // Create and export a singleton instance
 export const apiService = new ApiService();
-export default apiService; 
+export default apiService;
+
+// Payout Request Interface
+export interface PayoutRequest {
+  id: string;
+  tutorId: string;
+  amount: number;
+  paymentMethod: 'bank' | 'paypal' | 'paynow';
+  status: 'requested' | 'scheduled' | 'processing' | 'completed' | 'failed';
+  requestedDate: string;
+  scheduledDate?: string;
+  completedDate?: string;
+  payoutMonth: string;
+  invoiceUrl?: string;
+  receiptUrl?: string;
+}
+
+// Revenue Data Interface
+export interface RevenueData {
+  currentMonthEarnings: number;
+  pendingPayout: number;
+  lifetimeEarnings: number;
+  availableBalance: number;
+  lastPayoutDate?: string;
+  nextPayoutDate: string;
+  payoutCutoffDate: string;
+}
+
+// Mock payout requests storage
+let payoutRequests: PayoutRequest[] = [
+  {
+    id: '1',
+    tutorId: 'tutor-1',
+    amount: 1250.00,
+    paymentMethod: 'bank',
+    status: 'completed',
+    requestedDate: '2024-01-10',
+    scheduledDate: '2024-01-31',
+    completedDate: '2024-01-31',
+    payoutMonth: 'January 2024',
+    invoiceUrl: '/api/payouts/1/invoice',
+    receiptUrl: '/api/payouts/1/receipt'
+  },
+  {
+    id: '2',
+    tutorId: 'tutor-1',
+    amount: 2847.50,
+    paymentMethod: 'bank',
+    status: 'scheduled',
+    requestedDate: '2024-01-20',
+    scheduledDate: '2024-01-31',
+    payoutMonth: 'January 2024'
+  }
+];
+
+// Mock revenue data
+const mockRevenueData: RevenueData = {
+  currentMonthEarnings: 2847.50,
+  pendingPayout: 2847.50,
+  lifetimeEarnings: 15680.25,
+  availableBalance: 2847.50,
+  lastPayoutDate: '2024-01-31',
+  nextPayoutDate: 'January 31, 2024',
+  payoutCutoffDate: 'January 25, 2024'
+};
+
+// Payout-related API methods
+export const payoutApi = {
+  // Get tutor revenue summary
+  getTutorRevenue: async (): Promise<RevenueData> => {
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    // In real implementation, this would query the database
+    // and calculate earnings from User, Course, Subscription, Transaction models
+    return mockRevenueData;
+  },
+
+  // Submit a payout request
+  requestPayout: async (request: {
+    tutorId: string;
+    amount: number;
+    paymentMethod: 'bank' | 'paypal' | 'paynow';
+  }): Promise<PayoutRequest> => {
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Validate amount against available balance
+    if (request.amount > mockRevenueData.availableBalance) {
+      throw new Error('Requested amount exceeds available balance');
+    }
+    
+    // Create new payout request
+    const newRequest: PayoutRequest = {
+      id: `payout-${Date.now()}`,
+      tutorId: request.tutorId,
+      amount: request.amount,
+      paymentMethod: request.paymentMethod,
+      status: 'requested',
+      requestedDate: new Date().toISOString(),
+      payoutMonth: new Date().toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'long' 
+      })
+    };
+    
+    // Add to mock storage
+    payoutRequests.push(newRequest);
+    
+    // In real implementation, this would:
+    // 1. Save to PayoutRequest model in database
+    // 2. Send notification to finance team
+    // 3. Log the request for audit purposes
+    
+    console.log('Payout request submitted:', newRequest);
+    
+    return newRequest;
+  },
+
+  // Get payout requests for a tutor
+  getPayoutRequests: async (tutorId: string): Promise<PayoutRequest[]> => {
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 300));
+    
+    // Filter requests for this tutor
+    return payoutRequests.filter(req => req.tutorId === tutorId);
+  },
+
+  // Get detailed earnings report
+  getEarningsReport: async (tutorId: string): Promise<any> => {
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 800));
+    
+    // In real implementation, this would:
+    // 1. Query User, Course, Subscription, Transaction models
+    // 2. Calculate earnings based on 70% tutor share
+    // 3. Aggregate data by course, client type, etc.
+    // 4. Generate monthly trends
+    
+    return {
+      currentMonth: 2847.50,
+      previousMonth: 2150.00,
+      yearToDate: 15680.25,
+      lifetime: 15680.25,
+      skillstreamShare: 6723.54,
+      tutorShare: 15680.25,
+      courses: [
+        {
+          courseId: '1',
+          courseTitle: 'Advanced React Development',
+          individualEarnings: 1250.00,
+          corporateEarnings: 800.00,
+          totalEarnings: 2050.00,
+          enrollments: 45,
+          completionRate: 78
+        }
+      ],
+      transactions: [
+        {
+          id: '1',
+          type: 'enrollment',
+          amount: 150.00,
+          description: 'New enrollment in Advanced React Development',
+          date: '2024-01-20',
+          status: 'completed',
+          courseTitle: 'Advanced React Development',
+          studentName: 'John Doe',
+          clientType: 'individual'
+        }
+      ],
+      monthlyTrends: [
+        { month: 'Jan 2024', earnings: 2847.50 },
+        { month: 'Dec 2023', earnings: 2150.00 }
+      ],
+      pendingPayoutRequests: payoutRequests.filter(req => 
+        req.tutorId === tutorId && req.status === 'scheduled'
+      ),
+      nextPayoutDate: 'January 31, 2024',
+      payoutCutoffDate: 'January 25, 2024'
+    };
+  },
+
+  // Download invoice/receipt (mock)
+  downloadInvoice: async (payoutId: string): Promise<string> => {
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    // In real implementation, this would:
+    // 1. Generate PDF invoice using a library like PDFKit or Puppeteer
+    // 2. Include tutor details, amount, date, SkillStream branding
+    // 3. Store in cloud storage (S3, etc.)
+    // 4. Return download URL
+    
+    return `https://api.skillstream.com/payouts/${payoutId}/invoice.pdf`;
+  },
+
+  downloadReceipt: async (payoutId: string): Promise<string> => {
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    // In real implementation, this would:
+    // 1. Generate PDF receipt with payment confirmation
+    // 2. Include transaction details, payment method, etc.
+    // 3. Store in cloud storage
+    // 4. Return download URL
+    
+    return `https://api.skillstream.com/payouts/${payoutId}/receipt.pdf`;
+  }
+};
+
+// Mock monthly payout processing (simulates backend scheduled task)
+export const monthlyPayoutProcessor = {
+  // This would be a scheduled task that runs monthly
+  processMonthlyPayouts: async () => {
+    console.log('Starting monthly payout processing...');
+    
+    // Get all pending payout requests
+    const pendingRequests = payoutRequests.filter(req => req.status === 'requested');
+    
+    for (const request of pendingRequests) {
+      try {
+        // 1. Calculate actual earned amount for the month
+        const actualEarnings = await calculateActualEarnings();
+        
+        // 2. Determine payout amount (lesser of requested vs earned)
+        const payoutAmount = Math.min(request.amount, actualEarnings);
+        
+        // 3. Update request status
+        request.status = 'processing';
+        request.scheduledDate = new Date().toISOString();
+        
+        // 4. Initiate payment via payment processor
+        const paymentResult = await initiatePayment();
+        
+        if (paymentResult.success) {
+          // 5. Mark as completed
+          request.status = 'completed';
+          request.completedDate = new Date().toISOString();
+          
+          // 6. Generate invoice and receipt
+          request.invoiceUrl = await payoutApi.downloadInvoice(request.id);
+          request.receiptUrl = await payoutApi.downloadReceipt(request.id);
+          
+          // 7. Send notification to tutor
+          await sendPayoutNotification(request.tutorId, {
+            type: 'payout_completed',
+            amount: payoutAmount,
+            date: request.completedDate
+          });
+          
+          console.log(`Payout completed for tutor ${request.tutorId}: ${payoutAmount}`);
+        } else {
+          request.status = 'failed';
+          console.error(`Payout failed for tutor ${request.tutorId}:`, paymentResult.error);
+        }
+      } catch (error) {
+        request.status = 'failed';
+        console.error(`Error processing payout for tutor ${request.tutorId}:`, error);
+      }
+    }
+    
+    console.log('Monthly payout processing completed');
+  }
+};
+
+// Helper functions (would be implemented in backend)
+async function calculateActualEarnings(): Promise<number> {
+  // In real implementation, this would query the database
+  // and calculate earnings from all transactions for the month
+  return 2847.50; // Mock value
+}
+
+async function initiatePayment(): Promise<{ success: boolean; error?: string }> {
+  // In real implementation, this would integrate with:
+  // - Paynow API
+  // - PayPal API
+  // - ContiPay API
+  // - Bank transfer systems
+  
+  // Simulate payment processing
+  await new Promise(resolve => setTimeout(resolve, 2000));
+  
+  // Mock success (90% success rate)
+  return Math.random() > 0.1 
+    ? { success: true }
+    : { success: false, error: 'Payment processor error' };
+}
+
+async function sendPayoutNotification(tutorId: string, data: any): Promise<void> {
+  // In real implementation, this would send email/SMS notifications
+  console.log(`Notification sent to tutor ${tutorId}:`, data);
+} 

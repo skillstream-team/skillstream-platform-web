@@ -22,7 +22,11 @@ interface MarketingTemplate {
   tags: string[];
 }
 
-export const MarketingGuidePage: React.FC = () => {
+interface MarketingGuidePageProps {
+  guideType?: 'marketing' | 'revenue';
+}
+
+export const MarketingGuidePage: React.FC<MarketingGuidePageProps> = ({ guideType = 'marketing' }) => {
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
   const courseId = searchParams.get('courseId');
@@ -143,6 +147,8 @@ Check out all the incredible courses available: [SKILLSTREAM PLATFORM GENERAL LI
     window.open(url, '_blank');
   };
 
+  const isRevenueGuide = guideType === 'revenue';
+
   if (!course) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -169,10 +175,12 @@ Check out all the incredible courses available: [SKILLSTREAM PLATFORM GENERAL LI
               </div>
               <div>
                 <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-                  How to Grow Your Creative Reach!
+                  {isRevenueGuide ? 'How to Grow Your Revenue!' : 'How to Grow Your Creative Reach!'}
                 </h1>
                 <p className="text-gray-600 dark:text-gray-300 mt-1">
-                  Marketing templates and strategies to promote your course
+                  {isRevenueGuide
+                    ? 'Revenue-focused strategies and templates to help you boost your earnings on SkillStream.'
+                    : 'Marketing templates and strategies to promote your course'}
                 </p>
               </div>
             </div>
