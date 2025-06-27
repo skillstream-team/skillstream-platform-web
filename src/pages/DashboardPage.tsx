@@ -18,12 +18,16 @@ export const DashboardPage: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between py-6">
             <div className="flex items-center space-x-4">
+              <Activity className="h-8 w-8 text-blue-600" />
               <div>
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                  Dashboard
+                  {user?.role === 'TEACHER' ? 'Creation Overview!' : 'Learning Overview'}
                 </h1>
-                <p className="text-gray-600 dark:text-gray-300">
-                  Welcome back, {user?.name}! {user?.role === 'TEACHER' ? "Here's your creation overview!" : "Here's your learning overview"}
+                <p className="text-gray-600 dark:text-gray-300 mt-1">
+                  {user?.role === 'TEACHER' 
+                    ? 'Track your course performance and student engagement'
+                    : 'Track your learning progress and achievements'
+                  }
                 </p>
               </div>
             </div>

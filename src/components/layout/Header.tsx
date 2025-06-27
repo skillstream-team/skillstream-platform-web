@@ -87,32 +87,25 @@ export const Header: React.FC = () => {
               >
                 Courses
               </Link>
-              <Link
-                to="/calendar"
-                className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium text-sm"
-              >
-                Calendar
-              </Link>
-              {(user?.role === 'TEACHER' || user?.role === 'ADMIN') ? (
+              {(user?.role === 'TEACHER' || user?.role === 'ADMIN') && (
                 <Link
                   to="/analytics"
                   className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium text-sm"
                 >
                   Analytics
                 </Link>
-              ) : (
-                <Link
-                  to="/progress"
-                  className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium text-sm"
-                >
-                  Progress
-                </Link>
               )}
               <Link
-                to="/study-groups"
+                to="/calendar"
                 className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium text-sm"
               >
-                People & Groups
+                Calendar
+              </Link>
+              <Link
+                to="/messages"
+                className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium text-sm"
+              >
+                Messages
               </Link>
             </nav>
 
@@ -282,14 +275,7 @@ export const Header: React.FC = () => {
                 >
                   Courses
                 </Link>
-                <Link
-                  to="/calendar"
-                  className="block px-3 py-1.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-sm"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  Calendar
-                </Link>
-                {(user?.role === 'TEACHER' || user?.role === 'ADMIN') ? (
+                {(user?.role === 'TEACHER' || user?.role === 'ADMIN') && (
                   <Link
                     to="/analytics"
                     className="block px-3 py-1.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-sm"
@@ -297,21 +283,20 @@ export const Header: React.FC = () => {
                   >
                     Analytics
                   </Link>
-                ) : (
-                  <Link
-                    to="/progress"
-                    className="block px-3 py-1.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-sm"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    Progress
-                  </Link>
                 )}
                 <Link
-                  to="/study-groups"
+                  to="/calendar"
                   className="block px-3 py-1.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-sm"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
-                  People & Groups
+                  Calendar
+                </Link>
+                <Link
+                  to="/messages"
+                  className="block px-3 py-1.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-sm"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  Messages
                 </Link>
                 <Link
                   to="/profile"

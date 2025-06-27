@@ -24,6 +24,10 @@ export interface Course {
   duration?: string;
   rating?: number;
   enrolledStudents?: number;
+  completionRate?: number;
+  revenue?: number;
+  status?: 'draft' | 'published' | 'archived';
+  lastUpdated?: string;
   isPaid: boolean;
   price?: number;
   isPublished?: boolean;

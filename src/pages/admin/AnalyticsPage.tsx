@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BackButton } from '../../components/common/BackButton';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { 
   Users, 
   BookOpen, 
@@ -947,6 +947,50 @@ export const AnalyticsPage: React.FC = () => {
                   <Users className="h-5 w-5 mr-3" />
                   <span className="font-medium">View Students</span>
                 </button>
+              </div>
+            </div>
+
+            {/* Top Performing Courses */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  Top Performing Courses
+                </h3>
+                <Link
+                  to="/courses"
+                  className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 text-sm font-medium"
+                >
+                  View All Courses →
+                </Link>
+              </div>
+              <div className="space-y-4">
+                {courseAnalytics
+                  .filter(course => course.revenue > 0)
+                  .sort((a, b) => b.revenue - a.revenue)
+                  .slice(0, 3)
+                  .map((course, index) => (
+                    <div key={course.courseId} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                      <div className="flex items-center space-x-4">
+                        <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-semibold">
+                          {index + 1}
+                        </div>
+                        <div>
+                          <h4 className="font-medium text-gray-900 dark:text-white">
+                            {course.courseTitle}
+                          </h4>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">
+                            {course.enrollmentCount} students • {course.completionRate}% completion
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-lg font-semibold text-emerald-600 dark:text-emerald-400">
+                          ${course.revenue.toLocaleString()}
+                        </p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Total revenue</p>
+                      </div>
+                    </div>
+                  ))}
               </div>
             </div>
           </>

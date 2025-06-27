@@ -19,7 +19,6 @@ import { WebSocketMessage } from './types';
 import CalendarPage from './pages/CalendarPage';
 import { ProgressTracker } from './components/progress/ProgressTracker';
 import { StudyGroups } from './components/collaboration/StudyGroups';
-import { CourseBuilder } from './components/course-builder/CourseBuilder';
 import { ForumBoard } from './components/forum/ForumBoard';
 import { FileManagementPage } from './pages/FileManagementPage';
 import { MessagesPage } from './pages/MessagesPage';
@@ -28,6 +27,7 @@ import AssignmentsPage from './pages/assessments/AssignmentsPage';
 import AssignmentSubmitPage from './pages/assessments/AssignmentSubmitPage';
 import ProfilePage from './pages/ProfilePage';
 import CallsPage from './pages/CallsPage';
+import { MarketingGuidePage } from './pages/MarketingGuidePage';
 
 // Protected Route Component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -232,7 +232,7 @@ function App() {
               }
             />
             <Route
-              path="/courses/:id/learning"
+              path="/courses/:id/learn"
               element={
                 <ProtectedRoute>
                   <Layout>
@@ -311,26 +311,6 @@ function App() {
                         <StudyGroups />
                       </div>
                     </div>
-                  </Layout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/course-builder"
-              element={
-                <ProtectedRoute>
-                  <Layout>
-                    <CourseBuilder />
-                  </Layout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/course-builder/:id"
-              element={
-                <ProtectedRoute>
-                  <Layout>
-                    <CourseBuilder />
                   </Layout>
                 </ProtectedRoute>
               }
@@ -464,6 +444,18 @@ function App() {
               element={
                 <ProtectedRoute>
                   <CallsPage />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Marketing Guide Route */}
+            <Route
+              path="/marketing-guide"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <MarketingGuidePage />
+                  </Layout>
                 </ProtectedRoute>
               }
             />

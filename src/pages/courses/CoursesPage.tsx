@@ -1,30 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { 
   BookOpen, 
   Users, 
   Clock, 
   Star, 
   Search, 
-  Filter, 
   Grid, 
   List,
-  Play,
-  Download,
-  Calendar,
-  CheckCircle,
-  Circle,
-  ArrowLeft,
   Plus,
-  MessageCircle,
-  Video,
-  Bell,
-  Share2,
   Edit3,
   BarChart3,
-  GraduationCap,
-  Eye,
-  Settings
+  Zap,
+  Save,
+  X
 } from 'lucide-react';
 import { apiService } from '../../services/api';
 import { Course } from '../../types';
@@ -34,6 +23,7 @@ import { useAuthStore } from '../../store/auth';
 
 export const CoursesPage: React.FC = () => {
   const { user } = useAuthStore();
+  const navigate = useNavigate();
   const isTeacher = user?.role === 'TEACHER';
   
   const [courses, setCourses] = useState<Course[]>([]);
@@ -47,6 +37,14 @@ export const CoursesPage: React.FC = () => {
   });
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [isLoading, setIsLoading] = useState(true);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [newCourse, setNewCourse] = useState({
+    title: '',
+    description: '',
+    category: '',
+    price: 0,
+    isPaid: false
+  });
 
   const categories = [
     'Web Development',
@@ -165,6 +163,62 @@ export const CoursesPage: React.FC = () => {
     return { totalStudents, activeStudents, completionRate };
   };
 
+  const getTopPerformingCourses = () => {
+    return courses
+      .filter(course => course.status === 'published' && typeof course.revenue === 'number')
+      .sort((a, b) => (b.revenue ?? 0) - (a.revenue ?? 0))
+      .slice(0, 3);
+  };
+
+  const handleCreateCourse = async () => {
+    try {
+      const courseData = {
+        ...newCourse,
+        teacherId: user?.id || '',
+        isPublished: false,
+        isActive: false
+      };
+      
+      // In a real app, this would call the API
+      const newCourseId = `course-${Date.now()}`;
+      const createdCourse: Course = {
+        id: newCourseId,
+        title: newCourse.title,
+        description: newCourse.description,
+        category: newCourse.category,
+        price: newCourse.price,
+        isPaid: newCourse.isPaid,
+        teacherId: user?.id || '',
+        teacher: {
+          id: user?.id || '',
+          name: user?.name || '',
+          email: user?.email || '',
+          role: user?.role || 'TEACHER',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        },
+        lessons: [],
+        materials: [],
+        enrollments: [],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      
+      setCourses(prev => [createdCourse, ...prev]);
+      setShowCreateModal(false);
+      setNewCourse({ title: '', description: '', category: '', price: 0, isPaid: false });
+      
+      // Navigate to the new course for editing
+      navigate(`/courses/${newCourseId}`);
+    } catch (error) {
+      console.error('Error creating course:', error);
+    }
+  };
+
+  const handleBoostCourse = (courseId: string) => {
+    navigate(`/marketing-guide?courseId=${courseId}`);
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -198,13 +252,13 @@ export const CoursesPage: React.FC = () => {
             </div>
             <div className="mt-4 sm:mt-0 flex flex-col sm:flex-row gap-3">
               {isTeacher && (
-                <Link
-                  to="/course-builder"
+                <button
+                  onClick={() => setShowCreateModal(true)}
                   className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   Create Course
-                </Link>
+                </button>
               )}
             </div>
           </div>
@@ -212,6 +266,80 @@ export const CoursesPage: React.FC = () => {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Top Performing Courses Section (for teachers) */}
+        {isTeacher && getTopPerformingCourses().length > 0 && (
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                Top Performing Courses
+              </h2>
+              <Link
+                to="/analytics"
+                className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 text-sm font-medium"
+              >
+                View All Analytics →
+              </Link>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {getTopPerformingCourses().map(course => (
+                <div
+                  key={course.id}
+                  className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6"
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-semibold text-gray-900 dark:text-white line-clamp-2">
+                      {course.title}
+                    </h3>
+                    <button
+                      onClick={() => handleBoostCourse(course.id)}
+                      className="flex items-center px-3 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all duration-200 transform hover:scale-105"
+                    >
+                      <Zap className="h-4 w-4 mr-2" />
+                      Boost!
+                    </button>
+                  </div>
+                  
+                  <div className="space-y-3 mb-4">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-500 dark:text-gray-400">Enrolled Students</span>
+                      <span className="font-medium text-gray-900 dark:text-white">
+                        {course.enrolledStudents?.toLocaleString() || 0}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-500 dark:text-gray-400">Completion Rate</span>
+                      <span className="font-medium text-gray-900 dark:text-white">
+                        {course.completionRate || 0}%
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-500 dark:text-gray-400">Revenue</span>
+                      <span className="font-medium text-emerald-600 dark:text-emerald-400">
+                        ${(course.revenue ?? 0).toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div className="flex space-x-2">
+                    <Link
+                      to={`/courses/${course.id}`}
+                      className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-center text-sm"
+                    >
+                      Manage
+                    </Link>
+                    <Link
+                      to={`/analytics?courseId=${course.id}`}
+                      className="px-3 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                    >
+                      <BarChart3 className="h-4 w-4" />
+                    </Link>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Search and Filters */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-col sm:flex-row gap-4 mb-4 sm:mb-0">
@@ -289,13 +417,13 @@ export const CoursesPage: React.FC = () => {
               }
             </p>
             {isTeacher && (
-              <Link
-                to="/course-builder"
+              <button
+                onClick={() => setShowCreateModal(true)}
                 className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Create Your First Course
-              </Link>
+              </button>
             )}
           </div>
         ) : (
@@ -445,9 +573,17 @@ export const CoursesPage: React.FC = () => {
                             )}
                           </div>
                           <div className="flex space-x-2">
+                            {isTeacher && course.status === 'published' && (
+                              <button
+                                onClick={() => handleBoostCourse(course.id)}
+                                className="px-3 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition-colors font-medium text-sm"
+                              >
+                                <Zap className="h-4 w-4" />
+                              </button>
+                            )}
                             {isTeacher && (
                               <Link
-                                to={`/course-builder/${course.id}`}
+                                to={`/courses/${course.id}`}
                                 className="px-3 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium text-sm"
                               >
                                 <Edit3 className="h-4 w-4" />
@@ -550,9 +686,17 @@ export const CoursesPage: React.FC = () => {
                             </div>
                           )}
                           <div className="flex space-x-2 mt-2">
+                            {isTeacher && course.status === 'published' && (
+                              <button
+                                onClick={() => handleBoostCourse(course.id)}
+                                className="px-3 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition-colors"
+                              >
+                                <Zap className="h-4 w-4" />
+                              </button>
+                            )}
                             {isTeacher && (
                               <Link
-                                to={`/course-builder/${course.id}`}
+                                to={`/courses/${course.id}`}
                                 className="px-3 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
                               >
                                 <Edit3 className="h-4 w-4" />
@@ -575,6 +719,118 @@ export const CoursesPage: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Create Course Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                Create New Course
+              </h2>
+              <button
+                onClick={() => setShowCreateModal(false)}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Course Title
+                </label>
+                <input
+                  type="text"
+                  value={newCourse.title}
+                  onChange={(e) => setNewCourse(prev => ({ ...prev, title: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                  placeholder="Enter course title"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Description
+                </label>
+                <textarea
+                  value={newCourse.description}
+                  onChange={(e) => setNewCourse(prev => ({ ...prev, description: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                  rows={3}
+                  placeholder="Enter course description"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Category
+                </label>
+                <select
+                  value={newCourse.category}
+                  onChange={(e) => setNewCourse(prev => ({ ...prev, category: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                >
+                  <option value="">Select category</option>
+                  {categories.map(category => (
+                    <option key={category} value={category}>{category}</option>
+                  ))}
+                </select>
+              </div>
+              
+              <div className="flex items-center space-x-4">
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="isPaid"
+                    checked={newCourse.isPaid}
+                    onChange={(e) => setNewCourse(prev => ({ ...prev, isPaid: e.target.checked }))}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <label htmlFor="isPaid" className="ml-2 text-sm text-gray-700 dark:text-gray-300">
+                    Paid Course
+                  </label>
+                </div>
+              </div>
+              
+              {newCourse.isPaid && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Price ($)
+                  </label>
+                  <input
+                    type="number"
+                    value={newCourse.price}
+                    onChange={(e) => setNewCourse(prev => ({ ...prev, price: parseFloat(e.target.value) || 0 }))}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                    placeholder="0.00"
+                    min="0"
+                    step="0.01"
+                  />
+                </div>
+              )}
+            </div>
+            
+            <div className="flex space-x-3 mt-6">
+              <button
+                onClick={() => setShowCreateModal(false)}
+                className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCreateCourse}
+                disabled={!newCourse.title || !newCourse.description || !newCourse.category}
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Save className="h-4 w-4 mr-2 inline" />
+                Create Course
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }; 
