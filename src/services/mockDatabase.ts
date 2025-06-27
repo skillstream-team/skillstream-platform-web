@@ -1256,3 +1256,224 @@ export const mockAssignments = [
     priority: 'low'
   }
 ];
+
+// Mock student profiles data
+export const mockStudentProfiles = [
+  {
+    id: 'student-1',
+    name: 'John Doe',
+    email: 'john.doe@example.com',
+    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80',
+    department: 'Computer Science',
+    enrollmentDate: '2024-01-15T00:00:00Z',
+    totalCourses: 4,
+    completedCourses: 2,
+    averageScore: 87.5,
+    totalAssignments: 12,
+    completedAssignments: 8,
+    pendingAssignments: 3,
+    overdueAssignments: 1,
+    lastActivity: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
+    isOnline: true,
+    status: 'active',
+    progress: [
+      {
+        courseId: 'course-1',
+        userId: 'student-1',
+        completedLessons: 8,
+        totalLessons: 12,
+        completedQuizzes: 3,
+        totalQuizzes: 5,
+        completedAssignments: 2,
+        totalAssignments: 4,
+        overallProgress: 75,
+        timeSpent: 480,
+        lastActivity: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+        achievements: ['First Assignment', 'Quiz Master'],
+        streak: 5
+      }
+    ],
+    achievements: ['First Assignment', 'Quiz Master', 'Perfect Score'],
+    timeSpent: 1200
+  },
+  {
+    id: 'student-2',
+    name: 'Jane Smith',
+    email: 'jane.smith@example.com',
+    avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80',
+    department: 'Computer Science',
+    enrollmentDate: '2024-01-10T00:00:00Z',
+    totalCourses: 3,
+    completedCourses: 1,
+    averageScore: 92.3,
+    totalAssignments: 10,
+    completedAssignments: 7,
+    pendingAssignments: 2,
+    overdueAssignments: 1,
+    lastActivity: new Date(Date.now() - 30 * 60 * 1000).toISOString(), // 30 minutes ago
+    isOnline: true,
+    status: 'active',
+    progress: [
+      {
+        courseId: 'course-1',
+        userId: 'student-2',
+        completedLessons: 10,
+        totalLessons: 12,
+        completedQuizzes: 4,
+        totalQuizzes: 5,
+        completedAssignments: 3,
+        totalAssignments: 4,
+        overallProgress: 85,
+        timeSpent: 600,
+        lastActivity: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+        achievements: ['Perfect Score', 'Quick Learner'],
+        streak: 8
+      }
+    ],
+    achievements: ['Perfect Score', 'Quick Learner', 'Consistent Performer'],
+    timeSpent: 900
+  },
+  {
+    id: 'student-3',
+    name: 'Mike Johnson',
+    email: 'mike.johnson@example.com',
+    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80',
+    department: 'Computer Science',
+    enrollmentDate: '2024-01-20T00:00:00Z',
+    totalCourses: 2,
+    completedCourses: 0,
+    averageScore: 78.9,
+    totalAssignments: 6,
+    completedAssignments: 3,
+    pendingAssignments: 2,
+    overdueAssignments: 1,
+    lastActivity: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), // 1 day ago
+    isOnline: false,
+    status: 'active',
+    progress: [
+      {
+        courseId: 'course-1',
+        userId: 'student-3',
+        completedLessons: 5,
+        totalLessons: 12,
+        completedQuizzes: 2,
+        totalQuizzes: 5,
+        completedAssignments: 1,
+        totalAssignments: 4,
+        overallProgress: 45,
+        timeSpent: 240,
+        lastActivity: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+        achievements: ['First Lesson'],
+        streak: 2
+      }
+    ],
+    achievements: ['First Lesson'],
+    timeSpent: 300
+  }
+];
+
+// Mock assignment submission summaries
+export const mockAssignmentSubmissionSummaries = [
+  {
+    assignmentId: 'assign-1',
+    assignmentTitle: 'React Fundamentals - Final Project',
+    courseId: 'course-1',
+    courseTitle: 'Web Development',
+    totalStudents: 15,
+    submittedCount: 3,
+    pendingCount: 10,
+    gradedCount: 0,
+    overdueCount: 2,
+    averageScore: 0,
+    dueDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+    status: 'overdue',
+    submissions: [
+      {
+        studentId: 'student-1',
+        studentName: 'John Doe',
+        studentEmail: 'john.doe@example.com',
+        studentAvatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80',
+        submissionId: 'sub-1',
+        status: 'submitted',
+        submittedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+        score: undefined,
+        feedback: undefined,
+        isLate: true,
+        attachments: ['project.zip', 'README.md'],
+        lastActivity: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()
+      },
+      {
+        studentId: 'student-2',
+        studentName: 'Jane Smith',
+        studentEmail: 'jane.smith@example.com',
+        studentAvatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80',
+        submissionId: 'sub-2',
+        status: 'submitted',
+        submittedAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
+        score: undefined,
+        feedback: undefined,
+        isLate: false,
+        attachments: ['react-app.zip', 'documentation.pdf'],
+        lastActivity: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString()
+      },
+      {
+        studentId: 'student-3',
+        studentName: 'Mike Johnson',
+        studentEmail: 'mike.johnson@example.com',
+        studentAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80',
+        submissionId: undefined,
+        status: 'overdue',
+        submittedAt: undefined,
+        score: undefined,
+        feedback: undefined,
+        isLate: true,
+        attachments: [],
+        lastActivity: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+      }
+    ]
+  },
+  {
+    assignmentId: 'assign-3',
+    assignmentTitle: 'CSS Layout Assignment',
+    courseId: 'course-3',
+    courseTitle: 'Frontend Design',
+    totalStudents: 10,
+    submittedCount: 7,
+    pendingCount: 3,
+    gradedCount: 0,
+    overdueCount: 0,
+    averageScore: 0,
+    dueDate: new Date().toISOString(),
+    status: 'due-today',
+    submissions: [
+      {
+        studentId: 'student-1',
+        studentName: 'John Doe',
+        studentEmail: 'john.doe@example.com',
+        studentAvatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80',
+        submissionId: 'sub-3',
+        status: 'submitted',
+        submittedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+        score: undefined,
+        feedback: undefined,
+        isLate: false,
+        attachments: ['layout.html', 'styles.css'],
+        lastActivity: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
+      },
+      {
+        studentId: 'student-2',
+        studentName: 'Jane Smith',
+        studentEmail: 'jane.smith@example.com',
+        studentAvatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80',
+        submissionId: 'sub-4',
+        status: 'submitted',
+        submittedAt: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+        score: undefined,
+        feedback: undefined,
+        isLate: false,
+        attachments: ['responsive-layout.zip'],
+        lastActivity: new Date(Date.now() - 30 * 60 * 1000).toISOString()
+      }
+    ]
+  }
+];

@@ -5,36 +5,28 @@ import {
   Users, 
   Clock, 
   Star, 
-  Award, 
   Play, 
   Check, 
   MessageSquare,
   Award as AwardIcon,
   User,
   ChevronDown,
-  Lock,
-  Calendar,
   FileText,
   Video,
-  Download,
-  ExternalLink,
   CreditCard,
   Shield,
   X,
   ArrowRight,
   Edit3,
   BarChart3,
-  Settings,
-  Eye,
   GraduationCap,
   TrendingUp,
   Activity
 } from 'lucide-react';
-import { apiService } from '../../services/api';
-import { Course, Lesson, Material } from '../../types';
+import { Course } from '../../types';
 import { BackButton } from '../../components/common/BackButton';
 import { ForumBoard } from '../../components/forum/ForumBoard';
-import { getCourseDetails, dummyCourses, getMockLessons, getMockMaterials } from '../../data/courseData';
+import { getCourseDetails, dummyCourses } from '../../data/courseData';
 import { useAuthStore } from '../../store/auth';
 
 export const CourseDetailPage: React.FC = () => {
@@ -44,8 +36,6 @@ export const CourseDetailPage: React.FC = () => {
   const isTeacher = user?.role === 'TEACHER';
   
   const [course, setCourse] = useState<Course | null>(null);
-  const [lessons, setLessons] = useState<Lesson[]>([]);
-  const [materials, setMaterials] = useState<Material[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isEnrolled, setIsEnrolled] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
@@ -86,12 +76,6 @@ export const CourseDetailPage: React.FC = () => {
       
       if (dummyCourse) {
         setCourse(dummyCourse);
-        // Use mock lessons and materials that match server structure
-        const mockLessonsData = getMockLessons(id);
-        const mockMaterialsData = getMockMaterials(id);
-        
-        setLessons(mockLessonsData);
-        setMaterials(mockMaterialsData);
         setIsEnrolled(false); // Default to not enrolled for dummy data
       }
       
@@ -208,7 +192,7 @@ export const CourseDetailPage: React.FC = () => {
             {isOwnCourse && (
               <div className="flex space-x-3">
                 <Link
-                  to={`/course-builder/${course.id}`}
+                  to={`/courses/${course.id}/edit`}
                   className="flex items-center px-4 py-2 bg-white bg-opacity-20 text-white rounded-lg hover:bg-opacity-30 transition-colors"
                 >
                   <Edit3 className="h-4 w-4 mr-2" />
@@ -277,7 +261,7 @@ export const CourseDetailPage: React.FC = () => {
                   )}
                   <div className="mt-6 pt-4 border-t border-white border-opacity-20">
                     <Link
-                      to={`/course-builder/${course.id}`}
+                      to={`/courses/${course.id}/edit`}
                       className="w-full bg-white text-blue-600 font-semibold py-3 px-6 rounded-lg hover:bg-gray-100 transition-colors block text-center"
                     >
                       Manage Course

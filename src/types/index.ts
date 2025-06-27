@@ -616,4 +616,59 @@ export interface SearchResult {
   courses: Course[];
   total: number;
   filters: SearchFilters;
+}
+
+// Student Profile Types
+export interface StudentProfile {
+  id: string;
+  name: string;
+  email: string;
+  avatar?: string;
+  department?: string;
+  enrollmentDate: string;
+  totalCourses: number;
+  completedCourses: number;
+  averageScore: number;
+  totalAssignments: number;
+  completedAssignments: number;
+  pendingAssignments: number;
+  overdueAssignments: number;
+  lastActivity: string;
+  isOnline: boolean;
+  status: 'active' | 'inactive' | 'suspended';
+  progress: Progress[];
+  achievements: string[];
+  timeSpent: number; // in minutes
+}
+
+// Assignment Submission Tracking
+export interface AssignmentSubmissionSummary {
+  assignmentId: string;
+  assignmentTitle: string;
+  courseId: string;
+  courseTitle: string;
+  totalStudents: number;
+  submittedCount: number;
+  pendingCount: number;
+  gradedCount: number;
+  overdueCount: number;
+  averageScore: number;
+  dueDate: string;
+  status: 'upcoming' | 'due-today' | 'overdue' | 'completed';
+  submissions: StudentSubmission[];
+}
+
+export interface StudentSubmission {
+  studentId: string;
+  studentName: string;
+  studentEmail: string;
+  studentAvatar?: string;
+  submissionId?: string;
+  status: 'pending' | 'submitted' | 'graded' | 'overdue';
+  submittedAt?: string;
+  score?: number;
+  feedback?: string;
+  isLate: boolean;
+  attachments: string[];
+  lastActivity: string;
 } 

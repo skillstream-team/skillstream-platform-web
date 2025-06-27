@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { 
   BookOpen, 
   Users, 
@@ -24,6 +24,7 @@ import { useAuthStore } from '../../store/auth';
 export const CoursesPage: React.FC = () => {
   const { user } = useAuthStore();
   const navigate = useNavigate();
+  const location = useLocation();
   const isTeacher = user?.role === 'TEACHER';
   
   const [courses, setCourses] = useState<Course[]>([]);
@@ -68,6 +69,16 @@ export const CoursesPage: React.FC = () => {
   useEffect(() => {
     filterCourses();
   }, [courses, searchQuery, filters]);
+
+  // Check URL parameters for auto-opening the create modal
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    if (searchParams.get('create') === 'true' && isTeacher) {
+      setShowCreateModal(true);
+      // Clean up the URL by removing the query parameter
+      navigate('/courses', { replace: true });
+    }
+  }, [location.search, isTeacher, navigate]);
 
   const loadCourses = async () => {
     try {

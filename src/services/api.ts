@@ -22,7 +22,9 @@ import {
   ForumCategory,
   ForumThread,
   ForumReply,
-  FileUpload
+  FileUpload,
+  StudentProfile,
+  AssignmentSubmissionSummary
 } from '../types';
 
 interface FilePermission {
@@ -234,6 +236,37 @@ class ApiService {
 
   async submitAssignment(assignmentId: string, submissionData: any): Promise<any> {
     const response: AxiosResponse<any> = await this.api.post(`/assessments/assignments/${assignmentId}/submit`, submissionData);
+    return response.data;
+  }
+
+  // Student and Submission Services
+  async getCourseStudents(courseId: string): Promise<StudentProfile[]> {
+    const response: AxiosResponse<StudentProfile[]> = await this.api.get(`/courses/${courseId}/students`);
+    return response.data;
+  }
+
+  async getStudentProfile(studentId: string): Promise<StudentProfile> {
+    const response: AxiosResponse<StudentProfile> = await this.api.get(`/students/${studentId}`);
+    return response.data;
+  }
+
+  async getAssignmentSubmissionSummary(assignmentId: string): Promise<AssignmentSubmissionSummary> {
+    const response: AxiosResponse<AssignmentSubmissionSummary> = await this.api.get(`/assessments/assignments/${assignmentId}/submissions`);
+    return response.data;
+  }
+
+  async getCourseSubmissionSummaries(courseId: string): Promise<AssignmentSubmissionSummary[]> {
+    const response: AxiosResponse<AssignmentSubmissionSummary[]> = await this.api.get(`/courses/${courseId}/assignments/submissions`);
+    return response.data;
+  }
+
+  async getAllSubmissionSummaries(): Promise<AssignmentSubmissionSummary[]> {
+    const response: AxiosResponse<AssignmentSubmissionSummary[]> = await this.api.get('/assessments/submissions/summary');
+    return response.data;
+  }
+
+  async gradeSubmission(submissionId: string, gradeData: { score: number; feedback: string }): Promise<any> {
+    const response: AxiosResponse<any> = await this.api.post(`/assessments/submissions/${submissionId}/grade`, gradeData);
     return response.data;
   }
 
