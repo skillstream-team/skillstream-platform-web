@@ -43,7 +43,7 @@ export const CoursesPage: React.FC = () => {
     title: '',
     description: '',
     category: '',
-    price: 0,
+    price: undefined as number | undefined,
     isPaid: false
   });
 
@@ -191,7 +191,7 @@ export const CoursesPage: React.FC = () => {
         title: newCourse.title,
         description: newCourse.description,
         category: newCourse.category,
-        price: newCourse.price,
+        price: newCourse.price || 0,
         isPaid: newCourse.isPaid,
         teacherId: user?.id || '',
         teacher: {
@@ -211,7 +211,7 @@ export const CoursesPage: React.FC = () => {
       
       setCourses(prev => [createdCourse, ...prev]);
       setShowCreateModal(false);
-      setNewCourse({ title: '', description: '', category: '', price: 0, isPaid: false });
+      setNewCourse({ title: '', description: '', category: '', price: undefined, isPaid: false });
       
       // Navigate to the new course for editing
       navigate(`/courses/${newCourseId}`);
@@ -802,17 +802,26 @@ export const CoursesPage: React.FC = () => {
               {newCourse.isPaid && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Price ($)
+                    Price (USD)
                   </label>
                   <input
                     type="number"
-                    value={newCourse.price}
-                    onChange={(e) => setNewCourse(prev => ({ ...prev, price: parseFloat(e.target.value) || 0 }))}
+                    value={newCourse.price || ''}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      const numValue = value === '' ? undefined : parseFloat(value);
+                      setNewCourse(prev => ({ ...prev, price: numValue }));
+                    }}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
-                    placeholder="0.00"
+                    placeholder="Enter price (e.g., 99.99)"
                     min="0"
                     step="0.01"
                   />
+                  {newCourse.price && newCourse.price > 0 && (
+                    <div className="mt-2 text-sm text-green-600 dark:text-green-400">
+                      You will earn ${(newCourse.price * 0.7).toFixed(2)} per student
+                    </div>
+                  )}
                 </div>
               )}
             </div>

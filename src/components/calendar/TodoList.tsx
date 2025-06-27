@@ -61,6 +61,8 @@ export const TodoList: React.FC<TodoListProps> = ({
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [tempDueDate, setTempDueDate] = useState('');
   const [tempDueTime, setTempDueTime] = useState('');
+  const [durationHours, setDurationHours] = useState('');
+  const [durationMinutes, setDurationMinutes] = useState('');
 
   const categories = ['Study', 'Assignment', 'Project', 'Meeting', 'Personal', 'Work'];
   const priorities = ['low', 'medium', 'high', 'urgent'];
@@ -77,6 +79,18 @@ export const TodoList: React.FC<TodoListProps> = ({
   useEffect(() => {
     onTodosChange?.(todos);
   }, [todos, onTodosChange]);
+
+  // Initialize duration fields when editing a todo
+  useEffect(() => {
+    if (editingTodo?.estimatedTime) {
+      const { hours, minutes } = convertMinutesToDuration(editingTodo.estimatedTime);
+      setDurationHours(hours);
+      setDurationMinutes(minutes);
+    } else {
+      setDurationHours('');
+      setDurationMinutes('');
+    }
+  }, [editingTodo]);
 
   const loadTodos = async () => {
     try {
@@ -309,6 +323,20 @@ export const TodoList: React.FC<TodoListProps> = ({
     setShowDatePicker(true);
   };
 
+  const convertDurationToMinutes = (hours: string, minutes: string): number | undefined => {
+    const hoursNum = parseInt(hours) || 0;
+    const minutesNum = parseInt(minutes) || 0;
+    const totalMinutes = hoursNum * 60 + minutesNum;
+    return totalMinutes > 0 ? totalMinutes : undefined;
+  };
+
+  const convertMinutesToDuration = (totalMinutes: number | undefined) => {
+    if (!totalMinutes) return { hours: '', minutes: '' };
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    return { hours: hours.toString(), minutes: minutes.toString() };
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-64">
@@ -328,7 +356,12 @@ export const TodoList: React.FC<TodoListProps> = ({
           </p>
         </div>
         <button
-          onClick={() => setShowAddModal(true)}
+          onClick={() => {
+            setShowAddModal(true);
+            setEditingTodo(null);
+            setDurationHours('');
+            setDurationMinutes('');
+          }}
           className="flex items-center px-2 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 transition-colors"
         >
           <Plus className="h-3 w-3 mr-1" />
@@ -532,7 +565,7 @@ export const TodoList: React.FC<TodoListProps> = ({
                   dueDate: formData.get('dueDate') as string,
                   category: formData.get('category') as string,
                   tags: (formData.get('tags') as string).split(',').map(t => t.trim()).filter(Boolean),
-                  estimatedTime: parseInt(formData.get('estimatedTime') as string) || undefined,
+                  estimatedTime: convertDurationToMinutes(durationHours, durationMinutes),
                   notes: formData.get('notes') as string,
                   assignedTo: user?.id
                 };
@@ -542,6 +575,10 @@ export const TodoList: React.FC<TodoListProps> = ({
                 } else {
                   addTodo(todoData);
                 }
+                
+                // Reset duration fields
+                setDurationHours('');
+                setDurationMinutes('');
               }}>
                 <div>
                   <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -632,16 +669,34 @@ export const TodoList: React.FC<TodoListProps> = ({
 
                   <div>
                     <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Est. Time (min)
+                      Duration
                     </label>
-                    <input
-                      type="number"
-                      name="estimatedTime"
-                      defaultValue={editingTodo?.estimatedTime}
-                      min="0"
-                      className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded focus:ring-1 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
-                      placeholder="120"
-                    />
+                    <div className="flex gap-2">
+                      <div className="flex-1">
+                        <input
+                          type="number"
+                          value={durationHours}
+                          onChange={(e) => setDurationHours(e.target.value)}
+                          min="0"
+                          max="24"
+                          className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded focus:ring-1 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                          placeholder="0"
+                        />
+                        <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 text-center">Hours</div>
+                      </div>
+                      <div className="flex-1">
+                        <input
+                          type="number"
+                          value={durationMinutes}
+                          onChange={(e) => setDurationMinutes(e.target.value)}
+                          min="0"
+                          max="59"
+                          className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded focus:ring-1 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                          placeholder="0"
+                        />
+                        <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 text-center">Minutes</div>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -683,6 +738,8 @@ export const TodoList: React.FC<TodoListProps> = ({
                     onClick={() => {
                       setShowAddModal(false);
                       setEditingTodo(null);
+                      setDurationHours('');
+                      setDurationMinutes('');
                     }}
                     className="flex-1 px-3 py-1.5 bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded text-sm hover:bg-gray-400 dark:hover:bg-gray-500 transition-colors"
                   >

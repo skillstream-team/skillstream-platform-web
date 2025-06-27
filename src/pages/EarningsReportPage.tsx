@@ -56,7 +56,6 @@ interface EarningsData {
   previousMonth: number;
   yearToDate: number;
   lifetime: number;
-  skillstreamShare: number;
   tutorShare: number;
   courses: CourseEarnings[];
   transactions: Transaction[];
@@ -73,7 +72,6 @@ export const EarningsReportPage: React.FC = () => {
     previousMonth: 0,
     yearToDate: 0,
     lifetime: 0,
-    skillstreamShare: 0,
     tutorShare: 0,
     courses: [],
     transactions: [],
@@ -243,40 +241,16 @@ export const EarningsReportPage: React.FC = () => {
         </div>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Total Earnings</p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                  {formatCurrency(earningsData.currentMonth)}
-                </p>
-              </div>
-              <DollarSign className="h-8 w-8 text-green-600 dark:text-green-400" />
-            </div>
-          </div>
-
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Your Share (70%)</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Earnings</p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">
                   {formatCurrency(earningsData.tutorShare)}
                 </p>
               </div>
               <TrendingUp className="h-8 w-8 text-blue-600 dark:text-blue-400" />
-            </div>
-          </div>
-
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">SkillStream Share (30%)</p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                  {formatCurrency(earningsData.skillstreamShare)}
-                </p>
-              </div>
-              <BarChart3 className="h-8 w-8 text-purple-600 dark:text-purple-400" />
             </div>
           </div>
 
