@@ -841,33 +841,33 @@ export const AnalyticsPage: React.FC = () => {
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-4">
               <BackButton />
-              <div>
+                <div>
                 <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Analytics Dashboard</h1>
                 <p className="text-gray-600 dark:text-gray-400 mt-1">
                   Comprehensive insights into your teaching performance and student engagement
-                </p>
+                  </p>
+                </div>
               </div>
-            </div>
             <div className="flex items-center space-x-3">
-              <select
-                value={timeRange}
-                onChange={(e) => setTimeRange(e.target.value as any)}
+                <select
+                  value={timeRange}
+                  onChange={(e) => setTimeRange(e.target.value as any)}
                 className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
-              >
-                <option value="7d">Last 7 days</option>
-                <option value="30d">Last 30 days</option>
-                <option value="90d">Last 90 days</option>
-                <option value="1y">Last year</option>
-              </select>
+                >
+                  <option value="7d">Last 7 days</option>
+                  <option value="30d">Last 30 days</option>
+                  <option value="90d">Last 90 days</option>
+                  <option value="1y">Last year</option>
+                </select>
               <button 
                 onClick={() => setShowExportModal(true)}
                 className="flex items-center px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
               >
-                <Download className="h-3.5 w-3.5 mr-1.5" />
-                Export Report
-              </button>
+                  <Download className="h-3.5 w-3.5 mr-1.5" />
+                  Export Report
+                </button>
             </div>
           </div>
         </div>
@@ -981,10 +981,10 @@ export const AnalyticsPage: React.FC = () => {
                     </p>
                     <div className="flex items-center justify-between mt-2">
                       <div className="flex items-center">
-                        <ArrowUpRight className="w-4 h-4 text-green-500" />
-                        <span className="text-sm text-green-600 dark:text-green-400">
-                          +5.2% vs last month
-                        </span>
+                      <ArrowUpRight className="w-4 h-4 text-green-500" />
+                      <span className="text-sm text-green-600 dark:text-green-400">
+                        +5.2% vs last month
+                      </span>
                       </div>
                       {analytics.averageCompletionRate < 75 && (
                         <button className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-1 rounded hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors">
@@ -1105,7 +1105,7 @@ export const AnalyticsPage: React.FC = () => {
             </p>
           </div>
         )}
-        
+
         {/* Export Modal */}
         <ExportModal
           isOpen={showExportModal}

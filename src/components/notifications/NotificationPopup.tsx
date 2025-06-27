@@ -65,7 +65,7 @@ export const NotificationPopup: React.FC<NotificationPopupProps> = ({
       if (openToExpanded) {
         setShowAllNotifications(true);
       } else if (!showAllNotifications) {
-        fetchPopupNotifications();
+      fetchPopupNotifications();
       }
     }
   }, [isOpen, openToExpanded, showAllNotifications]);

@@ -9,15 +9,13 @@ import {
   Clock,
   Flag,
   Star,
-  Filter,
   Search,
-  MoreVertical,
   Tag,
-  User,
   AlertCircle,
   CheckCircle,
   Clock as ClockIcon,
-  X
+  X,
+  Check
 } from 'lucide-react';
 import { useAuthStore } from '../../store/auth';
 
@@ -41,15 +39,11 @@ interface TodoItem {
 
 interface TodoListProps {
   selectedDate?: Date;
-  onTodoClick?: (todo: TodoItem) => void;
-  onAddTodo?: () => void;
   onTodosChange?: (todos: TodoItem[]) => void;
 }
 
 export const TodoList: React.FC<TodoListProps> = ({
   selectedDate,
-  onTodoClick,
-  onAddTodo,
   onTodosChange
 }) => {
   const { user } = useAuthStore();
@@ -60,10 +54,13 @@ export const TodoList: React.FC<TodoListProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'completed'>('all');
   const [filterPriority, setFilterPriority] = useState<string>('all');
-  const [filterCategory, setFilterCategory] = useState<string>('all');
-  const [sortBy, setSortBy] = useState<'dueDate' | 'priority' | 'createdAt' | 'title'>('dueDate');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [filterCategory] = useState<string>('all');
+  const [sortBy] = useState<'dueDate' | 'priority' | 'createdAt' | 'title'>('dueDate');
+  const [sortOrder] = useState<'asc' | 'desc'>('asc');
   const [loading, setLoading] = useState(true);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [tempDueDate, setTempDueDate] = useState('');
+  const [tempDueTime, setTempDueTime] = useState('');
 
   const categories = ['Study', 'Assignment', 'Project', 'Meeting', 'Personal', 'Work'];
   const priorities = ['low', 'medium', 'high', 'urgent'];
@@ -286,6 +283,30 @@ export const TodoList: React.FC<TodoListProps> = ({
     if (diffDays === 0) return { status: 'due-today', color: 'text-orange-600 dark:text-orange-400' };
     if (diffDays <= 1) return { status: 'due-tomorrow', color: 'text-yellow-600 dark:text-yellow-400' };
     return { status: 'upcoming', color: 'text-green-600 dark:text-green-400' };
+  };
+
+  const handleDatePickerDone = () => {
+    const combinedDateTime = tempDueDate && tempDueTime ? `${tempDueDate}T${tempDueTime}` : '';
+    const form = document.querySelector('form') as HTMLFormElement;
+    if (form) {
+      const dueDateInput = form.querySelector('input[name="dueDate"]') as HTMLInputElement;
+      if (dueDateInput) {
+        dueDateInput.value = combinedDateTime;
+      }
+    }
+    setShowDatePicker(false);
+  };
+
+  const openDatePicker = (currentValue?: string) => {
+    if (currentValue) {
+      const [date, time] = currentValue.split('T');
+      setTempDueDate(date || '');
+      setTempDueTime(time || '');
+    } else {
+      setTempDueDate('');
+      setTempDueTime('');
+    }
+    setShowDatePicker(true);
   };
 
   if (loading) {
@@ -588,12 +609,25 @@ export const TodoList: React.FC<TodoListProps> = ({
                     <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                       Due Date
                     </label>
-                    <input
-                      type="datetime-local"
-                      name="dueDate"
-                      defaultValue={editingTodo?.dueDate}
-                      className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded focus:ring-1 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
-                    />
+                    <div className="relative">
+                      <input
+                        type="datetime-local"
+                        name="dueDate"
+                        defaultValue={editingTodo?.dueDate}
+                        className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded focus:ring-1 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                        style={{ display: 'none' }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => openDatePicker(editingTodo?.dueDate)}
+                        className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded focus:ring-1 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-left flex items-center justify-between"
+                      >
+                        <span className={editingTodo?.dueDate ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'}>
+                          {editingTodo?.dueDate ? new Date(editingTodo.dueDate).toLocaleString() : 'Select date & time'}
+                        </span>
+                        <Calendar className="h-4 w-4 text-gray-400" />
+                      </button>
+                    </div>
                   </div>
 
                   <div>
@@ -656,6 +690,64 @@ export const TodoList: React.FC<TodoListProps> = ({
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Date Picker Modal */}
+      {showDatePicker && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-sm w-full mx-4">
+            <div className="p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-base font-semibold text-gray-900 dark:text-white">
+                  Set Due Date & Time
+                </h3>
+                <button
+                  onClick={() => setShowDatePicker(false)}
+                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Date
+                  </label>
+                  <input
+                    type="date"
+                    value={tempDueDate}
+                    onChange={(e) => setTempDueDate(e.target.value)}
+                    className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded focus:ring-1 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Time
+                  </label>
+                  <input
+                    type="time"
+                    value={tempDueTime}
+                    onChange={(e) => setTempDueTime(e.target.value)}
+                    className="w-full px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded focus:ring-1 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                  />
+                </div>
+
+                <div className="flex justify-end pt-2">
+                  <button
+                    type="button"
+                    onClick={handleDatePickerDone}
+                    className="flex items-center px-3 py-1.5 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors"
+                  >
+                    <Check className="h-3 w-3 mr-1" />
+                    DONE
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>

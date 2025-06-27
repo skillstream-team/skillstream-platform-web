@@ -630,14 +630,6 @@ const CalendarPage: React.FC = () => {
             <div className="flex-1">
               <TodoList 
                 selectedDate={selectedDate || undefined}
-                onTodoClick={(todo) => {
-                  console.log('Todo clicked:', todo);
-                  // Handle todo click - could open edit modal or mark as complete
-                }}
-                onAddTodo={() => {
-                  console.log('Add todo clicked');
-                  // Handle add todo - could open add modal
-                }}
                 onTodosChange={(todos) => {
                   console.log('Todos changed:', todos);
                   // Handle todos change
