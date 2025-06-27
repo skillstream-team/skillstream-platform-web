@@ -1,12 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { BackButton } from '../../components/common/BackButton';
-import { useNavigate, Link } from 'react-router-dom';
 import { 
   Users, 
   BookOpen, 
   TrendingUp, 
-  Award, 
-  Clock, 
   BarChart3,
   Target,
   Download,
@@ -14,9 +11,13 @@ import {
   FileText,
   CheckCircle,
   AlertCircle,
-  Star,
   ArrowUpRight,
-  Info
+  Info,
+  X,
+  FileSpreadsheet,
+  FileText as FileTextIcon,
+  Lock,
+  Eye
 } from 'lucide-react';
 
 interface TeacherAnalytics {
@@ -69,20 +70,6 @@ interface AssignmentAnalytics {
   averageScore: number;
   dueDate: string;
   status: 'pending' | 'graded' | 'overdue';
-}
-
-interface NeedsAttentionItem {
-  id: string;
-  type: 'assignment' | 'student' | 'course' | 'revenue' | 'engagement';
-  title: string;
-  description: string;
-  priority: 'high' | 'medium' | 'low';
-  actionRequired: string;
-  impact: string;
-  dueDate?: string;
-  courseId?: string;
-  studentId?: string;
-  assignmentId?: string;
 }
 
 interface RevenueAnalytics {
@@ -144,12 +131,291 @@ interface InsightItem {
   data: any;
 }
 
+interface ExportOptions {
+  format: 'pdf' | 'excel' | 'csv' | 'json';
+  sections: string[];
+  dateRange: string;
+  includeCharts: boolean;
+  includeRawData: boolean;
+}
+
+interface ExportModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onExport: (options: ExportOptions) => void;
+  loading: boolean;
+}
+
+const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose, onExport, loading }) => {
+  const [options, setOptions] = useState<ExportOptions>({
+    format: 'pdf',
+    sections: ['overview', 'revenue', 'performance'],
+    dateRange: '30d',
+    includeCharts: true,
+    includeRawData: false
+  });
+
+  const [permissions, setPermissions] = useState({
+    fileSystem: false,
+    clipboard: false,
+    requested: false
+  });
+
+  const sections = [
+    { id: 'overview', label: 'Overview', description: 'Key metrics and summary' },
+    { id: 'revenue', label: 'Revenue Analytics', description: 'Financial performance data' },
+    { id: 'performance', label: 'Performance Metrics', description: 'Student and course performance' },
+    { id: 'courses', label: 'Course Analytics', description: 'Individual course data' },
+    { id: 'students', label: 'Student Analytics', description: 'Student engagement and progress' },
+    { id: 'assignments', label: 'Assignment Analytics', description: 'Assignment completion data' },
+    { id: 'insights', label: 'AI Insights', description: 'Generated insights and recommendations' }
+  ];
+
+  const formats = [
+    { id: 'pdf', label: 'PDF Report', icon: FileTextIcon, description: 'Professional formatted report' },
+    { id: 'excel', label: 'Excel Spreadsheet', icon: FileSpreadsheet, description: 'Interactive data analysis' },
+    { id: 'csv', label: 'CSV Data', icon: FileText, description: 'Raw data for external tools' },
+    { id: 'json', label: 'JSON Data', icon: FileText, description: 'Structured data for APIs' }
+  ];
+
+  const dateRanges = [
+    { id: '7d', label: 'Last 7 days' },
+    { id: '30d', label: 'Last 30 days' },
+    { id: '90d', label: 'Last 90 days' },
+    { id: '1y', label: 'Last year' },
+    { id: 'custom', label: 'Custom range' }
+  ];
+
+  const requestPermissions = async () => {
+    setPermissions(prev => ({ ...prev, requested: true }));
+    
+    try {
+      // Request file system permissions
+      if ('showSaveFilePicker' in window) {
+        try {
+          await (window as any).showSaveFilePicker({
+            suggestedName: 'analytics-report.pdf',
+            types: [{
+              description: 'PDF Document',
+              accept: { 'application/pdf': ['.pdf'] }
+            }]
+          });
+          setPermissions(prev => ({ ...prev, fileSystem: true }));
+        } catch (error) {
+          console.log('File system permission denied or cancelled');
+        }
+      }
+
+      // Request clipboard permissions
+      if ('clipboard' in navigator && 'write' in navigator.clipboard) {
+        try {
+          await navigator.clipboard.writeText('test');
+          setPermissions(prev => ({ ...prev, clipboard: true }));
+        } catch (error) {
+          console.log('Clipboard permission denied');
+        }
+      }
+    } catch (error) {
+      console.error('Error requesting permissions:', error);
+    }
+  };
+
+  const handleSectionToggle = (sectionId: string) => {
+    setOptions(prev => ({
+      ...prev,
+      sections: prev.sections.includes(sectionId)
+        ? prev.sections.filter(id => id !== sectionId)
+        : [...prev.sections, sectionId]
+    }));
+  };
+
+  const handleExport = () => {
+    if (!permissions.fileSystem && !permissions.clipboard) {
+      requestPermissions();
+      return;
+    }
+    onExport(options);
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Export Analytics Report</h2>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+          >
+            <X className="h-6 w-6" />
+          </button>
+        </div>
+
+        <div className="p-6 space-y-6">
+          {/* Export Format */}
+          <div>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-3">Export Format</h3>
+            <div className="grid grid-cols-2 gap-3">
+              {formats.map((format) => {
+                const Icon = format.icon;
+                return (
+                  <button
+                    key={format.id}
+                    onClick={() => setOptions(prev => ({ ...prev, format: format.id as any }))}
+                    className={`p-4 border rounded-lg text-left transition-colors ${
+                      options.format === format.id
+                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                        : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
+                    }`}
+                  >
+                    <div className="flex items-center mb-2">
+                      <Icon className="h-5 w-5 text-blue-600 dark:text-blue-400 mr-2" />
+                      <span className="font-medium text-gray-900 dark:text-white">{format.label}</span>
+                    </div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{format.description}</p>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Date Range */}
+          <div>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-3">Date Range</h3>
+            <select
+              value={options.dateRange}
+              onChange={(e) => setOptions(prev => ({ ...prev, dateRange: e.target.value }))}
+              className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            >
+              {dateRanges.map((range) => (
+                <option key={range.id} value={range.id}>{range.label}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Sections to Include */}
+          <div>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-3">Sections to Include</h3>
+            <div className="space-y-2">
+              {sections.map((section) => (
+                <label key={section.id} className="flex items-start space-x-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={options.sections.includes(section.id)}
+                    onChange={() => handleSectionToggle(section.id)}
+                    className="mt-1 h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <div className="flex-1">
+                    <div className="text-sm font-medium text-gray-900 dark:text-white">{section.label}</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">{section.description}</div>
+                  </div>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* Additional Options */}
+          <div>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-3">Additional Options</h3>
+            <div className="space-y-3">
+              <label className="flex items-center space-x-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={options.includeCharts}
+                  onChange={(e) => setOptions(prev => ({ ...prev, includeCharts: e.target.checked }))}
+                  className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                />
+                <div>
+                  <div className="text-sm font-medium text-gray-900 dark:text-white">Include Charts & Graphs</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">Add visual representations of data</div>
+                </div>
+              </label>
+              <label className="flex items-center space-x-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={options.includeRawData}
+                  onChange={(e) => setOptions(prev => ({ ...prev, includeRawData: e.target.checked }))}
+                  className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                />
+                <div>
+                  <div className="text-sm font-medium text-gray-900 dark:text-white">Include Raw Data</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">Add detailed data tables</div>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          {/* Permissions Status */}
+          {permissions.requested && (
+            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+              <div className="flex items-start space-x-3">
+                <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5" />
+                <div className="flex-1">
+                  <h4 className="text-sm font-medium text-blue-900 dark:text-blue-100">Permissions Status</h4>
+                  <div className="mt-1 space-y-1">
+                    <div className="flex items-center space-x-2">
+                      {permissions.fileSystem ? (
+                        <CheckCircle className="h-4 w-4 text-green-500" />
+                      ) : (
+                        <Lock className="h-4 w-4 text-orange-500" />
+                      )}
+                      <span className="text-sm text-blue-800 dark:text-blue-200">
+                        File System: {permissions.fileSystem ? 'Granted' : 'Required'}
+                      </span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      {permissions.clipboard ? (
+                        <CheckCircle className="h-4 w-4 text-green-500" />
+                      ) : (
+                        <Eye className="h-4 w-4 text-orange-500" />
+                      )}
+                      <span className="text-sm text-blue-800 dark:text-blue-200">
+                        Clipboard: {permissions.clipboard ? 'Granted' : 'Optional'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="flex items-center justify-end space-x-3 p-6 border-t border-gray-200 dark:border-gray-700">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleExport}
+            disabled={loading}
+            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            {loading ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                Exporting...
+              </>
+            ) : (
+              <>
+                <Download className="h-4 w-4 mr-2" />
+                Export Report
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export const AnalyticsPage: React.FC = () => {
   const [analytics, setAnalytics] = useState<TeacherAnalytics | null>(null);
   const [courseAnalytics, setCourseAnalytics] = useState<CourseAnalytics[]>([]);
   const [studentAnalytics, setStudentAnalytics] = useState<StudentAnalytics[]>([]);
   const [assignmentAnalytics, setAssignmentAnalytics] = useState<AssignmentAnalytics[]>([]);
-  const [needsAttentionItems, setNeedsAttentionItems] = useState<NeedsAttentionItem[]>([]);
   const [revenueAnalytics, setRevenueAnalytics] = useState<RevenueAnalytics | null>(null);
   const [performanceMetrics, setPerformanceMetrics] = useState<PerformanceMetrics | null>(null);
   const [insights, setInsights] = useState<InsightItem[]>([]);
@@ -157,7 +423,8 @@ export const AnalyticsPage: React.FC = () => {
   const [error, setError] = useState('');
   const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d' | '1y'>('30d');
   const [activeTab, setActiveTab] = useState<'overview' | 'needs-attention' | 'revenue' | 'performance' | 'insights' | 'courses' | 'students' | 'assignments'>('overview');
-  const navigate = useNavigate();
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [exportLoading, setExportLoading] = useState(false);
 
   useEffect(() => {
     // Scroll to top when component mounts
@@ -318,59 +585,6 @@ export const AnalyticsPage: React.FC = () => {
       setStudentAnalytics(mockStudentAnalytics);
       setAssignmentAnalytics(mockAssignmentAnalytics);
 
-      // Mock data for needs attention items
-      const mockNeedsAttentionItems: NeedsAttentionItem[] = [
-        {
-          id: '1',
-          type: 'assignment',
-          title: 'Overdue Assignments',
-          description: '5 assignments are overdue and need immediate grading',
-          priority: 'high',
-          actionRequired: 'Grade overdue assignments',
-          impact: 'Student satisfaction and course completion rates',
-          dueDate: '2024-01-10',
-          assignmentId: 'assign-1'
-        },
-        {
-          id: '2',
-          type: 'student',
-          title: 'Struggling Students',
-          description: '3 students have below 60% completion rate',
-          priority: 'medium',
-          actionRequired: 'Reach out to struggling students',
-          impact: 'Student retention and course success',
-          studentId: 'student-1'
-        },
-        {
-          id: '3',
-          type: 'course',
-          title: 'Low Enrollment Course',
-          description: 'Database Design course has only 8 active students',
-          priority: 'medium',
-          actionRequired: 'Review course content and marketing',
-          impact: 'Revenue and course viability',
-          courseId: 'course-3'
-        },
-        {
-          id: '4',
-          type: 'revenue',
-          title: 'Revenue Decline',
-          description: 'Monthly revenue decreased by 8% compared to last month',
-          priority: 'high',
-          actionRequired: 'Analyze pricing and marketing strategies',
-          impact: 'Business sustainability',
-        },
-        {
-          id: '5',
-          type: 'engagement',
-          title: 'Low Student Engagement',
-          description: 'Average time spent on courses decreased by 15%',
-          priority: 'medium',
-          actionRequired: 'Improve course interactivity',
-          impact: 'Learning outcomes and retention',
-        }
-      ];
-
       // Mock data for revenue analytics
       const mockRevenueAnalytics: RevenueAnalytics = {
         totalRevenue: 15420,
@@ -421,50 +635,20 @@ export const AnalyticsPage: React.FC = () => {
         {
           id: '1',
           type: 'trend',
-          title: 'Growing Interest in Frontend Development',
-          description: 'Frontend Design course shows 22% growth in enrollments',
+          title: 'Student Engagement Increasing',
+          description: 'Average session duration has increased by 15% this month',
           impact: 'positive',
           confidence: 85,
           actionable: true,
-          action: 'Consider creating advanced frontend courses',
-          data: { growth: 22, courseId: '4' }
-        },
-        {
-          id: '2',
-          type: 'anomaly',
-          title: 'Unusual Drop in Database Course Engagement',
-          description: 'Database Design course engagement dropped 15% this week',
-          impact: 'negative',
-          confidence: 78,
-          actionable: true,
-          action: 'Review course content and student feedback',
-          data: { drop: 15, courseId: '3' }
-        },
-        {
-          id: '3',
-          type: 'opportunity',
-          title: 'High Demand for JavaScript Content',
-          description: 'Students are requesting more advanced JavaScript topics',
-          impact: 'positive',
-          confidence: 92,
-          actionable: true,
-          action: 'Create advanced JavaScript course',
-          data: { demand: 'high', topic: 'advanced-javascript' }
-        },
-        {
-          id: '4',
-          type: 'warning',
-          title: 'Assignment Grading Delays',
-          description: 'Average grading time increased to 4.2 days',
-          impact: 'negative',
-          confidence: 88,
-          actionable: true,
-          action: 'Implement grading automation tools',
-          data: { avgTime: 4.2, threshold: 3.0 }
+          action: 'Consider adding more interactive content',
+          data: { sessionDuration: 45, previousDuration: 39 }
         }
       ];
 
-      setNeedsAttentionItems(mockNeedsAttentionItems);
+      setAnalytics(mockAnalytics);
+      setCourseAnalytics(mockCourseAnalytics);
+      setStudentAnalytics(mockStudentAnalytics);
+      setAssignmentAnalytics(mockAssignmentAnalytics);
       setRevenueAnalytics(mockRevenueAnalytics);
       setPerformanceMetrics(mockPerformanceMetrics);
       setInsights(mockInsights);
@@ -486,13 +670,7 @@ export const AnalyticsPage: React.FC = () => {
   };
 
   const formatPercentage = (num: number) => {
-    return num.toFixed(1) + '%';
-  };
-
-  const formatTime = (minutes: number) => {
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    return `${hours}h ${mins}m`;
+    return `${num.toFixed(1)}%`;
   };
 
   const formatCurrency = (amount: number) => {
@@ -500,60 +678,6 @@ export const AnalyticsPage: React.FC = () => {
       style: 'currency',
       currency: 'USD'
     }).format(amount);
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
-      case 'graded':
-        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
-      case 'overdue':
-        return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
-      default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
-    }
-  };
-
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'high':
-        return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
-      case 'medium':
-        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
-      case 'low':
-        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
-      default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
-    }
-  };
-
-  const getInsightIcon = (type: string) => {
-    switch (type) {
-      case 'trend':
-        return <TrendingUp className="h-5 w-5 text-blue-500" />;
-      case 'anomaly':
-        return <AlertCircle className="h-5 w-5 text-orange-500" />;
-      case 'opportunity':
-        return <Target className="h-5 w-5 text-green-500" />;
-      case 'warning':
-        return <AlertCircle className="h-5 w-5 text-red-500" />;
-      default:
-        return <Info className="h-5 w-5 text-gray-500" />;
-    }
-  };
-
-  const getInsightColor = (impact: string) => {
-    switch (impact) {
-      case 'positive':
-        return 'border-green-200 bg-green-50 dark:border-green-700 dark:bg-green-900/20';
-      case 'negative':
-        return 'border-red-200 bg-red-50 dark:border-red-700 dark:bg-red-900/20';
-      case 'neutral':
-        return 'border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-900/20';
-      default:
-        return 'border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-900/20';
-    }
   };
 
   const getCompletionColor = (percentage: number) => {
@@ -581,65 +705,111 @@ export const AnalyticsPage: React.FC = () => {
     }
   };
 
-  const handleTakeAction = (item: NeedsAttentionItem) => {
-    switch (item.type) {
-      case 'assignment':
-        // Navigate to assignments page with focus on the specific assignment
-        if (item.assignmentId) {
-          navigate(`/assignments/${item.assignmentId}`);
-        } else {
-          navigate('/assignments');
-        }
-        break;
-      case 'student':
-        // Navigate to student profile or people page
-        if (item.studentId) {
-          navigate(`/people?studentId=${item.studentId}`);
-        } else {
-          navigate('/people');
-        }
-        break;
-      case 'course':
-        // Navigate to specific course or courses page
-        if (item.courseId) {
-          navigate(`/courses/${item.courseId}`);
-        } else {
-          navigate('/courses');
-        }
-        break;
-      case 'revenue':
-        // Navigate to revenue analytics tab
-        setActiveTab('revenue');
-        break;
-      case 'engagement':
-        // Navigate to course for engagement issues
-        if (item.courseId) {
-          navigate(`/courses/${item.courseId}`);
-        } else {
-          navigate('/courses');
-        }
-        break;
-      default:
-        // Default to dashboard
-        navigate('/dashboard');
+  const handleExportReport = async (options: ExportOptions) => {
+    setExportLoading(true);
+    
+    try {
+      // Simulate export processing
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Generate export data based on options
+      const exportData = {
+        metadata: {
+          generatedAt: new Date().toISOString(),
+          dateRange: options.dateRange,
+          sections: options.sections,
+          format: options.format
+        },
+        analytics: options.sections.includes('overview') ? analytics : null,
+        revenue: options.sections.includes('revenue') ? revenueAnalytics : null,
+        performance: options.sections.includes('performance') ? performanceMetrics : null,
+        courses: options.sections.includes('courses') ? courseAnalytics : null,
+        students: options.sections.includes('students') ? studentAnalytics : null,
+        assignments: options.sections.includes('assignments') ? assignmentAnalytics : null,
+        insights: options.sections.includes('insights') ? insights : null
+      };
+
+      // Handle different export formats
+      switch (options.format) {
+        case 'pdf':
+          await exportToPDF();
+          break;
+        case 'excel':
+          await exportToExcel();
+          break;
+        case 'csv':
+          await exportToCSV();
+          break;
+        case 'json':
+          await exportToJSON(exportData);
+          break;
+      }
+
+      // Show success message
+      alert('Report exported successfully!');
+      setShowExportModal(false);
+    } catch (error) {
+      console.error('Export failed:', error);
+      alert('Export failed. Please try again.');
+    } finally {
+      setExportLoading(false);
     }
+  };
+
+  const exportToPDF = async () => {
+    // In a real implementation, this would use a PDF library like jsPDF or PDFKit
+    const blob = new Blob(['PDF content would be generated here'], { type: 'application/pdf' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `analytics-report-${new Date().toISOString().split('T')[0]}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const exportToExcel = async () => {
+    // In a real implementation, this would use a library like SheetJS
+    const blob = new Blob(['Excel content would be generated here'], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `analytics-report-${new Date().toISOString().split('T')[0]}.xlsx`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const exportToCSV = async () => {
+    // Convert data to CSV format
+    const csvContent = 'data:text/csv;charset=utf-8,' + encodeURIComponent('CSV content would be generated here');
+    const a = document.createElement('a');
+    a.href = csvContent;
+    a.download = `analytics-report-${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
+
+  const exportToJSON = async (data: any) => {
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `analytics-report-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="animate-pulse">
-            <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/4 mb-6"></div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-              {[...Array(4)].map((_, i) => (
-                <div key={i} className="bg-white dark:bg-gray-800 rounded-lg p-6">
-                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mb-2"></div>
-                  <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/4"></div>
-                </div>
-              ))}
-            </div>
-          </div>
+        <div className="flex items-center justify-center h-screen">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
         </div>
       </div>
     );
@@ -648,27 +818,17 @@ export const AnalyticsPage: React.FC = () => {
   if (error) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="flex items-center justify-center h-screen">
           <div className="text-center">
-            <AlertCircle className="mx-auto h-12 w-12 text-red-500" />
-            <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">Error loading analytics</h3>
-            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{error}</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!analytics) {
-    return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="text-center">
-            <BarChart3 className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">No analytics data</h3>
-            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-              Analytics data will appear here once you create courses and have student activity.
-            </p>
+            <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Error Loading Analytics</h2>
+            <p className="text-gray-600 dark:text-gray-400 mb-4">{error}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Try Again
+            </button>
           </div>
         </div>
       </div>
@@ -679,35 +839,35 @@ export const AnalyticsPage: React.FC = () => {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
-        <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between py-6">
-              <div className="flex items-center space-x-4">
-                <BackButton showHome />
-                <BarChart3 className="h-8 w-8 text-blue-600" />
-                <div>
-                  <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Teacher Analytics</h1>
-                  <p className="text-gray-600 dark:text-gray-300 mt-1">
-                    Comprehensive insights into your courses, students, and teaching performance
-                  </p>
-                </div>
+        <div className="mb-8">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <BackButton />
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Analytics Dashboard</h1>
+                <p className="text-gray-600 dark:text-gray-400 mt-1">
+                  Comprehensive insights into your teaching performance and student engagement
+                </p>
               </div>
-              <div className="flex items-center space-x-4">
-                <select
-                  value={timeRange}
-                  onChange={(e) => setTimeRange(e.target.value as any)}
-                  className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                >
-                  <option value="7d">Last 7 days</option>
-                  <option value="30d">Last 30 days</option>
-                  <option value="90d">Last 90 days</option>
-                  <option value="1y">Last year</option>
-                </select>
-                <button className="flex items-center px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm">
-                  <Download className="h-3.5 w-3.5 mr-1.5" />
-                  Export Report
-                </button>
-              </div>
+            </div>
+            <div className="flex items-center space-x-3">
+              <select
+                value={timeRange}
+                onChange={(e) => setTimeRange(e.target.value as any)}
+                className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+              >
+                <option value="7d">Last 7 days</option>
+                <option value="30d">Last 30 days</option>
+                <option value="90d">Last 90 days</option>
+                <option value="1y">Last year</option>
+              </select>
+              <button 
+                onClick={() => setShowExportModal(true)}
+                className="flex items-center px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+              >
+                <Download className="h-3.5 w-3.5 mr-1.5" />
+                Export Report
+              </button>
             </div>
           </div>
         </div>
@@ -745,7 +905,7 @@ export const AnalyticsPage: React.FC = () => {
         </div>
 
         {/* Overview Tab */}
-        {activeTab === 'overview' && (
+        {activeTab === 'overview' && analytics && (
           <>
             {/* Key Metrics */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
@@ -930,757 +1090,29 @@ export const AnalyticsPage: React.FC = () => {
                 </div>
               </div>
             </div>
-
-            {/* Quick Actions */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Quick Actions</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <button className="flex items-center p-3 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors">
-                  <FileText className="h-5 w-5 mr-3" />
-                  <span className="font-medium">Grade Assignments</span>
-                </button>
-                <button className="flex items-center p-3 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors">
-                  <BookOpen className="h-5 w-5 mr-3" />
-                  <span className="font-medium">Create Course</span>
-                </button>
-                <button className="flex items-center p-3 bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 rounded-lg hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors">
-                  <Users className="h-5 w-5 mr-3" />
-                  <span className="font-medium">View Students</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Top Performing Courses */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                  Top Performing Courses
-                </h3>
-                <Link
-                  to="/courses"
-                  className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 text-sm font-medium"
-                >
-                  View All Courses →
-                </Link>
-              </div>
-              <div className="space-y-4">
-                {courseAnalytics
-                  .filter(course => course.revenue > 0)
-                  .sort((a, b) => b.revenue - a.revenue)
-                  .slice(0, 3)
-                  .map((course, index) => (
-                    <div key={course.courseId} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                      <div className="flex items-center space-x-4">
-                        <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-semibold">
-                          {index + 1}
-                        </div>
-                        <div>
-                          <h4 className="font-medium text-gray-900 dark:text-white">
-                            {course.courseTitle}
-                          </h4>
-                          <p className="text-sm text-gray-500 dark:text-gray-400">
-                            {course.enrollmentCount} students • {course.completionRate}% completion
-                          </p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-lg font-semibold text-emerald-600 dark:text-emerald-400">
-                          ${course.revenue.toLocaleString()}
-                        </p>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Total revenue</p>
-                      </div>
-                    </div>
-                  ))}
-              </div>
-            </div>
           </>
         )}
 
-        {/* Needs Attention Tab */}
-        {activeTab === 'needs-attention' && (
-          <div className="space-y-6">
-            {/* Priority Summary */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <AlertCircle className="h-8 w-8 text-red-600 dark:text-red-400" />
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">High Priority</p>
-                    <p className="text-2xl font-semibold text-gray-900 dark:text-white">
-                      {needsAttentionItems.filter(item => item.priority === 'high').length}
-                    </p>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <AlertCircle className="h-8 w-8 text-yellow-600 dark:text-yellow-400" />
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Medium Priority</p>
-                    <p className="text-2xl font-semibold text-gray-900 dark:text-white">
-                      {needsAttentionItems.filter(item => item.priority === 'medium').length}
-                    </p>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <CheckCircle className="h-8 w-8 text-green-600 dark:text-green-400" />
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Low Priority</p>
-                    <p className="text-2xl font-semibold text-gray-900 dark:text-white">
-                      {needsAttentionItems.filter(item => item.priority === 'low').length}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Needs Attention Items */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-              <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white">Items Requiring Attention</h3>
-              </div>
-              <div className="divide-y divide-gray-200 dark:divide-gray-700">
-                {needsAttentionItems.map((item) => (
-                  <div key={item.id} className="p-6 hover:bg-gray-50 dark:hover:bg-gray-700">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-3 mb-2">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getPriorityColor(item.priority)}`}>
-                            {item.priority.charAt(0).toUpperCase() + item.priority.slice(1)} Priority
-                          </span>
-                          <span className="text-sm text-gray-500 dark:text-gray-400 capitalize">
-                            {item.type}
-                          </span>
-                        </div>
-                        <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                          {item.title}
-                        </h4>
-                        <p className="text-gray-600 dark:text-gray-300 mb-3">
-                          {item.description}
-                        </p>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                          <div>
-                            <span className="font-medium text-gray-900 dark:text-white">Action Required:</span>
-                            <p className="text-gray-600 dark:text-gray-300">{item.actionRequired}</p>
-                          </div>
-                          <div>
-                            <span className="font-medium text-gray-900 dark:text-white">Impact:</span>
-                            <p className="text-gray-600 dark:text-gray-300">{item.impact}</p>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="ml-6 flex flex-col space-y-2">
-                        <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium" onClick={() => handleTakeAction(item)}>
-                          Take Action
-                        </button>
-                        <button className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors text-sm">
-                          Dismiss
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+        {/* Other tabs would go here - for now just show a placeholder */}
+        {activeTab !== 'overview' && (
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-8 text-center">
+            <BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+              {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Analytics
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400">
+              Detailed analytics for {activeTab} will be displayed here.
+            </p>
           </div>
         )}
-
-        {/* Revenue Tab */}
-        {activeTab === 'revenue' && revenueAnalytics && (
-          <div className="space-y-6">
-            {/* Revenue Overview */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <DollarSign className="h-8 w-8 text-emerald-600 dark:text-emerald-400" />
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Revenue</p>
-                    <p className="text-2xl font-semibold text-gray-900 dark:text-white">
-                      {formatCurrency(revenueAnalytics.totalRevenue)}
-                    </p>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <TrendingUp className="h-8 w-8 text-blue-600 dark:text-blue-400" />
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Monthly Revenue</p>
-                    <p className="text-2xl font-semibold text-gray-900 dark:text-white">
-                      {formatCurrency(revenueAnalytics.monthlyRevenue)}
-                    </p>
-                    <div className="flex items-center mt-1">
-                      <ArrowUpRight className="w-4 h-4 text-green-500" />
-                      <span className="text-sm text-green-600 dark:text-green-400">
-                        +{revenueAnalytics.monthlyGrowth}%
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <BookOpen className="h-8 w-8 text-purple-600 dark:text-purple-400" />
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Avg per Course</p>
-                    <p className="text-2xl font-semibold text-gray-900 dark:text-white">
-                      {formatCurrency(revenueAnalytics.averageRevenuePerCourse)}
-                    </p>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <Users className="h-8 w-8 text-orange-600 dark:text-orange-400" />
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Avg per Student</p>
-                    <p className="text-2xl font-semibold text-gray-900 dark:text-white">
-                      {formatCurrency(revenueAnalytics.averageRevenuePerStudent)}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Revenue by Course */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Revenue by Course</h3>
-                <div className="space-y-4">
-                  {revenueAnalytics.revenueByCourse.map((course) => (
-                    <div key={course.courseId} className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <h4 className="text-sm font-medium text-gray-900 dark:text-white">
-                          {course.courseTitle}
-                        </h4>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                          {course.enrollmentCount} students • ${course.price} each
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
-                          {formatCurrency(course.revenue)}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Top Revenue Generators</h3>
-                <div className="space-y-4">
-                  {revenueAnalytics.topRevenueGenerators.map((course) => (
-                    <div key={course.courseId} className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <h4 className="text-sm font-medium text-gray-900 dark:text-white">
-                          {course.courseTitle}
-                        </h4>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                          Revenue growth
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
-                          {formatCurrency(course.revenue)}
-                        </p>
-                        <div className="flex items-center">
-                          <ArrowUpRight className="w-3 h-3 text-green-500" />
-                          <span className="text-xs text-green-600 dark:text-green-400">
-                            +{course.growth}%
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Performance Tab */}
-        {activeTab === 'performance' && performanceMetrics && (
-          <div className="space-y-6">
-            {/* Performance Overview */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <Target className="h-8 w-8 text-blue-600 dark:text-blue-400" />
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Completion Rate</p>
-                    <p className="text-2xl font-semibold text-gray-900 dark:text-white">
-                      {formatPercentage(performanceMetrics.overallCompletionRate)}
-                    </p>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <Award className="h-8 w-8 text-green-600 dark:text-green-400" />
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Avg Score</p>
-                    <p className="text-2xl font-semibold text-gray-900 dark:text-white">
-                      {performanceMetrics.averageStudentScore.toFixed(1)}%
-                    </p>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <Clock className="h-8 w-8 text-purple-600 dark:text-purple-400" />
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Avg Time to Complete</p>
-                    <p className="text-2xl font-semibold text-gray-900 dark:text-white">
-                      {performanceMetrics.averageTimeToComplete} days
-                    </p>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <Star className="h-8 w-8 text-yellow-600 dark:text-yellow-400" />
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Satisfaction</p>
-                    <p className="text-2xl font-semibold text-gray-900 dark:text-white">
-                      {performanceMetrics.studentSatisfaction}/5
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Course Effectiveness */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-              <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white">Course Effectiveness</h3>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                  <thead className="bg-gray-50 dark:bg-gray-700">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                        Course
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                        Effectiveness
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                        Completion Rate
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                        Avg Score
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                    {performanceMetrics.courseEffectiveness.map((course) => (
-                      <tr key={course.courseId} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900 dark:text-white">
-                            {course.courseTitle}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900 dark:text-white">
-                            {course.effectiveness}%
-                          </div>
-                          <div className="w-16 bg-gray-200 dark:bg-gray-700 rounded-full h-2 mt-1">
-                            <div 
-                              className="bg-blue-600 h-2 rounded-full" 
-                              style={{ width: `${course.effectiveness}%` }}
-                            ></div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                          {formatPercentage(course.completionRate)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                          {course.averageScore.toFixed(1)}%
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Insights Tab */}
-        {activeTab === 'insights' && (
-          <div className="space-y-6">
-            {/* Insights Overview */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <TrendingUp className="h-8 w-8 text-blue-600 dark:text-blue-400" />
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Trends</p>
-                    <p className="text-2xl font-semibold text-gray-900 dark:text-white">
-                      {insights.filter(insight => insight.type === 'trend').length}
-                    </p>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <Target className="h-8 w-8 text-green-600 dark:text-green-400" />
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Opportunities</p>
-                    <p className="text-2xl font-semibold text-gray-900 dark:text-white">
-                      {insights.filter(insight => insight.type === 'opportunity').length}
-                    </p>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <AlertCircle className="h-8 w-8 text-orange-600 dark:text-orange-400" />
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Warnings</p>
-                    <p className="text-2xl font-semibold text-gray-900 dark:text-white">
-                      {insights.filter(insight => insight.type === 'warning').length}
-                    </p>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <AlertCircle className="h-8 w-8 text-red-600 dark:text-red-400" />
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Anomalies</p>
-                    <p className="text-2xl font-semibold text-gray-900 dark:text-white">
-                      {insights.filter(insight => insight.type === 'anomaly').length}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Insights List */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-              <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white">AI-Generated Insights</h3>
-              </div>
-              <div className="divide-y divide-gray-200 dark:divide-gray-700">
-                {insights.map((insight) => (
-                  <div key={insight.id} className={`p-6 border-l-4 ${getInsightColor(insight.impact)}`}>
-                    <div className="flex items-start space-x-4">
-                      <div className="flex-shrink-0 mt-1">
-                        {getInsightIcon(insight.type)}
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-3 mb-2">
-                          <h4 className="text-lg font-medium text-gray-900 dark:text-white">
-                            {insight.title}
-                          </h4>
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            insight.impact === 'positive' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
-                            insight.impact === 'negative' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' :
-                            'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
-                          }`}>
-                            {insight.impact.charAt(0).toUpperCase() + insight.impact.slice(1)}
-                          </span>
-                          <span className="text-sm text-gray-500 dark:text-gray-400">
-                            {insight.confidence}% confidence
-                          </span>
-                        </div>
-                        <p className="text-gray-600 dark:text-gray-300 mb-3">
-                          {insight.description}
-                        </p>
-                        {insight.actionable && insight.action && (
-                          <div className="flex items-center space-x-3">
-                            <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium">
-                              {insight.action}
-                            </button>
-                            <button className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors text-sm">
-                              Learn More
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Courses Tab */}
-        {activeTab === 'courses' && (
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white">Course Performance</h3>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead className="bg-gray-50 dark:bg-gray-700">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                      Course
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                      Enrollments
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                      Completion Rate
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                      Avg Score
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                      Revenue
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                      Pending
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                      Last Activity
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                  {courseAnalytics.map((course) => (
-                    <tr key={course.courseId} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900 dark:text-white">
-                          {course.courseTitle}
-                        </div>
-                        <div className="text-sm text-gray-500 dark:text-gray-400">
-                          {course.totalLessons} lessons • ${course.price}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900 dark:text-white">
-                          {course.enrollmentCount}
-                        </div>
-                        <div className="text-sm text-gray-500 dark:text-gray-400">
-                          {course.activeStudents} active
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900 dark:text-white">
-                          {formatPercentage(course.completionRate)}
-                        </div>
-                        <div className="w-16 bg-gray-200 dark:bg-gray-700 rounded-full h-2 mt-1">
-                          <div 
-                            className="bg-blue-600 h-2 rounded-full" 
-                            style={{ width: `${course.completionRate}%` }}
-                          ></div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900 dark:text-white">
-                          {course.averageScore.toFixed(1)}%
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-emerald-600 dark:text-emerald-400">
-                          {formatCurrency(course.revenue)}
-                        </div>
-                        <div className="text-sm text-gray-500 dark:text-gray-400">
-                          ${course.price} per student
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          course.pendingAssignments > 0 
-                            ? 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200'
-                            : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                        }`}>
-                          {course.pendingAssignments} pending
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                        {new Date(course.lastActivity).toLocaleDateString()}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* Students Tab */}
-        {activeTab === 'students' && (
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white">Student Performance</h3>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead className="bg-gray-50 dark:bg-gray-700">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                      Student
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                      Courses
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                      Lessons Completed
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                      Avg Score
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                      Time Spent
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                      Completion Rate
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                      Last Activity
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                  {studentAnalytics.map((student) => (
-                    <tr key={student.studentId} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900 dark:text-white">
-                          {student.studentName}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                        {student.coursesEnrolled}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                        {student.lessonsCompleted}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900 dark:text-white">
-                          {student.averageScore.toFixed(1)}%
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                        {formatTime(student.timeSpent)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900 dark:text-white">
-                          {formatPercentage(student.completionRate)}
-                        </div>
-                        <div className="w-16 bg-gray-200 dark:bg-gray-700 rounded-full h-2 mt-1">
-                          <div 
-                            className="bg-green-600 h-2 rounded-full" 
-                            style={{ width: `${student.completionRate}%` }}
-                          ></div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                        {new Date(student.lastActivity).toLocaleDateString()}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* Assignments Tab */}
-        {activeTab === 'assignments' && (
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white">Assignment Analytics</h3>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead className="bg-gray-50 dark:bg-gray-700">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                      Assignment
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                      Course
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                      Submissions
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                      Graded
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                      Avg Score
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                      Due Date
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                      Status
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                  {assignmentAnalytics.map((assignment) => (
-                    <tr key={assignment.assignmentId} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900 dark:text-white">
-                          {assignment.assignmentTitle}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                        {assignment.courseTitle}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                        {assignment.totalSubmissions}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                        {assignment.gradedSubmissions}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                        {assignment.averageScore.toFixed(1)}%
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                        {new Date(assignment.dueDate).toLocaleDateString()}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(assignment.status)}`}>
-                          {assignment.status.charAt(0).toUpperCase() + assignment.status.slice(1)}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
+        
+        {/* Export Modal */}
+        <ExportModal
+          isOpen={showExportModal}
+          onClose={() => setShowExportModal(false)}
+          onExport={handleExportReport}
+          loading={exportLoading}
+        />
       </div>
     </div>
   );
