@@ -133,6 +133,48 @@ const mockUsersDatabase: MockUser[] = [
     courses: ['cs101', 'web-dev', 'mobile-dev'],
     createdAt: '2024-01-01T00:00:00Z',
     updatedAt: '2024-01-01T00:00:00Z'
+  },
+  {
+    id: '6',
+    name: 'Emily Davis',
+    email: 'emily@example.com',
+    role: 'STUDENT',
+    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80',
+    isOnline: true,
+    lastSeen: new Date().toISOString(),
+    status: 'available',
+    department: 'Computer Science',
+    courses: ['cs101', 'cs201', 'ui-ux'],
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z'
+  },
+  {
+    id: '7',
+    name: 'David Chen',
+    email: 'david@example.com',
+    role: 'TEACHER',
+    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80',
+    isOnline: true,
+    lastSeen: new Date().toISOString(),
+    status: 'available',
+    department: 'Computer Science',
+    courses: ['cs301', 'cs401', 'machine-learning'],
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z'
+  },
+  {
+    id: '8',
+    name: 'Lisa Anderson',
+    email: 'lisa@example.com',
+    role: 'STUDENT',
+    avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80',
+    isOnline: false,
+    lastSeen: new Date(Date.now() - 1800000).toISOString(),
+    status: 'away',
+    department: 'Computer Science',
+    courses: ['cs101', 'cs201', 'database'],
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z'
   }
 ];
 
@@ -198,13 +240,13 @@ const mockConversationsDatabase: MockConversation[] = [
       senderId: '4',
       content: 'Great work on the project!',
       type: 'text',
-      timestamp: new Date(Date.now() - 86400000).toISOString(),
+      timestamp: new Date(Date.now() - 10800000).toISOString(),
       isRead: true
     },
     unreadCount: 0,
     isGroup: false,
     createdAt: '2024-01-01T00:00:00Z',
-    updatedAt: new Date(Date.now() - 86400000).toISOString()
+    updatedAt: new Date(Date.now() - 10800000).toISOString()
   },
   {
     id: 'conv-5',
@@ -212,16 +254,67 @@ const mockConversationsDatabase: MockConversation[] = [
     lastMessage: {
       id: 'msg-5-1',
       conversationId: 'conv-5',
-      senderId: '5',
-      content: 'Let\'s study together tomorrow',
+      senderId: 'current-user',
+      content: 'Let\'s work on the group project together',
       type: 'text',
-      timestamp: new Date(Date.now() - 172800000).toISOString(),
+      timestamp: new Date(Date.now() - 14400000).toISOString(),
       isRead: true
     },
     unreadCount: 0,
     isGroup: false,
     createdAt: '2024-01-01T00:00:00Z',
-    updatedAt: new Date(Date.now() - 172800000).toISOString()
+    updatedAt: new Date(Date.now() - 14400000).toISOString()
+  },
+  {
+    id: 'conv-6',
+    participants: ['current-user', '6'],
+    lastMessage: {
+      id: 'msg-6-1',
+      conversationId: 'conv-6',
+      senderId: '6',
+      content: 'The UI design looks amazing!',
+      type: 'text',
+      timestamp: new Date(Date.now() - 21600000).toISOString(),
+      isRead: false
+    },
+    unreadCount: 1,
+    isGroup: false,
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: new Date(Date.now() - 21600000).toISOString()
+  },
+  {
+    id: 'conv-7',
+    participants: ['current-user', '7'],
+    lastMessage: {
+      id: 'msg-7-1',
+      conversationId: 'conv-7',
+      senderId: '7',
+      content: 'Your machine learning project is ready for review',
+      type: 'text',
+      timestamp: new Date(Date.now() - 28800000).toISOString(),
+      isRead: true
+    },
+    unreadCount: 0,
+    isGroup: false,
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: new Date(Date.now() - 28800000).toISOString()
+  },
+  {
+    id: 'conv-8',
+    participants: ['current-user', '8'],
+    lastMessage: {
+      id: 'msg-8-1',
+      conversationId: 'conv-8',
+      senderId: 'current-user',
+      content: 'How is the database project coming along?',
+      type: 'text',
+      timestamp: new Date(Date.now() - 36000000).toISOString(),
+      isRead: true
+    },
+    unreadCount: 0,
+    isGroup: false,
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: new Date(Date.now() - 36000000).toISOString()
   }
 ];
 

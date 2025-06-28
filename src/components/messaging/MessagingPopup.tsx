@@ -136,8 +136,13 @@ export const MessagingPopup: React.FC<MessagingPopupProps> = ({
   // Close popup when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (buttonRef?.current && !buttonRef.current.contains(event.target as Node)) {
-        onClose();
+      // Only handle clicks outside if the popup is open and we're not clicking on the button
+      if (isOpen && buttonRef?.current && !buttonRef.current.contains(event.target as Node)) {
+        // Check if the click is outside the popup content
+        const popupElement = document.querySelector('[data-popup="messaging"]');
+        if (popupElement && !popupElement.contains(event.target as Node)) {
+          onClose();
+        }
       }
     };
 
@@ -165,37 +170,49 @@ export const MessagingPopup: React.FC<MessagingPopupProps> = ({
   };
 
   const handleStartChat = (contact: MockRecentContact) => {
+    console.log('Starting chat with:', contact.user.name, 'ID:', contact.user.id);
     // Navigate to the conversation
-    navigate(`/messages/${contact.user.id}`);
+    setTimeout(() => {
+      navigate(`/messages/${contact.user.id}`);
+    }, 100);
     onClose();
   };
 
   const handleNewMessage = () => {
-    navigate('/messages/new');
+    console.log('Opening new message page');
+    setTimeout(() => {
+      navigate('/messages/new');
+    }, 100);
     onClose();
   };
 
   const handlePhoneCall = (contact: MockRecentContact) => {
+    console.log('Starting phone call with:', contact.user.name, 'ID:', contact.user.id);
     // Navigate to phone call page or initiate call
-    navigate(`/calls/${contact.user.id}`, { 
-      state: { 
-        contactName: contact.user.name,
-        contactId: contact.user.id,
-        callType: 'audio'
-      }
-    });
+    setTimeout(() => {
+      navigate(`/calls/${contact.user.id}`, { 
+        state: { 
+          contactName: contact.user.name,
+          contactId: contact.user.id,
+          callType: 'audio'
+        }
+      });
+    }, 100);
     onClose();
   };
 
   const handleVideoCall = (contact: MockRecentContact) => {
+    console.log('Starting video call with:', contact.user.name, 'ID:', contact.user.id);
     // Navigate to video call page or initiate video call
-    navigate(`/calls/${contact.user.id}`, { 
-      state: { 
-        contactName: contact.user.name,
-        contactId: contact.user.id,
-        callType: 'video'
-      }
-    });
+    setTimeout(() => {
+      navigate(`/calls/${contact.user.id}`, { 
+        state: { 
+          contactName: contact.user.name,
+          contactId: contact.user.id,
+          callType: 'video'
+        }
+      });
+    }, 100);
     onClose();
   };
 
@@ -209,10 +226,18 @@ export const MessagingPopup: React.FC<MessagingPopupProps> = ({
   return (
     <>
       {/* Backdrop */}
-      <div className="fixed inset-0 z-40" onClick={onClose} />
+      <div className="fixed inset-0 z-40" onClick={(e) => {
+        // Only close if clicking directly on the backdrop, not on popup content
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
+      }} />
       
       {/* Popup */}
-      <div className={`absolute right-0 top-full mt-1 w-80 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-50 ${isTransitioning ? 'pointer-events-none opacity-50' : ''}`}>
+      <div 
+        data-popup="messaging"
+        className={`absolute right-0 top-full mt-1 w-80 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-50 ${isTransitioning ? 'pointer-events-none opacity-50' : ''}`}
+      >
         {/* Arrow pointing up to the button */}
         <div className="absolute -top-2 right-4 w-4 h-4 bg-white dark:bg-gray-800 border-l border-t border-gray-200 dark:border-gray-700 transform rotate-45"></div>
         
@@ -263,7 +288,13 @@ export const MessagingPopup: React.FC<MessagingPopupProps> = ({
         {/* New Message Button */}
         <div className="p-3 border-b border-gray-200 dark:border-gray-700">
           <button
-            onClick={handleNewMessage}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              if (!isTransitioning) {
+                handleNewMessage();
+              }
+            }}
             disabled={isTransitioning}
             className="w-full flex items-center justify-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white py-2 px-3 rounded-md transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
           >
@@ -291,7 +322,12 @@ export const MessagingPopup: React.FC<MessagingPopupProps> = ({
                 <div
                   key={contact.user.id}
                   className={`flex items-center space-x-2 p-2 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${isTransitioning ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
-                  onClick={() => !isTransitioning && handleStartChat(contact)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (!isTransitioning) {
+                      handleStartChat(contact);
+                    }
+                  }}
                 >
                   {/* Avatar */}
                   <div className="relative flex-shrink-0">
@@ -342,6 +378,7 @@ export const MessagingPopup: React.FC<MessagingPopupProps> = ({
                     <div className="flex items-center space-x-0.5">
                       <button
                         onClick={(e) => {
+                          e.preventDefault();
                           e.stopPropagation();
                           if (!isTransitioning) {
                             handlePhoneCall(contact);
@@ -355,6 +392,7 @@ export const MessagingPopup: React.FC<MessagingPopupProps> = ({
                       </button>
                       <button
                         onClick={(e) => {
+                          e.preventDefault();
                           e.stopPropagation();
                           if (!isTransitioning) {
                             handleVideoCall(contact);
