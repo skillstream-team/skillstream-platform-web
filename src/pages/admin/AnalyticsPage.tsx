@@ -840,67 +840,69 @@ export const AnalyticsPage: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
+            <div className="flex items-center space-x-4">
               <BackButton />
-                <div>
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Analytics Dashboard</h1>
-                <p className="text-gray-600 dark:text-gray-400 mt-1">
+              <div>
+                <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">Analytics Dashboard</h1>
+                <p className="text-sm lg:text-base text-gray-600 dark:text-gray-400 mt-1">
                   Comprehensive insights into your teaching performance and student engagement
-                  </p>
-                </div>
+                </p>
               </div>
-            <div className="flex items-center space-x-3">
-                <select
-                  value={timeRange}
-                  onChange={(e) => setTimeRange(e.target.value as any)}
+            </div>
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
+              <select
+                value={timeRange}
+                onChange={(e) => setTimeRange(e.target.value as any)}
                 className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
-                >
-                  <option value="7d">Last 7 days</option>
-                  <option value="30d">Last 30 days</option>
-                  <option value="90d">Last 90 days</option>
-                  <option value="1y">Last year</option>
-                </select>
+              >
+                <option value="7d">Last 7 days</option>
+                <option value="30d">Last 30 days</option>
+                <option value="90d">Last 90 days</option>
+                <option value="1y">Last year</option>
+              </select>
               <button 
                 onClick={() => setShowExportModal(true)}
-                className="flex items-center px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                className="flex items-center justify-center px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
               >
-                  <Download className="h-3.5 w-3.5 mr-1.5" />
-                  Export Report
-                </button>
+                <Download className="h-3.5 w-3.5 mr-1.5" />
+                Export Report
+              </button>
             </div>
           </div>
         </div>
 
         {/* Navigation Tabs */}
         <div className="mb-8">
-          <nav className="flex space-x-8">
-            {[
-              { id: 'overview', label: 'Overview', icon: BarChart3 },
-              { id: 'needs-attention', label: 'Needs Attention', icon: AlertCircle },
-              { id: 'revenue', label: 'Revenue', icon: DollarSign },
-              { id: 'performance', label: 'Performance', icon: Target },
-              { id: 'insights', label: 'Insights', icon: TrendingUp },
-              { id: 'courses', label: 'Courses', icon: BookOpen },
-              { id: 'students', label: 'Students', icon: Users },
-              { id: 'assignments', label: 'Assignments', icon: FileText }
-            ].map((tab) => {
-              const Icon = tab.icon;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id as any)}
-                  className={`flex items-center space-x-2 py-2 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === tab.id
-                      ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
-                  }`}
-                >
-                  <Icon className="h-4 w-4" />
-                  <span>{tab.label}</span>
-                </button>
-              );
-            })}
+          <nav className="flex overflow-x-auto scrollbar-hide">
+            <div className="flex space-x-8 min-w-max">
+              {[
+                { id: 'overview', label: 'Overview', icon: BarChart3 },
+                { id: 'needs-attention', label: 'Needs Attention', icon: AlertCircle },
+                { id: 'revenue', label: 'Revenue', icon: DollarSign },
+                { id: 'performance', label: 'Performance', icon: Target },
+                { id: 'insights', label: 'Insights', icon: TrendingUp },
+                { id: 'courses', label: 'Courses', icon: BookOpen },
+                { id: 'students', label: 'Students', icon: Users },
+                { id: 'assignments', label: 'Assignments', icon: FileText }
+              ].map((tab) => {
+                const Icon = tab.icon;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id as any)}
+                    className={`flex items-center space-x-2 py-2 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
+                      activeTab === tab.id
+                        ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+                    }`}
+                  >
+                    <Icon className="h-4 w-4 flex-shrink-0" />
+                    <span>{tab.label}</span>
+                  </button>
+                );
+              })}
+            </div>
           </nav>
         </div>
 
@@ -908,20 +910,20 @@ export const AnalyticsPage: React.FC = () => {
         {activeTab === 'overview' && analytics && (
           <>
             {/* Key Metrics */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 lg:gap-6 mb-8">
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 lg:p-6">
                 <div className="flex items-center">
                   <div className="flex-shrink-0">
-                    <BookOpen className="h-8 w-8 text-blue-600 dark:text-blue-400" />
+                    <BookOpen className="h-6 w-6 lg:h-8 lg:w-8 text-blue-600 dark:text-blue-400" />
                   </div>
-                  <div className="ml-4 flex-1">
-                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Courses</p>
-                    <p className="text-2xl font-semibold text-gray-900 dark:text-white">
+                  <div className="ml-3 lg:ml-4 flex-1 min-w-0">
+                    <p className="text-xs lg:text-sm font-medium text-gray-500 dark:text-gray-400">Total Courses</p>
+                    <p className="text-xl lg:text-2xl font-semibold text-gray-900 dark:text-white">
                       {analytics.totalCourses}
                     </p>
                     <div className="flex items-center mt-1">
-                      <ArrowUpRight className="w-4 h-4 text-green-500" />
-                      <span className="text-sm text-green-600 dark:text-green-400">
+                      <ArrowUpRight className="w-3 h-3 lg:w-4 lg:h-4 text-green-500" />
+                      <span className="text-xs lg:text-sm text-green-600 dark:text-green-400">
                         +{analytics.monthlyGrowth}% this month
                       </span>
                     </div>
@@ -929,19 +931,19 @@ export const AnalyticsPage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 lg:p-6">
                 <div className="flex items-center">
                   <div className="flex-shrink-0">
-                    <Users className="h-8 w-8 text-green-600 dark:text-green-400" />
+                    <Users className="h-6 w-6 lg:h-8 lg:w-8 text-green-600 dark:text-green-400" />
                   </div>
-                  <div className="ml-4 flex-1">
-                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Students</p>
-                    <p className="text-2xl font-semibold text-gray-900 dark:text-white">
+                  <div className="ml-3 lg:ml-4 flex-1 min-w-0">
+                    <p className="text-xs lg:text-sm font-medium text-gray-500 dark:text-gray-400">Total Students</p>
+                    <p className="text-xl lg:text-2xl font-semibold text-gray-900 dark:text-white">
                       {formatNumber(analytics.totalStudents)}
                     </p>
                     <div className="flex items-center mt-1">
-                      <ArrowUpRight className="w-4 h-4 text-green-500" />
-                      <span className="text-sm text-green-600 dark:text-green-400">
+                      <ArrowUpRight className="w-3 h-3 lg:w-4 lg:h-4 text-green-500" />
+                      <span className="text-xs lg:text-sm text-green-600 dark:text-green-400">
                         {analytics.activeStudents} active
                       </span>
                     </div>
@@ -949,19 +951,19 @@ export const AnalyticsPage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 lg:p-6">
                 <div className="flex items-center">
                   <div className="flex-shrink-0">
-                    <FileText className="h-8 w-8 text-orange-600 dark:text-orange-400" />
+                    <FileText className="h-6 w-6 lg:h-8 lg:w-8 text-orange-600 dark:text-orange-400" />
                   </div>
-                  <div className="ml-4 flex-1">
-                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Pending Assignments</p>
-                    <p className="text-2xl font-semibold text-gray-900 dark:text-white">
+                  <div className="ml-3 lg:ml-4 flex-1 min-w-0">
+                    <p className="text-xs lg:text-sm font-medium text-gray-500 dark:text-gray-400">Pending Assignments</p>
+                    <p className="text-xl lg:text-2xl font-semibold text-gray-900 dark:text-white">
                       {analytics.pendingAssignments}
                     </p>
                     <div className="flex items-center mt-1">
-                      <AlertCircle className="w-4 h-4 text-orange-500" />
-                      <span className="text-sm text-orange-600 dark:text-orange-400">
+                      <AlertCircle className="w-3 h-3 lg:w-4 lg:h-4 text-orange-500" />
+                      <span className="text-xs lg:text-sm text-orange-600 dark:text-orange-400">
                         Need attention
                       </span>
                     </div>
@@ -969,22 +971,22 @@ export const AnalyticsPage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 lg:p-6">
                 <div className="flex items-center">
                   <div className="flex-shrink-0">
-                    <Target className={`h-8 w-8 ${getCompletionColor(analytics.averageCompletionRate).icon}`} />
+                    <Target className={`h-6 w-6 lg:h-8 lg:w-8 ${getCompletionColor(analytics.averageCompletionRate).icon}`} />
                   </div>
-                  <div className="ml-4 flex-1">
-                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Avg. Completion</p>
-                    <p className={`text-2xl font-semibold ${getCompletionColor(analytics.averageCompletionRate).text}`}>
+                  <div className="ml-3 lg:ml-4 flex-1 min-w-0">
+                    <p className="text-xs lg:text-sm font-medium text-gray-500 dark:text-gray-400">Avg. Completion</p>
+                    <p className={`text-xl lg:text-2xl font-semibold ${getCompletionColor(analytics.averageCompletionRate).text}`}>
                       {formatPercentage(analytics.averageCompletionRate)}
                     </p>
                     <div className="flex items-center justify-between mt-2">
                       <div className="flex items-center">
-                      <ArrowUpRight className="w-4 h-4 text-green-500" />
-                      <span className="text-sm text-green-600 dark:text-green-400">
-                        +5.2% vs last month
-                      </span>
+                        <ArrowUpRight className="w-3 h-3 lg:w-4 lg:h-4 text-green-500" />
+                        <span className="text-xs lg:text-sm text-green-600 dark:text-green-400">
+                          +5.2% vs last month
+                        </span>
                       </div>
                       {analytics.averageCompletionRate < 75 && (
                         <button className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-1 rounded hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors">
@@ -996,19 +998,19 @@ export const AnalyticsPage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 lg:p-6">
                 <div className="flex items-center">
                   <div className="flex-shrink-0">
-                    <DollarSign className="h-8 w-8 text-emerald-600 dark:text-emerald-400" />
+                    <DollarSign className="h-6 w-6 lg:h-8 lg:w-8 text-emerald-600 dark:text-emerald-400" />
                   </div>
-                  <div className="ml-4 flex-1">
-                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Monthly Revenue</p>
-                    <p className="text-2xl font-semibold text-gray-900 dark:text-white">
+                  <div className="ml-3 lg:ml-4 flex-1 min-w-0">
+                    <p className="text-xs lg:text-sm font-medium text-gray-500 dark:text-gray-400">Monthly Revenue</p>
+                    <p className="text-xl lg:text-2xl font-semibold text-gray-900 dark:text-white">
                       {formatCurrency(analytics.monthlyRevenue)}
                     </p>
                     <div className="flex items-center mt-1">
-                      <ArrowUpRight className="w-4 h-4 text-green-500" />
-                      <span className="text-sm text-green-600 dark:text-green-400">
+                      <ArrowUpRight className="w-3 h-3 lg:w-4 lg:h-4 text-green-500" />
+                      <span className="text-xs lg:text-sm text-green-600 dark:text-green-400">
                         +{analytics.monthlyGrowth}% vs last month
                       </span>
                     </div>

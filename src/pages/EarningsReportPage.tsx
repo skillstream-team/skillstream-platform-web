@@ -6,7 +6,6 @@ import {
   Calendar,
   Download,
   ArrowLeft,
-  BarChart3,
   Users,
   Building,
   FileText,
