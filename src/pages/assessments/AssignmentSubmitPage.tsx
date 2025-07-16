@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Assignment } from '../../types';
-import { apiService } from '../../services/api';
+import { apiService, getAssignment, submitAssignment, uploadFile } from '../../services/api';
 import { 
   ArrowLeftIcon,
   DocumentTextIcon,
@@ -30,7 +30,7 @@ const AssignmentSubmitPage: React.FC = () => {
   const loadAssignment = async () => {
     try {
       setLoading(true);
-      const assignmentData = await apiService.getAssignment(assignmentId!);
+      const assignmentData = await getAssignment(assignmentId!);
       setAssignment(assignmentData);
     } catch (error) {
       console.error('Failed to load assignment:', error);
@@ -65,10 +65,12 @@ const AssignmentSubmitPage: React.FC = () => {
       const uploadedFiles: string[] = [];
       for (const file of attachments) {
         try {
-          const uploadResult = await apiService.uploadFile(file, 'personal', {
-            category: 'assignment',
-            tags: ['assignment-submission']
-          });
+          const formData = new FormData();
+          formData.append('file', file);
+          formData.append('category', 'assignment');
+          formData.append('tags', 'assignment-submission');
+          
+          const uploadResult = await uploadFile(formData);
           uploadedFiles.push(uploadResult.url);
         } catch (error) {
           console.error('Failed to upload file:', file.name, error);
@@ -78,7 +80,7 @@ const AssignmentSubmitPage: React.FC = () => {
       }
 
       // Submit assignment
-      await apiService.submitAssignment(assignmentId!, {
+      await submitAssignment(assignmentId!, {
         content,
         attachments: uploadedFiles
       });

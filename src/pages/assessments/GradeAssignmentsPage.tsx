@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AssignmentSubmissionSummary, StudentSubmission } from '../../types';
-import { apiService } from '../../services/api';
+import { AssignmentSubmissionSummary, StudentSubmission, Assignment } from '../../types';
+import { getAssignmentsForCourse, getAssignmentSubmissionSummaries } from '../../services/api';
 import { 
   DocumentTextIcon, 
   ClockIcon, 
@@ -27,93 +27,45 @@ const GradeAssignmentsPage: React.FC = () => {
 
   useEffect(() => {
     loadSubmissionSummaries();
-  }, []);
+  }, [selectedCourse, filter]);
 
   const loadSubmissionSummaries = async () => {
     try {
       setLoading(true);
-      // For now, using mock data - replace with actual API call
-      const summaries = await apiService.getAllSubmissionSummaries();
-      setSubmissionSummaries(summaries);
+      
+      // Build query parameters based on current filters
+      const params: any = {};
+      
+      if (selectedCourse !== 'all') {
+        params.courseId = selectedCourse;
+      }
+      
+      if (filter !== 'all') {
+        // Map filter values to API status values
+        switch (filter) {
+          case 'submitted':
+            params.status = 'submitted';
+            break;
+          case 'overdue':
+            params.status = 'late';
+            break;
+          case 'urgent':
+            params.status = 'late';
+            break;
+        }
+      }
+      
+      // Add pagination and sorting
+      params.page = 1;
+      params.limit = 50;
+      params.sortBy = 'submittedAt';
+      params.sortOrder = 'desc';
+      
+      const response = await getAssignmentSubmissionSummaries(params);
+      setSubmissionSummaries(response.data);
     } catch (error) {
       console.error('Failed to load submission summaries:', error);
-      // Fallback to mock data
-      setSubmissionSummaries([
-        {
-          assignmentId: 'assign-1',
-          assignmentTitle: 'React Fundamentals - Final Project',
-          courseId: 'course-1',
-          courseTitle: 'Web Development',
-          totalStudents: 15,
-          submittedCount: 3,
-          pendingCount: 10,
-          gradedCount: 0,
-          overdueCount: 2,
-          averageScore: 0,
-          dueDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-          status: 'overdue',
-          submissions: [
-            {
-              studentId: 'student-1',
-              studentName: 'John Doe',
-              studentEmail: 'john.doe@example.com',
-              studentAvatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80',
-              submissionId: 'sub-1',
-              status: 'submitted',
-              submittedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-              score: undefined,
-              feedback: undefined,
-              isLate: true,
-              attachments: ['project.zip', 'README.md'],
-              lastActivity: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()
-            },
-            {
-              studentId: 'student-2',
-              studentName: 'Jane Smith',
-              studentEmail: 'jane.smith@example.com',
-              studentAvatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80',
-              submissionId: 'sub-2',
-              status: 'submitted',
-              submittedAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
-              score: undefined,
-              feedback: undefined,
-              isLate: false,
-              attachments: ['react-app.zip', 'documentation.pdf'],
-              lastActivity: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString()
-            }
-          ]
-        },
-        {
-          assignmentId: 'assign-3',
-          assignmentTitle: 'CSS Layout Assignment',
-          courseId: 'course-3',
-          courseTitle: 'Frontend Design',
-          totalStudents: 10,
-          submittedCount: 7,
-          pendingCount: 3,
-          gradedCount: 0,
-          overdueCount: 0,
-          averageScore: 0,
-          dueDate: new Date().toISOString(),
-          status: 'due-today',
-          submissions: [
-            {
-              studentId: 'student-1',
-              studentName: 'John Doe',
-              studentEmail: 'john.doe@example.com',
-              studentAvatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80',
-              submissionId: 'sub-3',
-              status: 'submitted',
-              submittedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-              score: undefined,
-              feedback: undefined,
-              isLate: false,
-              attachments: ['layout.html', 'styles.css'],
-              lastActivity: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
-            }
-          ]
-        }
-      ]);
+      setSubmissionSummaries([]);
     } finally {
       setLoading(false);
     }

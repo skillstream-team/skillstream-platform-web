@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Assignment, AssignmentSubmission } from '../../types';
-import { apiService } from '../../services/api';
+import { Assignment } from '../../types';
+import { apiService, getMyAssignments } from '../../services/api';
 import { 
   CalendarIcon, 
   ClockIcon, 
@@ -28,20 +28,8 @@ const AssignmentsPage: React.FC = () => {
   const loadAssignments = async () => {
     try {
       setLoading(true);
-      // Get enrolled courses first
-      const enrolledCourses = await apiService.getMyCourses();
-      
-      // Get assignments for each course
-      const allAssignments: Assignment[] = [];
-      for (const course of enrolledCourses) {
-        try {
-          const courseAssignments = await apiService.getAssignments(course.id);
-          allAssignments.push(...courseAssignments);
-        } catch (error) {
-          console.error(`Failed to load assignments for course ${course.id}:`, error);
-        }
-      }
-      
+      // Get all assignments for the current user across all enrolled courses
+      const allAssignments = await getMyAssignments();
       setAssignments(allAssignments);
     } catch (error) {
       console.error('Failed to load assignments:', error);

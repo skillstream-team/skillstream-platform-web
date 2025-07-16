@@ -1,13 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Quiz, QuizQuestion, QuizAttempt } from '../../types';
-import { apiService } from '../../services/api';
+import { apiService, getQuizForTaking, submitQuizAnswers } from '../../services/api';
 import { 
   ClockIcon, 
   CheckCircleIcon, 
-  XCircleIcon,
   ExclamationTriangleIcon,
-  DocumentTextIcon,
   ArrowLeftIcon,
   ArrowRightIcon,
   FlagIcon
@@ -51,7 +49,7 @@ const QuizPage: React.FC = () => {
   const loadQuiz = async () => {
     try {
       setLoading(true);
-      const quizData = await apiService.getQuiz(quizId!);
+      const quizData = await getQuizForTaking(quizId!);
       setQuiz(quizData);
       if (quizData.timeLimit) {
         setTimeLeft(quizData.timeLimit * 60); // Convert to seconds
@@ -87,7 +85,13 @@ const QuizPage: React.FC = () => {
 
     try {
       setSubmitting(true);
-      const result = await apiService.submitQuizAttempt(quizId!, answers);
+      // Transform answers to the expected format
+      const formattedAnswers = Object.entries(answers).map(([questionId, answer]) => ({
+        questionId: parseInt(questionId),
+        selectedOptionIds: Array.isArray(answer) ? answer : [answer]
+      }));
+      
+      const result = await submitQuizAnswers(quizId!, formattedAnswers);
       setAttempt(result);
       setShowResults(true);
     } catch (error) {

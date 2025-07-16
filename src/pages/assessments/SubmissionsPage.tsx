@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AssignmentSubmissionSummary, StudentSubmission } from '../../types';
-import { apiService } from '../../services/api';
+import { getAssignmentSubmissionSummaries } from '../../services/api';
 import { 
   DocumentTextIcon, 
   ClockIcon, 
@@ -26,13 +26,45 @@ const SubmissionsPage: React.FC = () => {
 
   useEffect(() => {
     loadSubmissionSummaries();
-  }, []);
+  }, [selectedCourse, filter]);
 
   const loadSubmissionSummaries = async () => {
     try {
       setLoading(true);
-      const summaries = await apiService.getAllSubmissionSummaries();
-      setSubmissionSummaries(summaries);
+      
+      // Build query parameters based on current filters
+      const params: any = {};
+      
+      if (selectedCourse !== 'all') {
+        params.courseId = selectedCourse;
+      }
+      
+      if (filter !== 'all') {
+        // Map filter values to API status values
+        switch (filter) {
+          case 'submitted':
+            params.status = 'submitted';
+            break;
+          case 'graded':
+            params.status = 'graded';
+            break;
+          case 'pending':
+            params.status = 'pending';
+            break;
+          case 'overdue':
+            params.status = 'late';
+            break;
+        }
+      }
+      
+      // Add pagination and sorting
+      params.page = 1;
+      params.limit = 50;
+      params.sortBy = 'submittedAt';
+      params.sortOrder = 'desc';
+      
+      const response = await getAssignmentSubmissionSummaries(params);
+      setSubmissionSummaries(response.data);
     } catch (error) {
       console.error('Failed to load submission summaries:', error);
     } finally {
