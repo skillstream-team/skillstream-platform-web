@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   Calendar, 
   Clock, 
@@ -6,8 +6,6 @@ import {
   BookOpen, 
   Users, 
   TrendingUp, 
-  CheckCircle, 
-  AlertCircle,
   Plus,
   Edit3,
   Trash2,
@@ -15,11 +13,7 @@ import {
   X,
   ArrowUp,
   ArrowDown,
-  GripVertical,
-  Eye,
-  Settings,
-  Download,
-  Share2
+  GripVertical
 } from 'lucide-react';
 import { Course, Lesson } from '../types';
 
@@ -51,7 +45,6 @@ interface CurriculumPlannerProps {
 }
 
 export const CurriculumPlanner: React.FC<CurriculumPlannerProps> = ({
-  course,
   sections,
   onClose,
   onSave
@@ -130,19 +123,6 @@ export const CurriculumPlanner: React.FC<CurriculumPlannerProps> = ({
         ? { ...section, objectives: section.objectives.filter(obj => obj.id !== objectiveId) }
         : section
     ));
-  };
-
-  const moveSection = (fromIndex: number, toIndex: number) => {
-    const newSections = [...curriculumSections];
-    const [movedSection] = newSections.splice(fromIndex, 1);
-    newSections.splice(toIndex, 0, movedSection);
-    
-    // Update order
-    newSections.forEach((section, index) => {
-      section.order = index;
-    });
-    
-    setCurriculumSections(newSections);
   };
 
   const getObjectiveIcon = (type: string) => {

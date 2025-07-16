@@ -18,6 +18,7 @@ import {
   Check
 } from 'lucide-react';
 import { useAuthStore } from '../../store/auth';
+import { getTodos, createTodo, updateTodo as updateTodoApi, deleteTodo as deleteTodoApi } from '../../services/api';
 
 interface TodoItem {
   id: string;
@@ -94,71 +95,12 @@ export const TodoList: React.FC<TodoListProps> = ({
 
   const loadTodos = async () => {
     try {
-      // Mock data for demo - replace with actual API calls
-      const mockTodos: TodoItem[] = [
-        {
-          id: '1',
-          title: 'Complete React Assignment',
-          description: 'Finish the component library project for React Fundamentals course',
-          completed: false,
-          priority: 'high',
-          dueDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
-          category: 'Assignment',
-          tags: ['react', 'frontend', 'project'],
-          assignedTo: user?.id,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          estimatedTime: 120,
-          notes: 'Need to implement responsive design and add unit tests'
-        },
-        {
-          id: '2',
-          title: 'Study for JavaScript Quiz',
-          description: 'Review ES6 features and async programming concepts',
-          completed: false,
-          priority: 'medium',
-          dueDate: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000).toISOString(),
-          category: 'Study',
-          tags: ['javascript', 'quiz', 'es6'],
-          assignedTo: user?.id,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          estimatedTime: 60
-        },
-        {
-          id: '3',
-          title: 'Team Study Session',
-          description: 'Weekly group study session for advanced topics',
-          completed: true,
-          priority: 'low',
-          dueDate: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-          category: 'Meeting',
-          tags: ['study-group', 'collaboration'],
-          assignedTo: user?.id,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          estimatedTime: 90,
-          actualTime: 85
-        },
-        {
-          id: '4',
-          title: 'Prepare Presentation',
-          description: 'Create slides for the final project presentation',
-          completed: false,
-          priority: 'urgent',
-          dueDate: new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString(),
-          category: 'Project',
-          tags: ['presentation', 'final-project'],
-          assignedTo: user?.id,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          estimatedTime: 180
-        }
-      ];
-
-      setTodos(mockTodos);
+      setLoading(true);
+      const todos = await getTodos();
+      setTodos(todos);
     } catch (error) {
       console.error('Error loading todos:', error);
+      setTodos([]);
     } finally {
       setLoading(false);
     }
@@ -230,35 +172,43 @@ export const TodoList: React.FC<TodoListProps> = ({
   };
 
   const toggleTodo = async (todoId: string) => {
-    setTodos(prev => prev.map(todo => 
-      todo.id === todoId 
-        ? { ...todo, completed: !todo.completed, updatedAt: new Date().toISOString() }
-        : todo
-    ));
+    try {
+      const todo = todos.find(t => t.id === todoId);
+      if (!todo) return;
+      const updated = await updateTodoApi(todoId, { completed: !todo.completed });
+      setTodos(prev => prev.map(t => t.id === todoId ? updated : t));
+    } catch (error) {
+      console.error('Error toggling todo:', error);
+    }
   };
 
   const deleteTodo = async (todoId: string) => {
-    setTodos(prev => prev.filter(todo => todo.id !== todoId));
+    try {
+      await deleteTodoApi(todoId);
+      setTodos(prev => prev.filter(todo => todo.id !== todoId));
+    } catch (error) {
+      console.error('Error deleting todo:', error);
+    }
   };
 
   const addTodo = async (todoData: Omit<TodoItem, 'id' | 'createdAt' | 'updatedAt'>) => {
-    const newTodo: TodoItem = {
-      ...todoData,
-      id: Date.now().toString(),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-    setTodos(prev => [...prev, newTodo]);
-    setShowAddModal(false);
+    try {
+      const newTodo = await createTodo(todoData);
+      setTodos(prev => [...prev, newTodo]);
+      setShowAddModal(false);
+    } catch (error) {
+      console.error('Error adding todo:', error);
+    }
   };
 
   const updateTodo = async (todoId: string, updates: Partial<TodoItem>) => {
-    setTodos(prev => prev.map(todo => 
-      todo.id === todoId 
-        ? { ...todo, ...updates, updatedAt: new Date().toISOString() }
-        : todo
-    ));
-    setEditingTodo(null);
+    try {
+      const updated = await updateTodoApi(todoId, updates);
+      setTodos(prev => prev.map(todo => todo.id === todoId ? updated : todo));
+      setEditingTodo(null);
+    } catch (error) {
+      console.error('Error updating todo:', error);
+    }
   };
 
   const getPriorityColor = (priority: string) => {

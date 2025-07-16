@@ -14,7 +14,7 @@ import {
   Search
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
-import { mockNotificationService, MockNotification } from '../../services/mockDatabase';
+import { getNotifications, markNotificationAsRead, markAllNotificationsAsRead, deleteNotification } from '../../services/api';
 
 interface NotificationPopupProps {
   isOpen: boolean;
@@ -26,10 +26,9 @@ interface NotificationPopupProps {
 export const NotificationPopup: React.FC<NotificationPopupProps> = ({
   isOpen,
   onClose,
-  buttonRef,
   openToExpanded = false
 }) => {
-  const [notifications, setNotifications] = useState<MockNotification[]>([]);
+  const [notifications, setNotifications] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showAllNotifications, setShowAllNotifications] = useState(openToExpanded);
   const [filterType, setFilterType] = useState<'all' | 'unread' | 'read'>('all');
@@ -42,21 +41,29 @@ export const NotificationPopup: React.FC<NotificationPopupProps> = ({
   // Fetch notifications for popup (show top 5)
   const fetchPopupNotifications = async () => {
     setIsLoading(true);
-    const { notifications: notifs } = await mockNotificationService.getNotifications({ limit: 5 });
-    setNotifications(notifs);
+    try {
+      const notifs = await getNotifications();
+      setNotifications(notifs.slice(0, 5));
+    } catch (error) {
+      setNotifications([]);
+    }
     setIsLoading(false);
   };
 
   // Fetch notifications for modal (with search/filter)
   const fetchModalNotifications = async () => {
     setIsLoading(true);
-    let filters: any = {};
-    if (filterType === 'unread') filters.isRead = false;
-    if (filterType === 'read') filters.isRead = true;
-    if (searchQuery) filters.search = searchQuery;
-    const { notifications: notifs, total } = await mockNotificationService.getNotifications(filters);
-    setNotifications(notifs);
-    setTotal(total);
+    try {
+      let notifs = await getNotifications();
+      if (filterType === 'unread') notifs = notifs.filter((n: any) => !n.isRead);
+      if (filterType === 'read') notifs = notifs.filter((n: any) => n.isRead);
+      if (searchQuery) notifs = notifs.filter((n: any) => n.title.toLowerCase().includes(searchQuery.toLowerCase()) || n.message.toLowerCase().includes(searchQuery.toLowerCase()));
+      setNotifications(notifs);
+      setTotal(notifs.length);
+    } catch (error) {
+      setNotifications([]);
+      setTotal(0);
+    }
     setIsLoading(false);
   };
 
@@ -79,27 +86,27 @@ export const NotificationPopup: React.FC<NotificationPopupProps> = ({
 
   // Mark as read
   const markAsRead = async (id: string) => {
-    await mockNotificationService.markAsRead(id);
+    await markNotificationAsRead(id);
     if (showAllNotifications) fetchModalNotifications();
     else fetchPopupNotifications();
   };
 
   // Mark all as read
   const markAllAsRead = async () => {
-    await mockNotificationService.markAllAsRead();
+    await markAllNotificationsAsRead();
     if (showAllNotifications) fetchModalNotifications();
     else fetchPopupNotifications();
   };
 
   // Delete notification
-  const deleteNotification = async (id: string) => {
-    await mockNotificationService.deleteNotification(id);
+  const handleDeleteNotification = async (id: string) => {
+    await deleteNotification(id);
     if (showAllNotifications) fetchModalNotifications();
     else fetchPopupNotifications();
   };
 
   // Action click handler for modal
-  const handleModalActionClick = (notification: MockNotification) => {
+  const handleModalActionClick = (notification: any) => {
     markAsRead(notification.id);
     setShowAllNotifications(false);
     if (notification.action?.route) {
@@ -110,7 +117,7 @@ export const NotificationPopup: React.FC<NotificationPopupProps> = ({
   };
 
   // Action click handler for popup
-  const handleActionClick = (notification: MockNotification) => {
+  const handleActionClick = (notification: any) => {
     markAsRead(notification.id);
     if (notification.action?.route) {
       setTimeout(() => {
@@ -270,7 +277,7 @@ export const NotificationPopup: React.FC<NotificationPopupProps> = ({
                           </button>
                         )}
                         <button
-                          onClick={() => deleteNotification(notification.id)}
+                          onClick={() => handleDeleteNotification(notification.id)}
                           className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
                         >
                           <Trash2 className="h-3 w-3" />
@@ -434,7 +441,7 @@ export const NotificationPopup: React.FC<NotificationPopupProps> = ({
                                   </button>
                                 )}
                                 <button
-                                  onClick={() => deleteNotification(notification.id)}
+                                  onClick={() => handleDeleteNotification(notification.id)}
                                   className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                                   title="Delete notification"
                                 >

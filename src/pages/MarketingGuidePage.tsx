@@ -11,7 +11,6 @@ import {
 } from 'lucide-react';
 import { BackButton } from '../components/common/BackButton';
 import { Course } from '../types';
-import { dummyCourses } from '../data/courseData';
 
 interface MarketingTemplate {
   id: string;
@@ -101,11 +100,8 @@ Check out all the incredible courses available: [SKILLSTREAM PLATFORM GENERAL LI
 
   useEffect(() => {
     if (courseId) {
-      // Find the course from dummy data
-      const foundCourse = dummyCourses.find(c => c.id === courseId);
-      if (foundCourse) {
-        setCourse(foundCourse);
-      }
+      // TODO: Replace with actual API call
+      setCourse(null);
     }
   }, [courseId]);
 

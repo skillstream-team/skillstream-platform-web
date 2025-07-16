@@ -10,24 +10,16 @@ import {
   BookOpen,
   UserPlus,
   Settings,
-  Video,
-  FileText,
-  Star,
   Clock,
   X,
-  CheckCircle,
   AlertCircle,
   GraduationCap,
-  Mail,
-  Phone,
-  Globe,
-  Filter,
   SortAsc,
   SortDesc
 } from 'lucide-react';
 import { useAuthStore } from '../../store/auth';
-import { apiService } from '../../services/api';
 import { MessagingPanel } from '../messaging/MessagingPanel';
+import { getStudyGroups, getTeachers, getStudents } from '../../services/api';
 
 interface StudyGroup {
   id: string;
@@ -85,19 +77,14 @@ interface StudyGroupProps {
 export const StudyGroups: React.FC<StudyGroupProps> = ({ courseId }) => {
   const { user } = useAuthStore();
   const [groups, setGroups] = useState<StudyGroup[]>([]);
-  const [myGroups, setMyGroups] = useState<StudyGroup[]>([]);
-  const [people, setPeople] = useState<Person[]>([]);
   const [teachers, setTeachers] = useState<Person[]>([]);
   const [students, setStudents] = useState<Person[]>([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showJoinModal, setShowJoinModal] = useState(false);
-  const [selectedGroup, setSelectedGroup] = useState<StudyGroup | null>(null);
-  const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'groups' | 'students' | 'teachers'>('groups');
   const [showMessaging, setShowMessaging] = useState(false);
-  const [messagingRecipient, setMessagingRecipient] = useState<string>('');
   const [filterRole, setFilterRole] = useState<string>('all');
   const [sortBy, setSortBy] = useState<'name' | 'recent' | 'courses'>('name');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
@@ -108,127 +95,20 @@ export const StudyGroups: React.FC<StudyGroupProps> = ({ courseId }) => {
 
   const loadData = async () => {
     try {
-      // Mock data for demo - replace with actual API calls
-      const mockGroups: StudyGroup[] = [
-        {
-          id: '1',
-          name: 'React Study Group',
-          description: 'Weekly study sessions for React fundamentals and advanced concepts',
-          courseId: '1',
-          courseName: 'React Fundamentals',
-          creatorId: 'user1',
-          creatorName: 'John Doe',
-          members: [
-            { id: 'user1', name: 'John Doe', role: 'creator', joinedAt: '2024-01-01', isOnline: true },
-            { id: 'user2', name: 'Jane Smith', role: 'member', joinedAt: '2024-01-02', isOnline: false },
-            { id: 'user3', name: 'Bob Johnson', role: 'member', joinedAt: '2024-01-03', isOnline: true }
-          ],
-          maxMembers: 10,
-          isPrivate: false,
-          meetingSchedule: 'Every Tuesday at 7 PM',
-          location: 'Online (Zoom)',
-          tags: ['react', 'javascript', 'frontend'],
-          createdAt: '2024-01-01',
-          lastActivity: '2024-01-15'
-        },
-        {
-          id: '2',
-          name: 'JavaScript Masters',
-          description: 'Advanced JavaScript concepts and best practices',
-          courseId: '2',
-          courseName: 'JavaScript Advanced',
-          creatorId: 'user4',
-          creatorName: 'Alice Brown',
-          members: [
-            { id: 'user4', name: 'Alice Brown', role: 'creator', joinedAt: '2024-01-01', isOnline: true },
-            { id: 'user5', name: 'Charlie Wilson', role: 'admin', joinedAt: '2024-01-02', isOnline: true }
-          ],
-          maxMembers: 8,
-          isPrivate: true,
-          meetingSchedule: 'Every Thursday at 6 PM',
-          location: 'Campus Library',
-          tags: ['javascript', 'advanced', 'es6'],
-          createdAt: '2024-01-01',
-          lastActivity: '2024-01-14'
-        }
-      ];
-
-      const mockPeople: Person[] = [
-        {
-          id: 'user1',
-          name: 'John Doe',
-          email: 'john.doe@example.com',
-          role: 'STUDENT',
-          bio: 'Passionate about web development and React',
-          enrolledCourses: [
-            { id: '1', title: 'React Fundamentals', description: 'Learn React basics', enrollments: 150 },
-            { id: '2', title: 'JavaScript Advanced', description: 'Advanced JS concepts', enrollments: 89 }
-          ],
-          isOnline: true,
-          lastSeen: new Date().toISOString(),
-          skills: ['React', 'JavaScript', 'HTML', 'CSS'],
-          location: 'New York, NY',
-          joinedAt: '2024-01-01'
-        },
-        {
-          id: 'user2',
-          name: 'Jane Smith',
-          email: 'jane.smith@example.com',
-          role: 'STUDENT',
-          bio: 'Full-stack developer in training',
-          enrolledCourses: [
-            { id: '1', title: 'React Fundamentals', description: 'Learn React basics', enrollments: 150 }
-          ],
-          isOnline: false,
-          lastSeen: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-          skills: ['Python', 'Django', 'JavaScript'],
-          location: 'San Francisco, CA',
-          joinedAt: '2024-01-02'
-        },
-        {
-          id: 'teacher1',
-          name: 'Dr. Sarah Johnson',
-          email: 'sarah.johnson@example.com',
-          role: 'TEACHER',
-          bio: 'Senior Software Engineer with 10+ years of experience in web development',
-          courses: [
-            { id: '1', title: 'React Fundamentals', description: 'Learn React basics', enrollments: 150 },
-            { id: '3', title: 'Node.js Backend', description: 'Server-side development', enrollments: 95 }
-          ],
-          isOnline: true,
-          lastSeen: new Date().toISOString(),
-          skills: ['React', 'Node.js', 'TypeScript', 'MongoDB'],
-          location: 'Boston, MA',
-          joinedAt: '2023-06-01'
-        },
-        {
-          id: 'teacher2',
-          name: 'Prof. Michael Chen',
-          email: 'michael.chen@example.com',
-          role: 'TEACHER',
-          bio: 'Computer Science professor specializing in algorithms and data structures',
-          courses: [
-            { id: '2', title: 'JavaScript Advanced', description: 'Advanced JS concepts', enrollments: 89 },
-            { id: '4', title: 'Data Structures', description: 'Learn fundamental data structures', enrollments: 120 }
-          ],
-          isOnline: false,
-          lastSeen: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
-          skills: ['JavaScript', 'Python', 'Algorithms', 'Data Structures'],
-          location: 'Seattle, WA',
-          joinedAt: '2023-08-15'
-        }
-      ];
-
-      setGroups(mockGroups);
-      setMyGroups(mockGroups.filter(group => 
-        group.members.some(member => member.id === user?.id)
-      ));
-      
-      setPeople(mockPeople);
-      setTeachers(mockPeople.filter(p => p.role === 'TEACHER'));
-      setStudents(mockPeople.filter(p => p.role === 'STUDENT'));
+      setLoading(true);
+      const [groupsData, teachersData, studentsData] = await Promise.all([
+        getStudyGroups(courseId),
+        getTeachers(courseId),
+        getStudents(courseId)
+      ]);
+      setGroups(groupsData);
+      setTeachers(teachersData);
+      setStudents(studentsData);
     } catch (error) {
-      console.error('Error loading data:', error);
+      console.error('Error loading study groups or people:', error);
+      setGroups([]);
+      setTeachers([]);
+      setStudents([]);
     } finally {
       setLoading(false);
     }
@@ -243,17 +123,7 @@ export const StudyGroups: React.FC<StudyGroupProps> = ({ courseId }) => {
     }
   };
 
-  const handleCreateGroup = async (groupData: any) => {
-    try {
-      console.log('Creating group:', groupData);
-      setShowCreateModal(false);
-    } catch (error) {
-      console.error('Error creating group:', error);
-    }
-  };
-
-  const handleMessagePerson = (personId: string) => {
-    setMessagingRecipient(personId);
+  const handleMessagePerson = () => {
     setShowMessaging(true);
   };
 
@@ -517,7 +387,7 @@ export const StudyGroups: React.FC<StudyGroupProps> = ({ courseId }) => {
                 {isMember(group) ? (
                   <>
                     <button
-                      onClick={() => setSelectedGroup(group)}
+                      onClick={() => setShowMessaging(true)}
                       className="flex-1 flex items-center justify-center px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-sm"
                     >
                       <MessageCircle className="h-4 w-4 mr-1" />
@@ -650,14 +520,14 @@ export const StudyGroups: React.FC<StudyGroupProps> = ({ courseId }) => {
               {/* Actions */}
               <div className="flex space-x-2">
                 <button
-                  onClick={() => handleMessagePerson(person.id)}
+                  onClick={() => handleMessagePerson()}
                   className="flex-1 flex items-center justify-center px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-sm"
                 >
                   <MessageCircle className="h-4 w-4 mr-1" />
                   Message
                 </button>
                 <button
-                  onClick={() => setSelectedPerson(person)}
+                  onClick={() => setShowMessaging(true)}
                   className="px-3 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm"
                 >
                   View Profile
@@ -848,8 +718,6 @@ export const StudyGroups: React.FC<StudyGroupProps> = ({ courseId }) => {
         <MessagingPanel 
           isOpen={showMessaging}
           onClose={() => setShowMessaging(false)}
-          type="messages"
-          courseId=""
         />
       )}
     </div>

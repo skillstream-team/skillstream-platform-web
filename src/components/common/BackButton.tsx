@@ -1,5 +1,5 @@
 import React from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Home } from 'lucide-react';
 
 interface BackButtonProps {
@@ -16,7 +16,6 @@ export const BackButton: React.FC<BackButtonProps> = ({
   className = ''
 }) => {
   const navigate = useNavigate();
-  const location = useLocation();
 
   const handleBack = () => {
     if (to) {

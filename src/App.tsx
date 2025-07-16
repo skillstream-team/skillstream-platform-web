@@ -11,6 +11,7 @@ import { CourseDetailPage } from './pages/courses/CourseDetailPage';
 import { CourseLearningPage } from './pages/courses/CourseLearningPage';
 import CourseAnnouncementsPage from './pages/courses/CourseAnnouncementsPage';
 import QuizPage from './pages/assessments/QuizPage';
+import QuizzesPage from './pages/assessments/QuizzesPage';
 import { AnalyticsPage } from './pages/admin/AnalyticsPage';
 import { NotificationManager } from './components/notifications/NotificationToast';
 import { AIChatAssistant } from './components/ai/AIChatAssistant';
@@ -248,6 +249,16 @@ function App() {
                 <ProtectedRoute>
                   <Layout>
                     <CourseAnnouncementsPage />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/quizzes"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <QuizzesPage />
                   </Layout>
                 </ProtectedRoute>
               }

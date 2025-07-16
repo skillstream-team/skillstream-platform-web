@@ -1,22 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Calendar as CalendarIcon, 
-  Clock, 
-  Video, 
-  BookOpen, 
-  Plus,
-  ChevronLeft,
-  ChevronRight,
-  Users,
-  Bell,
-  CheckSquare,
-  List,
-  Flag,
-  AlertCircle,
-  Filter
-} from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, Plus, ChevronLeft, ChevronRight, Users, Bell, CheckSquare } from 'lucide-react';
 import { useAuthStore } from '../../store/auth';
-import { apiService } from '../../services/api';
+import { getCalendarEvents, getMyCalendarEvents } from '../../services/api';
 import { CalendarEvent } from '../../types';
 import { TodoList } from './TodoList';
 
@@ -104,59 +89,18 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
 
   const loadEvents = async () => {
     try {
-      const calendarEvents = await apiService.getCalendarEvents();
+      // Get events for the current month
+      const startDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).toISOString().split('T')[0];
+      const endDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).toISOString().split('T')[0];
+      
+      const calendarEvents = await getCalendarEvents({
+        startDate,
+        endDate
+      });
       setEvents(calendarEvents);
     } catch (error) {
       console.error('Error loading calendar events:', error);
-      // Mock data for demo
-      setEvents([
-        {
-          id: '1',
-          userId: user?.id || '',
-          title: 'React Fundamentals - Lesson 1',
-          description: 'Introduction to React components and JSX',
-          startTime: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
-          endTime: new Date(Date.now() + 3 * 60 * 60 * 1000).toISOString(),
-          type: 'lesson',
-          category: 'Programming',
-          priority: 'high'
-        },
-        {
-          id: '2',
-          userId: user?.id || '',
-          title: 'JavaScript Quiz',
-          description: 'Assessment on JavaScript fundamentals',
-          startTime: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-          endTime: new Date(Date.now() + 24 * 60 * 60 * 1000 + 60 * 60 * 1000).toISOString(),
-          type: 'quiz',
-          category: 'Assessment',
-          priority: 'urgent'
-        },
-        {
-          id: '3',
-          userId: user?.id || '',
-          title: 'Team Study Session',
-          description: 'Group study session for advanced topics',
-          startTime: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(),
-          endTime: new Date(Date.now() + 48 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000).toISOString(),
-          type: 'study',
-          category: 'Collaboration',
-          priority: 'medium'
-        },
-        {
-          id: '4',
-          userId: user?.id || '',
-          title: 'Personal Project Review',
-          description: 'Review personal coding project',
-          startTime: new Date(Date.now() + 72 * 60 * 60 * 1000).toISOString(),
-          endTime: new Date(Date.now() + 72 * 60 * 60 * 1000 + 90 * 60 * 1000).toISOString(),
-          type: 'assignment',
-          category: 'Personal',
-          priority: 'low'
-        }
-      ]);
-    } finally {
-      setLoading(false);
+      setEvents([]); // Show empty state on error
     }
   };
 
@@ -210,13 +154,13 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
 
   const getEventIcon = (type: string) => {
     switch (type) {
-      case 'lesson': return <BookOpen className="h-3 w-3" />;
+      case 'lesson': return <Users className="h-3 w-3" />;
       case 'quiz': return <Clock className="h-3 w-3" />;
-      case 'video': return <Video className="h-3 w-3" />;
+      case 'video': return <Users className="h-3 w-3" />;
       case 'study': return <Users className="h-3 w-3" />;
       case 'todo': return <CheckSquare className="h-3 w-3" />;
-      case 'assignment': return <List className="h-3 w-3" />;
-      case 'exam': return <AlertCircle className="h-3 w-3" />;
+      case 'assignment': return <Users className="h-3 w-3" />;
+      case 'exam': return <Bell className="h-3 w-3" />;
       default: return <CalendarIcon className="h-3 w-3" />;
     }
   };
@@ -409,7 +353,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                     : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                 }`}
               >
-                <Filter className="h-4 w-4 mr-2" />
+                <span className="h-4 w-4 mr-2 inline-block">&#9881;</span>
                 Filters
               </button>
               <button
@@ -646,8 +590,8 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                               event.priority === 'medium' ? 'text-yellow-600 dark:text-yellow-400 bg-yellow-100 dark:bg-yellow-900' :
                               'text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900'
                             }`}>
-                              {event.priority === 'urgent' ? <AlertCircle className="h-3 w-3 mr-1" /> :
-                               event.priority === 'high' ? <Flag className="h-3 w-3 mr-1" /> :
+                              {event.priority === 'urgent' ? <Bell className="h-3 w-3 mr-1" /> :
+                               event.priority === 'high' ? <Bell className="h-3 w-3 mr-1" /> :
                                event.priority === 'medium' ? <Clock className="h-3 w-3 mr-1" /> :
                                <CheckSquare className="h-3 w-3 mr-1" />}
                               <span className="capitalize">{event.priority}</span>
@@ -702,14 +646,6 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
         <div className="p-6">
           <TodoList 
             selectedDate={selectedDate || undefined}
-            onTodoClick={(todo) => {
-              // Handle todo click - could open edit modal or show details
-              console.log('Todo clicked:', todo);
-            }}
-            onAddTodo={() => {
-              // Handle add todo - could open add modal
-              console.log('Add todo clicked');
-            }}
             onTodosChange={setTodos}
           />
         </div>

@@ -23,6 +23,7 @@ import {
   FolderIcon,
   XMarkIcon as XMarkIconSolid
 } from '@heroicons/react/24/solid';
+import { getUserPreferences, updateUserPreferences } from '../services/api';
 
 interface FormDataType {
   name: string;
@@ -82,6 +83,22 @@ const ProfilePage: React.FC = () => {
     }));
   }, [theme]);
 
+  useEffect(() => {
+    async function loadPreferences() {
+      try {
+        const prefs = await getUserPreferences();
+        setFormData(prev => ({
+          ...prev,
+          timezone: prefs.timeZone || prev.timezone,
+          // Add accessibilityPreferences if needed
+        }));
+      } catch (error) {
+        // handle error
+      }
+    }
+    loadPreferences();
+  }, []);
+
   const [formData, setFormData] = useState<FormDataType>({
     name: user?.name || '',
     email: user?.email || '',
@@ -113,28 +130,46 @@ const ProfilePage: React.FC = () => {
     theme: 'auto'
   });
 
-  const handleInputChange = (field: string, value: string | boolean) => {
-    if (field.includes('.')) {
-      const [parent, child] = field.split('.');
-      setFormData(prev => ({
-        ...prev,
-        [parent]: {
-          ...prev[parent as keyof typeof prev],
-          [child]: value
-        }
-      }));
-    } else {
-      setFormData(prev => ({
-        ...prev,
-        [field]: value
-      }));
-    }
-  };
+const handleInputChange = (field: string, value: string | boolean) => {
+  if (field.includes('.')) {
+    const [parent, child] = field.split('.');
 
-  const handleSave = () => {
-    // Here you would typically make an API call to update the user profile
-    console.log('Saving profile:', formData);
-    setIsEditing(false);
+    setFormData(prev => {
+      const parentValue = prev[parent as keyof typeof prev];
+
+      // ✅ Runtime type check goes here
+      if (typeof parentValue === 'object' && parentValue !== null) {
+        return {
+          ...prev,
+          [parent]: {
+            ...parentValue,
+            [child]: value
+          }
+        };
+      }
+
+      console.warn(`Expected object at '${parent}', but got:`, parentValue);
+      return prev;
+    });
+
+  } else {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  }
+};
+
+  const handleSave = async () => {
+    try {
+      await updateUserPreferences({
+        accessibilityPreferences: {}, // Add real data if available
+        timeZone: formData.timezone
+      });
+      setIsEditing(false);
+    } catch (error) {
+      // handle error
+    }
   };
 
   const handlePasswordChange = () => {

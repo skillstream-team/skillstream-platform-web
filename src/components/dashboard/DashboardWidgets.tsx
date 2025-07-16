@@ -12,18 +12,15 @@ import {
   Star,
   Target,
   Trophy,
-  GraduationCap,
   FileText,
   Eye,
   BarChart3
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/auth';
-import { apiService } from '../../services/api';
+import { getStreaks, getChallenges, getNotifications, getCourses, getMyCourses, getUpcomingEvents, getTeacherStats, getMyCalendarEvents } from '../../services/api';
 import { CalendarEvent, Course } from '../../types';
 import { MessagingWidget } from './MessagingWidget';
-import { mockAssignments } from '../../services/mockDatabase';
-import { mockNotificationService, MockNotification } from '../../services/mockDatabase';
 import { NotificationPopup } from '../notifications/NotificationPopup';
 import { RevenueSummary } from './RevenueSummary';
 
@@ -36,7 +33,7 @@ export const DashboardWidgets: React.FC<DashboardWidgetsProps> = ({ className = 
   const navigate = useNavigate();
   const [upcomingEvents, setUpcomingEvents] = useState<CalendarEvent[]>([]);
   const [recentCourses, setRecentCourses] = useState<Course[]>([]);
-  const [recentNotifications, setRecentNotifications] = useState<MockNotification[]>([]);
+  const [recentNotifications, setRecentNotifications] = useState<any[]>([]); // Changed to any[] as MockNotification is removed
   const [isNotificationPopupOpen, setIsNotificationPopupOpen] = useState(false);
   const [teacherStats, setTeacherStats] = useState({
     totalCourses: 0,
@@ -54,53 +51,42 @@ export const DashboardWidgets: React.FC<DashboardWidgetsProps> = ({ className = 
 
   const loadDashboardData = async () => {
     try {
+      setLoading(true);
       // Load upcoming events
-      const events = await apiService.getUpcomingEvents(5);
+      const events = await getMyCalendarEvents();
       setUpcomingEvents(events);
-
       // Load recent courses
-      const courses = await apiService.getMyCourses();
-      setRecentCourses(courses.slice(0, 3));
-
-      // Load recent notifications
-      const { notifications } = await mockNotificationService.getNotifications({ limit: 3 });
+      const courses = user?.role === 'TEACHER' ? await getCourses({ page: 1, limit: 5 }) : await getMyCourses();
+      setRecentCourses(courses);
+      // Load notifications
+      const notifications = await getNotifications();
       setRecentNotifications(notifications);
-
-      // Mock teacher stats - replace with actual API calls
+      // Load teacher stats (real API call)
+      let stats = {
+        totalCourses: 0,
+        totalStudents: 0,
+        pendingAssignments: 0,
+        averageCompletionRate: 0,
+        activeStudents: 0,
+        totalLessons: 0
+      };
       if (user?.role === 'TEACHER') {
-        const pendingCount = mockAssignments.reduce((total, assignment) => total + assignment.pendingSubmissions, 0);
-        setTeacherStats({
-          totalCourses: 4,
-          totalStudents: 127,
-          pendingAssignments: pendingCount,
-          averageCompletionRate: 78,
-          activeStudents: 89,
-          totalLessons: 45
-        });
+        stats = await getTeacherStats(user.id);
       }
+      setTeacherStats(stats);
     } catch (error) {
       console.error('Error loading dashboard data:', error);
-      // Mock data for demo
-      setUpcomingEvents([
-        {
-          id: '1',
-          userId: user?.id || '',
-          title: 'React Quiz',
-          description: 'Assessment on React fundamentals',
-          startTime: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
-          endTime: new Date(Date.now() + 3 * 60 * 60 * 1000).toISOString(),
-          type: 'quiz'
-        },
-        {
-          id: '2',
-          userId: user?.id || '',
-          title: 'Study Group Meeting',
-          description: 'Weekly JavaScript study session',
-          startTime: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-          endTime: new Date(Date.now() + 24 * 60 * 60 * 1000 + 60 * 60 * 1000).toISOString(),
-          type: 'study'
-        }
-      ]);
+      setUpcomingEvents([]);
+      setRecentCourses([]);
+      setRecentNotifications([]);
+      setTeacherStats({
+        totalCourses: 0,
+        totalStudents: 0,
+        pendingAssignments: 0,
+        averageCompletionRate: 0,
+        activeStudents: 0,
+        totalLessons: 0
+      });
     } finally {
       setLoading(false);
     }
@@ -128,9 +114,9 @@ export const DashboardWidgets: React.FC<DashboardWidgetsProps> = ({ className = 
     navigate(`/assignments/${assignmentId}`);
   };
 
-  const handleNotificationClick = (notification: MockNotification) => {
+  const handleNotificationClick = (notification: any) => { // Changed to any as MockNotification is removed
     // Mark as read first
-    mockNotificationService.markAsRead(notification.id);
+    // No mock service to call, so this will be a no-op for now
     
     // Navigate based on notification action
     if (notification.action?.route) {
@@ -277,7 +263,7 @@ export const DashboardWidgets: React.FC<DashboardWidgetsProps> = ({ className = 
                 <span className="text-gray-700 dark:text-gray-300">Total Courses</span>
               </div>
               <span className="text-lg font-semibold text-gray-900 dark:text-white">
-                {teacherStats.totalCourses}
+                {teacherStats?.totalCourses || 'N/A'}
               </span>
             </div>
             <div className="flex items-center justify-between">
@@ -286,7 +272,7 @@ export const DashboardWidgets: React.FC<DashboardWidgetsProps> = ({ className = 
                 <span className="text-gray-700 dark:text-gray-300">Total Students</span>
               </div>
               <span className="text-lg font-semibold text-gray-900 dark:text-white">
-                {teacherStats.totalStudents}
+                {teacherStats?.totalStudents || 'N/A'}
               </span>
             </div>
             <div className="flex items-center justify-between">
@@ -295,7 +281,7 @@ export const DashboardWidgets: React.FC<DashboardWidgetsProps> = ({ className = 
                 <span className="text-gray-700 dark:text-gray-300">Pending Assignments</span>
               </div>
               <span className="text-lg font-semibold text-gray-900 dark:text-white">
-                {teacherStats.pendingAssignments}
+                {teacherStats?.pendingAssignments || 'N/A'}
               </span>
             </div>
             <div className="flex items-center justify-between">
@@ -304,7 +290,7 @@ export const DashboardWidgets: React.FC<DashboardWidgetsProps> = ({ className = 
                 <span className="text-gray-700 dark:text-gray-300">Avg. Completion</span>
               </div>
               <span className="text-lg font-semibold text-gray-900 dark:text-white">
-                {teacherStats.averageCompletionRate}%
+                {teacherStats?.averageCompletionRate || 'N/A'}%
               </span>
             </div>
             <div className="flex items-center justify-between">
@@ -313,16 +299,16 @@ export const DashboardWidgets: React.FC<DashboardWidgetsProps> = ({ className = 
                 <span className="text-gray-700 dark:text-gray-300">Active Students</span>
               </div>
               <span className="text-lg font-semibold text-gray-900 dark:text-white">
-                {teacherStats.activeStudents}
+                {teacherStats?.activeStudents || 'N/A'}
               </span>
             </div>
             <div className="flex items-center justify-between">
               <div className="flex items-center">
-                <GraduationCap className="h-5 w-5 text-teal-600 dark:text-teal-400 mr-3" />
+                <FileText className="h-5 w-5 text-teal-600 dark:text-teal-400 mr-3" />
                 <span className="text-gray-700 dark:text-gray-300">Total Lessons</span>
               </div>
               <span className="text-lg font-semibold text-gray-900 dark:text-white">
-                {teacherStats.totalLessons}
+                {teacherStats?.totalLessons || 'N/A'}
               </span>
             </div>
           </div>
@@ -448,49 +434,18 @@ export const DashboardWidgets: React.FC<DashboardWidgetsProps> = ({ className = 
             </Link>
           </div>
           <div className="space-y-3">
-            {mockAssignments.slice(0, 4).map(assignment => (
-              <div
-                key={assignment.id}
-                onClick={() => handleAssignmentClick(assignment.id)}
-                className={`flex items-start space-x-3 p-3 rounded-lg cursor-pointer transition-colors ${
-                  assignment.status === 'overdue' ? 'bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30' :
-                  assignment.status === 'due-today' ? 'bg-yellow-50 dark:bg-yellow-900/20 hover:bg-yellow-100 dark:hover:bg-yellow-900/30' :
-                  'bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30'
-                }`}
-              >
-                <div className={`p-2 rounded-lg ${
-                  assignment.status === 'overdue' ? 'bg-red-100 dark:bg-red-800' :
-                  assignment.status === 'due-today' ? 'bg-yellow-100 dark:bg-yellow-800' :
-                  'bg-blue-100 dark:bg-blue-800'
-                }`}>
-                  <FileText className={`h-4 w-4 ${
-                    assignment.status === 'overdue' ? 'text-red-600 dark:text-red-400' :
-                    assignment.status === 'due-today' ? 'text-yellow-600 dark:text-yellow-400' :
-                    'text-blue-600 dark:text-blue-400'
-                  }`} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h4 className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                    {assignment.title}
-                  </h4>
-                  <p className="text-xs text-gray-600 dark:text-gray-300 truncate">
-                    {assignment.pendingSubmissions} submissions pending • Due {getDueDateText(assignment.dueDate)}
-                  </p>
-                  <div className="flex items-center mt-1">
-                    <Users className="h-3 w-3 text-gray-400 mr-1" />
-                    <span className="text-xs text-gray-500 dark:text-gray-400">
-                      Course: {assignment.courseTitle}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            ))}
+            {/* This section will need to be updated to fetch assignments from the API */}
+            {/* For now, it will show a placeholder or empty */}
+            <div className="text-center py-4">
+              <FileText className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+              <p className="text-sm text-gray-500 dark:text-gray-400">No pending assignments</p>
+            </div>
           </div>
           <div className="mt-4 pt-3 border-t border-gray-200 dark:border-gray-700">
             <div className="flex items-center justify-between text-sm">
               <span className="text-gray-600 dark:text-gray-400">Total Pending:</span>
               <span className="font-semibold text-orange-600 dark:text-orange-400">
-                {mockAssignments.reduce((total, assignment) => total + assignment.pendingSubmissions, 0)} submissions
+                0 submissions
               </span>
             </div>
           </div>

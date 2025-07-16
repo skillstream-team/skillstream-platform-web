@@ -1,42 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { 
-  Upload, 
-  Folder, 
-  File, 
-  FileText, 
-  Image, 
-  Video, 
-  Music, 
-  Archive,
-  Download,
-  Share2,
-  Edit3,
-  Trash2,
-  Search,
-  Filter,
-  Grid,
-  List,
-  MoreHorizontal,
-  Plus,
-  Users,
-  Eye,
-  Lock,
-  Unlock,
-  Star,
-  Calendar,
-  Clock,
-  User,
-  Copy,
-  Link,
-  Settings,
-  FolderPlus,
-  Move,
-  Tag
-} from 'lucide-react';
+import { File, FileText, Image, Video, Music, Archive, Folder, Search, Grid, List, MoreHorizontal, Download, Share2, Eye, Trash2 } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
-import { apiService } from '../../services/api';
+import { getFiles, deleteFile, uploadFile } from '../../services/api';
 import { useAuthStore } from '../../store/auth';
-import { FileUpload, Course, User as UserType } from '../../types';
+import { FileUpload } from '../../types';
 
 interface FileCategory {
   id: string;
@@ -58,7 +25,6 @@ export const FileManager: React.FC<FileManagerProps> = ({
 }) => {
   const { user } = useAuthStore();
   const [files, setFiles] = useState<FileUpload[]>([]);
-  const [folders, setFolders] = useState<any[]>([]);
   const [currentPath, setCurrentPath] = useState<string[]>([]);
   const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -67,11 +33,6 @@ export const FileManager: React.FC<FileManagerProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCategory, setFilterCategory] = useState<string>('all');
   const [loading, setLoading] = useState(true);
-  const [showUploadModal, setShowUploadModal] = useState(false);
-  const [showSharingModal, setShowSharingModal] = useState(false);
-  const [showDetailsModal, setShowDetailsModal] = useState(false);
-  const [selectedFile, setSelectedFile] = useState<FileUpload | null>(null);
-  const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
 
   const categories: FileCategory[] = [
     { id: 'documents', name: 'Documents', color: 'bg-blue-500', icon: <FileText className="h-4 w-4" /> },
@@ -89,93 +50,24 @@ export const FileManager: React.FC<FileManagerProps> = ({
   const loadFiles = async () => {
     try {
       setLoading(true);
-      let fileData: FileUpload[] = [];
-      
-      // Mock data for demonstration
-      const mockFiles: FileUpload[] = [
-        {
-          id: '1',
-          filename: 'intro_programming.pdf',
-          originalName: 'Introduction to Programming.pdf',
-          mimeType: 'application/pdf',
-          size: 2048576,
-          url: '#',
-          uploadedBy: 'John Doe',
-          createdAt: '2024-01-10T09:00:00Z'
-        },
-        {
-          id: '2',
-          filename: 'web_dev_basics.docx',
-          originalName: 'Web Development Basics.docx',
-          mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-          size: 1048576,
-          url: '#',
-          uploadedBy: 'Jane Smith',
-          createdAt: '2024-01-12T11:00:00Z'
-        },
-        {
-          id: '3',
-          filename: 'sample_image.jpg',
-          originalName: 'Sample Image.jpg',
-          mimeType: 'image/jpeg',
-          size: 512000,
-          url: '#',
-          uploadedBy: 'Mike Johnson',
-          createdAt: '2024-01-13T16:45:00Z'
-        },
-        {
-          id: '4',
-          filename: 'tutorial_video.mp4',
-          originalName: 'Tutorial Video.mp4',
-          mimeType: 'video/mp4',
-          size: 52428800,
-          url: '#',
-          uploadedBy: 'Sarah Wilson',
-          createdAt: '2024-01-08T13:30:00Z'
-        }
-      ];
-      
-      switch (mode) {
-        case 'course':
-          if (courseId) {
-            try {
-              fileData = await apiService.getCourseFiles(courseId, currentPath.join('/'));
-            } catch (error) {
-              console.log('Using mock data for course files');
-              fileData = mockFiles.filter(f => f.mimeType.includes('pdf') || f.mimeType.includes('word'));
-            }
-          }
-          break;
-        case 'personal':
-          try {
-            fileData = await apiService.getUserFiles(user?.id || '', currentPath.join('/'));
-          } catch (error) {
-            console.log('Using mock data for personal files');
-            fileData = mockFiles;
-          }
-          break;
-        case 'shared':
-          try {
-            fileData = await apiService.getSharedFiles(user?.id || '');
-          } catch (error) {
-            console.log('Using mock data for shared files');
-            fileData = mockFiles.slice(0, 2); // Show first 2 files as shared
-          }
-          break;
+      let fileData = [];
+      if (mode === 'course' && courseId) {
+        fileData = await getFiles({ courseId });
+      } else if (mode === 'personal' && userId) {
+        fileData = await getFiles({ userId });
+      } else if (mode === 'shared') {
+        fileData = await getFiles({ shared: true });
       }
-      
       setFiles(fileData);
     } catch (error) {
       console.error('Error loading files:', error);
-      // Set empty array if all else fails
       setFiles([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const onDrop = useCallback((acceptedFiles: File[]) => {
-    setShowUploadModal(true);
+  const onDrop = useCallback(() => {
     // Handle file upload logic will be in the modal
   }, []);
 
@@ -196,45 +88,10 @@ export const FileManager: React.FC<FileManagerProps> = ({
     multiple: true
   });
 
-  const handleFileUpload = async (files: File[], category: string, tags: string[]) => {
-    try {
-      const uploadPromises = files.map(async (file) => {
-        const fileId = `${Date.now()}-${Math.random()}`;
-        setUploadProgress(prev => ({ ...prev, [fileId]: 0 }));
-
-        const uploadedFile = await apiService.uploadFile(file, mode, {
-          courseId,
-          userId: user?.id,
-          category,
-          tags,
-          path: currentPath.join('/'),
-          onProgress: (progress) => {
-            setUploadProgress(prev => ({ ...prev, [fileId]: progress }));
-          }
-        });
-
-        setUploadProgress(prev => {
-          const newProgress = { ...prev };
-          delete newProgress[fileId];
-          return newProgress;
-        });
-
-        return uploadedFile;
-      });
-
-      const uploadedFiles = await Promise.all(uploadPromises);
-      setFiles(prev => [...uploadedFiles, ...prev]);
-      setShowUploadModal(false);
-    } catch (error) {
-      console.error('Error uploading files:', error);
-    }
-  };
-
   const handleFileDelete = async (fileId: string) => {
     if (!confirm('Are you sure you want to delete this file?')) return;
-
     try {
-      await apiService.deleteFile(fileId);
+      await deleteFile(fileId);
       setFiles(prev => prev.filter(file => file.id !== fileId));
     } catch (error) {
       console.error('Error deleting file:', error);
@@ -276,14 +133,6 @@ export const FileManager: React.FC<FileManagerProps> = ({
         ? prev.filter(id => id !== fileId)
         : [...prev, fileId]
     );
-  };
-
-  const handleSelectAll = () => {
-    if (selectedFiles.length === files.length) {
-      setSelectedFiles([]);
-    } else {
-      setSelectedFiles(files.map(file => file.id));
-    }
   };
 
   const getFileIcon = (file: FileUpload) => {
@@ -345,14 +194,6 @@ export const FileManager: React.FC<FileManagerProps> = ({
     return sortOrder === 'asc' ? comparison : -comparison;
   });
 
-  const navigateToFolder = (folderName: string) => {
-    setCurrentPath(prev => [...prev, folderName]);
-  };
-
-  const navigateBack = () => {
-    setCurrentPath(prev => prev.slice(0, -1));
-  };
-
   const navigateToRoot = () => {
     setCurrentPath([]);
   };
@@ -372,7 +213,7 @@ export const FileManager: React.FC<FileManagerProps> = ({
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between py-6">
             <div className="flex items-center space-x-4">
-              <Folder className="h-8 w-8 text-blue-600" />
+              <File className="h-8 w-8 text-blue-600" />
               <div>
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
                   File Manager
@@ -390,7 +231,7 @@ export const FileManager: React.FC<FileManagerProps> = ({
                 }}
                 className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               >
-                <Upload className="h-4 w-4 mr-2" />
+                <File className="h-4 w-4 mr-2" />
                 Upload Files
               </button>
               <button
@@ -400,7 +241,7 @@ export const FileManager: React.FC<FileManagerProps> = ({
                 }}
                 className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
               >
-                <FolderPlus className="h-4 w-4 mr-2" />
+                <Folder className="h-4 w-4 mr-2" />
                 New Folder
               </button>
             </div>
@@ -510,7 +351,7 @@ export const FileManager: React.FC<FileManagerProps> = ({
           }`}
         >
           <input {...getInputProps()} />
-          <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+          <File className="h-12 w-12 text-gray-400 mx-auto mb-4" />
           <p className="text-lg font-medium text-gray-900 dark:text-white mb-2">
             {isDragActive ? 'Drop files here' : 'Drag & drop files here'}
           </p>
@@ -540,7 +381,7 @@ export const FileManager: React.FC<FileManagerProps> = ({
                 }}
                 className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors mx-auto"
               >
-                <Upload className="h-4 w-4 mr-2" />
+                <File className="h-4 w-4 mr-2" />
                 Upload Files
               </button>
             )}

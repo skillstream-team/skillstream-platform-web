@@ -17,25 +17,25 @@ import {
 import { useAuthStore } from '../store/auth';
 import { BackButton } from '../components/common/BackButton';
 import { AttachmentMenu, Attachment } from '../components/messaging/AttachmentMenu';
-import { mockMessagingService, MockMessage, MockUser, MockConversation } from '../services/mockMessaging';
+import { getUsers, getDirectMessages, sendDirectMessage } from '../services/api';
 
 export const MessagesPage: React.FC = () => {
   const { user } = useAuthStore();
   const location = useLocation();
   const params = useParams();
-  const [messages, setMessages] = useState<MockMessage[]>([]);
-  const [users, setUsers] = useState<MockUser[]>([]);
-  const [selectedUser, setSelectedUser] = useState<MockUser | null>(null);
+  const [messages, setMessages] = useState<any[]>([]); // TODO: Replace with real API calls
+  const [users, setUsers] = useState<any[]>([]); // TODO: Replace with real API calls
+  const [selectedUser, setSelectedUser] = useState<any | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [newMessage, setNewMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSending, setIsSending] = useState(false);
-  const [filteredUsers, setFilteredUsers] = useState<MockUser[]>([]);
+  const [filteredUsers, setFilteredUsers] = useState<any[]>([]);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
   const [isNewMessageMode, setIsNewMessageMode] = useState(false);
-  const [currentConversation, setCurrentConversation] = useState<MockConversation | null>(null);
-  const [lastMessages, setLastMessages] = useState<{ [userId: string]: MockMessage }>({});
+  const [currentConversation, setCurrentConversation] = useState<any | null>(null);
+  const [lastMessages, setLastMessages] = useState<{ [userId: string]: any }>({}); // TODO: Replace with real API calls
   const attachmentButtonRef = React.useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -71,23 +71,22 @@ export const MessagesPage: React.FC = () => {
   useEffect(() => {
     const loadLastMessages = async () => {
       if (!user) return;
-      
-      const lastMessagesData: { [userId: string]: MockMessage } = {};
-      
-      for (const userItem of users) {
-        if (userItem.id !== user.id) {
-          try {
-            const conversation = await mockMessagingService.findConversation(user.id, userItem.id);
-            if (conversation) {
-              lastMessagesData[userItem.id] = conversation.lastMessage;
-            }
-          } catch (error) {
-            console.error(`Error loading last message for user ${userItem.id}:`, error);
+      try {
+        // Use real API call to fetch direct messages
+        const messages = await getDirectMessages();
+        const lastMessagesData: { [userId: string]: any } = {};
+        messages.forEach((msg: any) => {
+          if (msg.senderId !== user.id) {
+            lastMessagesData[msg.senderId] = msg;
+          } else if (msg.receiverId !== user.id) {
+            lastMessagesData[msg.receiverId] = msg;
           }
-        }
+        });
+        setLastMessages(lastMessagesData);
+      } catch (error) {
+        console.error('Error loading last messages:', error);
+        setLastMessages({});
       }
-      
-      setLastMessages(lastMessagesData);
     };
     
     if (users.length > 0 && user) {
@@ -97,12 +96,11 @@ export const MessagesPage: React.FC = () => {
 
   const loadUsers = async () => {
     try {
-      const usersData = await mockMessagingService.getUsers();
+      const usersData = await getUsers();
       setUsers(usersData);
       setFilteredUsers(usersData);
     } catch (error) {
       console.error('Error loading users:', error);
-      // Fallback to empty array if service fails
       setUsers([]);
       setFilteredUsers([]);
     }
@@ -110,63 +108,30 @@ export const MessagesPage: React.FC = () => {
 
   const loadMessages = async () => {
     if (!selectedUser || !user) return;
-    
     try {
       setIsLoading(true);
-      
-      // Find or create conversation between current user and selected user
-      let conversation = await mockMessagingService.findConversation(user.id, selectedUser.id);
-      
-      if (!conversation) {
-        // Create new conversation if it doesn't exist
-        conversation = await mockMessagingService.createConversation([user.id, selectedUser.id]);
-      }
-      
-      setCurrentConversation(conversation);
-      
-      // Load messages for the conversation
-      const messagesData = await mockMessagingService.getMessages(conversation.id);
-      setMessages(messagesData);
+      const messagesData = await getDirectMessages();
+      const userMessages = messagesData.filter((msg: any) =>
+        (msg.senderId === user.id && msg.receiverId === selectedUser.id) ||
+        (msg.senderId === selectedUser.id && msg.receiverId === user.id)
+      );
+      setMessages(userMessages);
     } catch (error) {
-      console.error('Error loading messages:', error);
       setMessages([]);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const sendMessage = async () => {
-    if (!newMessage.trim() || !selectedUser || !user || !currentConversation) return;
-
+  const handleSendMessage = async (content: string) => {
+    if (!selectedUser) return;
     try {
       setIsSending(true);
-      const sentMessage = await mockMessagingService.sendMessage(currentConversation.id, user.id, newMessage.trim());
-      setMessages(prev => [...prev, sentMessage]);
+      await sendDirectMessage(selectedUser.id, content);
       setNewMessage('');
-      
-      // If in new message mode, switch back to regular messages mode after sending
-      if (isNewMessageMode) {
-        setIsNewMessageMode(false);
-      }
+      await loadMessages();
     } catch (error) {
       console.error('Error sending message:', error);
-      // Add message locally for demo
-      const mockMessage: MockMessage = {
-        id: Date.now().toString(),
-        conversationId: currentConversation.id,
-        senderId: user.id,
-        content: newMessage.trim(),
-        type: 'text',
-        timestamp: new Date().toISOString(),
-        isRead: false
-      };
-      setMessages(prev => [...prev, mockMessage]);
-      setNewMessage('');
-      
-      // If in new message mode, switch back to regular messages mode after sending
-      if (isNewMessageMode) {
-        setIsNewMessageMode(false);
-      }
     } finally {
       setIsSending(false);
     }
@@ -189,7 +154,7 @@ export const MessagesPage: React.FC = () => {
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      sendMessage();
+      handleSendMessage(newMessage);
     }
   };
 
@@ -410,7 +375,7 @@ export const MessagesPage: React.FC = () => {
                             Cancel
                           </button>
                           <button
-                            onClick={sendMessage}
+                            onClick={() => handleSendMessage(newMessage)}
                             disabled={!newMessage.trim() || isSending}
                             className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                           >
@@ -650,7 +615,7 @@ export const MessagesPage: React.FC = () => {
                       </button>
                     </div>
                     <button
-                      onClick={sendMessage}
+                      onClick={() => handleSendMessage(newMessage)}
                       disabled={(!newMessage.trim() && attachments.length === 0) || isSending}
                       className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                     >

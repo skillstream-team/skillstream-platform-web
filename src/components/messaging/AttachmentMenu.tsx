@@ -1,13 +1,10 @@
 import React, { useState, useRef } from 'react';
 import { 
-  Paperclip, 
   Image, 
   Camera, 
   File, 
   X, 
-  ChevronDown,
   AlertCircle,
-  CheckCircle,
   Loader2
 } from 'lucide-react';
 
@@ -33,7 +30,6 @@ export const AttachmentMenu: React.FC<AttachmentMenuProps> = ({
   isOpen,
   buttonRef
 }) => {
-  const [isLoading, setIsLoading] = useState(false);
   const [permissionStatus, setPermissionStatus] = useState<'granted' | 'denied' | 'requesting' | null>(null);
   const [error, setError] = useState<string | null>(null);
   
@@ -193,14 +189,6 @@ export const AttachmentMenu: React.FC<AttachmentMenuProps> = ({
     }
     setPermissionStatus(null);
     setError(null);
-  };
-
-  const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
   if (!isOpen) return null;

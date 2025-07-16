@@ -2,31 +2,28 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { 
   BookOpen, 
-  Users, 
-  Clock, 
-  Star, 
   Play, 
-  Check, 
+  Users, 
+  Star, 
   MessageSquare,
-  Award as AwardIcon,
-  User,
-  ChevronDown,
-  FileText,
-  Video,
-  CreditCard,
-  Shield,
-  X,
-  ArrowRight,
   Edit3,
   BarChart3,
-  GraduationCap,
+  Clock,
+  Check,
+  Activity,
   TrendingUp,
-  Activity
+  GraduationCap,
+  ChevronDown,
+  Video,
+  FileText,
+  X,
+  CreditCard,
+  Shield,
+  ArrowRight
 } from 'lucide-react';
 import { Course } from '../../types';
 import { BackButton } from '../../components/common/BackButton';
 import { ForumBoard } from '../../components/forum/ForumBoard';
-import { getCourseDetails, dummyCourses } from '../../data/courseData';
 import { useAuthStore } from '../../store/auth';
 
 export const CourseDetailPage: React.FC = () => {
@@ -62,7 +59,7 @@ export const CourseDetailPage: React.FC = () => {
   ] : [
     { id: 'overview', label: 'Overview', icon: <BookOpen className="h-4 w-4" /> },
     { id: 'curriculum', label: 'Curriculum', icon: <Play className="h-4 w-4" /> },
-    { id: 'instructor', label: 'Instructor', icon: <User className="h-4 w-4" /> },
+    { id: 'instructor', label: 'Instructor', icon: <Users className="h-4 w-4" /> },
     { id: 'reviews', label: 'Reviews', icon: <Star className="h-4 w-4" /> },
     { id: 'forum', label: 'Forum', icon: <MessageSquare className="h-4 w-4" /> }
   ];
@@ -70,26 +67,16 @@ export const CourseDetailPage: React.FC = () => {
   useEffect(() => {
     const fetchCourseData = async () => {
       if (!id) return;
-      
-      // Since we don't have a backend server, immediately use dummy data
-      const dummyCourse = dummyCourses.find(c => c.id === id);
-      
-      if (dummyCourse) {
-        setCourse(dummyCourse);
-        setIsEnrolled(false); // Default to not enrolled for dummy data
-      }
-      
-      // Set loading to false regardless
+      // TODO: Replace with actual API call
+      setCourse(null);
+      setIsEnrolled(false);
       setIsLoading(false);
     };
-
     // Add a timeout to prevent infinite loading
     const timeoutId = setTimeout(() => {
       setIsLoading(false);
     }, 5000); // 5 second timeout
-
     fetchCourseData();
-
     return () => clearTimeout(timeoutId);
   }, [id]);
 
@@ -612,7 +599,7 @@ export const CourseDetailPage: React.FC = () => {
                         <span>{courseDetails.instructor.rating} Instructor Rating</span>
                       </div>
                       <div className="flex items-center">
-                        <AwardIcon className="h-4 w-4 mr-1" />
+                        <Users className="h-4 w-4 mr-1" />
                         <span>{courseDetails.instructor.students.toLocaleString()} Students</span>
                       </div>
                       <div className="flex items-center">

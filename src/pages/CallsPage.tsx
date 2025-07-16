@@ -10,10 +10,8 @@ import {
   VolumeX,
   Settings,
   User,
-  Clock,
-  ArrowLeft
+  Clock
 } from 'lucide-react';
-import { useAuthStore } from '../store/auth';
 import { BackButton } from '../components/common/BackButton';
 
 interface CallState {
@@ -29,8 +27,6 @@ const CallsPage: React.FC = () => {
   const { contactId } = useParams<{ contactId: string }>();
   const location = useLocation();
   const navigate = useNavigate();
-  const { user } = useAuthStore();
-  
   const [callState, setCallState] = useState<CallState>({
     isConnected: false,
     isMuted: false,
@@ -72,7 +68,7 @@ const CallsPage: React.FC = () => {
   }, [contactId, contactName]);
 
   useEffect(() => {
-    let interval: number;
+    let interval: ReturnType<typeof setInterval>;
     
     if (callState.isConnected) {
       interval = setInterval(() => {

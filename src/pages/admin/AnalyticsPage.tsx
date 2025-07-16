@@ -19,6 +19,15 @@ import {
   Lock,
   Eye
 } from 'lucide-react';
+import {
+  getUserEngagement,
+  getCoursePerformance,
+  getPaymentStats,
+  getTopEarningCourses,
+  getTopEarningTutors,
+  getPaymentTrends,
+  getRevenueDistribution
+} from '../../services/api';
 
 interface TeacherAnalytics {
   totalCourses: number;
@@ -442,219 +451,28 @@ export const AnalyticsPage: React.FC = () => {
   const loadAnalytics = async () => {
     try {
       setLoading(true);
-      // Mock data for teacher analytics
-      const mockAnalytics: TeacherAnalytics = {
-        totalCourses: 4,
-        totalStudents: 127,
-        totalAssignments: 45,
-        pendingAssignments: 23,
-        averageCompletionRate: 78,
-        averageStudentScore: 84.5,
-        activeStudents: 89,
-        totalLessons: 45,
-        totalRevenue: 15420,
-        monthlyRevenue: 3240,
-        monthlyGrowth: 12.5,
-        averageRevenuePerCourse: 3855,
-        averageRevenuePerStudent: 121.4
-      };
-
-      const mockCourseAnalytics: CourseAnalytics[] = [
-        {
-          courseId: '1',
-          courseTitle: 'Web Development Fundamentals',
-          enrollmentCount: 45,
-          completionRate: 82,
-          averageScore: 87.3,
-          totalLessons: 12,
-          activeStudents: 38,
-          pendingAssignments: 8,
-          lastActivity: '2024-01-15T10:30:00Z',
-          revenue: 1000,
-          price: 20
-        },
-        {
-          courseId: '2',
-          courseTitle: 'JavaScript Programming',
-          enrollmentCount: 32,
-          completionRate: 75,
-          averageScore: 81.2,
-          totalLessons: 15,
-          activeStudents: 24,
-          pendingAssignments: 6,
-          lastActivity: '2024-01-14T14:20:00Z',
-          revenue: 800,
-          price: 25
-        },
-        {
-          courseId: '3',
-          courseTitle: 'Database Design',
-          enrollmentCount: 28,
-          completionRate: 68,
-          averageScore: 79.8,
-          totalLessons: 10,
-          activeStudents: 19,
-          pendingAssignments: 5,
-          lastActivity: '2024-01-13T09:15:00Z',
-          revenue: 700,
-          price: 22
-        },
-        {
-          courseId: '4',
-          courseTitle: 'Frontend Design',
-          enrollmentCount: 22,
-          completionRate: 91,
-          averageScore: 89.1,
-          totalLessons: 8,
-          activeStudents: 20,
-          pendingAssignments: 4,
-          lastActivity: '2024-01-15T16:45:00Z',
-          revenue: 900,
-          price: 28
-        }
-      ];
-
-      const mockStudentAnalytics: StudentAnalytics[] = [
-        {
-          studentId: '1',
-          studentName: 'Alex Johnson',
-          coursesEnrolled: 3,
-          lessonsCompleted: 28,
-          averageScore: 92.5,
-          timeSpent: 1240,
-          lastActivity: '2024-01-15T18:30:00Z',
-          completionRate: 95
-        },
-        {
-          studentId: '2',
-          studentName: 'Sarah Chen',
-          coursesEnrolled: 2,
-          lessonsCompleted: 22,
-          averageScore: 88.7,
-          timeSpent: 980,
-          lastActivity: '2024-01-15T12:15:00Z',
-          completionRate: 88
-        },
-        {
-          studentId: '3',
-          studentName: 'Michael Rodriguez',
-          coursesEnrolled: 4,
-          lessonsCompleted: 35,
-          averageScore: 85.2,
-          timeSpent: 1560,
-          lastActivity: '2024-01-14T20:45:00Z',
-          completionRate: 82
-        }
-      ];
-
-      const mockAssignmentAnalytics: AssignmentAnalytics[] = [
-        {
-          assignmentId: '1',
-          assignmentTitle: 'React Fundamentals - Final Project',
-          courseTitle: 'Web Development Fundamentals',
-          totalSubmissions: 45,
-          gradedSubmissions: 33,
-          averageScore: 84.2,
-          dueDate: '2024-01-13T23:59:59Z',
-          status: 'pending'
-        },
-        {
-          assignmentId: '2',
-          assignmentTitle: 'JavaScript Quiz #3',
-          courseTitle: 'JavaScript Programming',
-          totalSubmissions: 32,
-          gradedSubmissions: 24,
-          averageScore: 78.9,
-          dueDate: '2024-01-14T23:59:59Z',
-          status: 'pending'
-        },
-        {
-          assignmentId: '3',
-          assignmentTitle: 'CSS Layout Assignment',
-          courseTitle: 'Frontend Design',
-          totalSubmissions: 22,
-          gradedSubmissions: 19,
-          averageScore: 91.5,
-          dueDate: '2024-01-15T23:59:59Z',
-          status: 'pending'
-        }
-      ];
-
-      setAnalytics(mockAnalytics);
-      setCourseAnalytics(mockCourseAnalytics);
-      setStudentAnalytics(mockStudentAnalytics);
-      setAssignmentAnalytics(mockAssignmentAnalytics);
-
-      // Mock data for revenue analytics
-      const mockRevenueAnalytics: RevenueAnalytics = {
-        totalRevenue: 15420,
-        monthlyRevenue: 3240,
-        monthlyGrowth: 12.5,
-        averageRevenuePerCourse: 3855,
-        averageRevenuePerStudent: 121.4,
-        revenueByCourse: [
-          { courseId: '1', courseTitle: 'Web Development Fundamentals', revenue: 1000, enrollmentCount: 45, price: 20 },
-          { courseId: '2', courseTitle: 'JavaScript Programming', revenue: 800, enrollmentCount: 32, price: 25 },
-          { courseId: '3', courseTitle: 'Database Design', revenue: 700, enrollmentCount: 28, price: 22 },
-          { courseId: '4', courseTitle: 'Frontend Design', revenue: 900, enrollmentCount: 22, price: 28 }
-        ],
-        revenueTrend: [
-          { month: 'Oct', revenue: 2800, growth: 5.2 },
-          { month: 'Nov', revenue: 3100, growth: 10.7 },
-          { month: 'Dec', revenue: 2900, growth: -6.5 },
-          { month: 'Jan', revenue: 3240, growth: 11.7 }
-        ],
-        topRevenueGenerators: [
-          { courseId: '1', courseTitle: 'Web Development Fundamentals', revenue: 1000, growth: 15.2 },
-          { courseId: '4', courseTitle: 'Frontend Design', revenue: 900, growth: 22.1 },
-          { courseId: '2', courseTitle: 'JavaScript Programming', revenue: 800, growth: 8.5 }
-        ]
-      };
-
-      // Mock data for performance metrics
-      const mockPerformanceMetrics: PerformanceMetrics = {
-        overallCompletionRate: 78,
-        averageStudentScore: 84.5,
-        averageTimeToComplete: 45,
-        studentSatisfaction: 4.2,
-        courseEffectiveness: [
-          { courseId: '1', courseTitle: 'Web Development Fundamentals', effectiveness: 92, completionRate: 82, averageScore: 87.3 },
-          { courseId: '2', courseTitle: 'JavaScript Programming', effectiveness: 85, completionRate: 75, averageScore: 81.2 },
-          { courseId: '3', courseTitle: 'Database Design', effectiveness: 78, completionRate: 68, averageScore: 79.8 },
-          { courseId: '4', courseTitle: 'Frontend Design', effectiveness: 95, completionRate: 91, averageScore: 89.1 }
-        ],
-        studentProgress: [
-          { studentId: '1', studentName: 'Alex Johnson', progress: 95, coursesCompleted: 3, averageScore: 92.5 },
-          { studentId: '2', studentName: 'Sarah Chen', progress: 88, coursesCompleted: 2, averageScore: 88.7 },
-          { studentId: '3', studentName: 'Michael Rodriguez', progress: 92, coursesCompleted: 4, averageScore: 85.2 }
-        ]
-      };
-
-      // Mock data for insights
-      const mockInsights: InsightItem[] = [
-        {
-          id: '1',
-          type: 'trend',
-          title: 'Student Engagement Increasing',
-          description: 'Average session duration has increased by 15% this month',
-          impact: 'positive',
-          confidence: 85,
-          actionable: true,
-          action: 'Consider adding more interactive content',
-          data: { sessionDuration: 45, previousDuration: 39 }
-        }
-      ];
-
-      setAnalytics(mockAnalytics);
-      setCourseAnalytics(mockCourseAnalytics);
-      setStudentAnalytics(mockStudentAnalytics);
-      setAssignmentAnalytics(mockAssignmentAnalytics);
-      setRevenueAnalytics(mockRevenueAnalytics);
-      setPerformanceMetrics(mockPerformanceMetrics);
-      setInsights(mockInsights);
+      // Fetch all analytics data from API
+      const paymentStats = await getPaymentStats();
+      const topCourses = await getTopEarningCourses();
+      const topTutors = await getTopEarningTutors();
+      const paymentTrends = await getPaymentTrends();
+      const revenueDistribution = await getRevenueDistribution();
+      setAnalytics(paymentStats);
+      setCourseAnalytics(topCourses);
+      setStudentAnalytics(topTutors);
+      setAssignmentAnalytics([]); // If available, fetch from API
+      setRevenueAnalytics(revenueDistribution);
+      setPerformanceMetrics(paymentTrends);
+      setInsights([]); // If available, fetch from API
     } catch (error) {
-      console.error('Failed to load analytics:', error);
-      setError('Failed to load analytics data');
+      console.error('Error loading analytics:', error);
+      setAnalytics(null);
+      setCourseAnalytics([]);
+      setStudentAnalytics([]);
+      setAssignmentAnalytics([]);
+      setRevenueAnalytics(null);
+      setPerformanceMetrics(null);
+      setInsights([]);
     } finally {
       setLoading(false);
     }
@@ -783,14 +601,26 @@ export const AnalyticsPage: React.FC = () => {
   };
 
   const exportToCSV = async () => {
-    // Convert data to CSV format
-    const csvContent = 'data:text/csv;charset=utf-8,' + encodeURIComponent('CSV content would be generated here');
-    const a = document.createElement('a');
-    a.href = csvContent;
-    a.download = `analytics-report-${new Date().toISOString().split('T')[0]}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    try {
+      // This function is no longer used as per the new_code, but keeping it for now
+      // as it might be called from the new_code or if it's part of a larger export flow.
+      // The new_code uses getPaymentStats, getTopEarningCourses, getTopEarningTutors, getPaymentTrends, getRevenueDistribution
+      // which are all async and return data directly.
+      // If this function was intended to fetch data from an API, it would need to be updated.
+      // For now, it's a placeholder.
+      const csvContent = 'CSV content would be generated here'; // Placeholder
+      const blob = new Blob([csvContent], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `analytics-report-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      alert('Failed to export analytics report.');
+    }
   };
 
   const exportToJSON = async (data: any) => {

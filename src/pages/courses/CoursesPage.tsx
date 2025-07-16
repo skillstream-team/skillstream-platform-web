@@ -2,24 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { 
   BookOpen, 
-  Users, 
-  Clock, 
-  Star, 
-  Search, 
-  Grid, 
-  List,
-  Plus,
-  Edit3,
-  BarChart3,
-  Zap,
-  Save,
-  X
+  Plus, Zap, BarChart3, Search, Grid, List, Star, Clock, Users, Edit3, X, Save
 } from 'lucide-react';
-import { apiService } from '../../services/api';
 import { Course } from '../../types';
 import { BackButton } from '../../components/common/BackButton';
-import { dummyCourses } from '../../data/courseData';
 import { useAuthStore } from '../../store/auth';
+import { getCourses, getTeacherCourses } from '../../services/api';
 
 export const CoursesPage: React.FC = () => {
   const { user } = useAuthStore();
@@ -47,21 +35,6 @@ export const CoursesPage: React.FC = () => {
     isPaid: false
   });
 
-  const categories = [
-    'Web Development',
-    'Frontend Development',
-    'Data Science',
-    'DevOps',
-    'Mobile Development',
-    'Design',
-    'Business',
-    'Marketing',
-    'Language',
-    'Music',
-    'Photography',
-    'Fitness'
-  ];
-
   useEffect(() => {
     loadCourses();
   }, []);
@@ -86,26 +59,23 @@ export const CoursesPage: React.FC = () => {
       let coursesData;
       
       if (isTeacher) {
-        // For teachers, get their own courses
-        coursesData = await apiService.getTeacherCourses(user?.id || '');
+        // For teachers, get their own courses with pagination
+        coursesData = await getTeacherCourses(user?.id || '', {
+          page: 1,
+          limit: 50
+        });
       } else {
-        // For students, get all available courses
-        coursesData = await apiService.getCourses();
+        // For students, get all available courses with filtering
+        coursesData = await getCourses({
+          page: 1,
+          limit: 50
+        });
       }
       
       setCourses(coursesData);
     } catch (error) {
       console.error('Error loading courses:', error);
-      // Use the comprehensive dummy course data
-      // For teachers, filter to show only their courses
-      if (isTeacher) {
-        const teacherCourses = dummyCourses.filter(course => 
-          course.teacher.id === user?.id || course.teacher.name === user?.name
-        );
-        setCourses(teacherCourses);
-      } else {
-        setCourses(dummyCourses);
-      }
+      setCourses([]); // Show empty state if API fails or not implemented
     } finally {
       setIsLoading(false);
     }
@@ -778,9 +748,9 @@ export const CoursesPage: React.FC = () => {
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
                 >
                   <option value="">Select category</option>
-                  {categories.map(category => (
+                  {/* categories.map(category => (
                     <option key={category} value={category}>{category}</option>
-                  ))}
+                  ))} */}
                 </select>
               </div>
               

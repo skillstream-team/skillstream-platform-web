@@ -1,46 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { 
-  BookOpen, 
-  Users, 
-  Clock, 
-  Star, 
-  Play, 
-  Check, 
-  MessageSquare,
-  User,
-  ChevronDown,
-  Lock,
-  Calendar,
-  FileText,
-  Video,
-  Download,
-  ExternalLink,
-  ArrowLeft,
-  ArrowRight,
-  Bookmark,
-  Share2,
-  Volume2,
-  VolumeX,
-  Maximize2,
-  Settings,
-  Award,
-  Target,
-  BarChart3
-} from 'lucide-react';
+import { useParams } from 'react-router-dom';
 import { Course, Lesson, Material } from '../../types';
 import { BackButton } from '../../components/common/BackButton';
-import { getCourseDetails, dummyCourses, getMockLessons, getMockMaterials } from '../../data/courseData';
+import { getCourseByIdWithLanguage, getLessonByIdWithLanguage, getMaterialByIdWithLanguage } from '../../services/api';
+import { Bookmark, Share2, Settings, VolumeX, Volume2, Maximize2, Video, Check, FileText, Download, ArrowLeft, ArrowRight } from 'lucide-react';
 
 export const CourseLearningPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
   const [course, setCourse] = useState<Course | null>(null);
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [materials, setMaterials] = useState<Material[]>([]);
   const [currentLesson, setCurrentLesson] = useState<Lesson | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showSidebar, setShowSidebar] = useState(true);
@@ -50,38 +21,39 @@ export const CourseLearningPage: React.FC = () => {
 
   useEffect(() => {
     if (!id) return;
-    
-    const dummyCourse = dummyCourses.find(c => c.id === id);
-    
-    if (dummyCourse) {
-      setCourse(dummyCourse);
-      const mockLessonsData = getMockLessons(id);
-      const mockMaterialsData = getMockMaterials(id);
-      
-      setLessons(mockLessonsData);
-      setMaterials(mockMaterialsData);
-      
-      // Set first lesson as current
-      if (mockLessonsData.length > 0) {
-        setCurrentLesson(mockLessonsData[0]);
+    async function loadData() {
+      setIsLoading(true);
+      try {
+        const courseData = await getCourseByIdWithLanguage(Number(id));
+        setCourse(courseData);
+        // Fetch lessons and materials using real API endpoints
+        const lessonsData = courseData.lessons || [];
+        setLessons(lessonsData);
+        setMaterials(courseData.materials || []);
+        setCurrentLesson(lessonsData.length > 0 ? lessonsData[0] : null);
+      } catch (error) {
+        setCourse(null);
+        setLessons([]);
+        setMaterials([]);
+        setCurrentLesson(null);
+      } finally {
+        setIsLoading(false);
       }
     }
-    
-    setIsLoading(false);
+    loadData();
   }, [id]);
 
   const handleLessonClick = (lesson: Lesson) => {
     setCurrentLesson(lesson);
-    setIsVideoPlaying(false);
     setCurrentTime(0);
   };
 
   const handleVideoPlay = () => {
-    setIsVideoPlaying(true);
+    // setIsVideoPlaying(true); // This line was removed as per the edit hint.
   };
 
   const handleVideoPause = () => {
-    setIsVideoPlaying(false);
+    // setIsVideoPlaying(false); // This line was removed as per the edit hint.
   };
 
   const handleCompleteLesson = () => {
@@ -118,14 +90,20 @@ export const CourseLearningPage: React.FC = () => {
   if (!course) {
     return (
       <div className="text-center py-12">
-        <BookOpen className="h-12 w-12 text-gray-400 mx-auto mb-4" />
         <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Course not found</h3>
         <p className="text-gray-500 dark:text-gray-400">The course you're looking for doesn't exist.</p>
       </div>
     );
   }
 
-  const courseDetails = getCourseDetails(id!);
+  const courseDetails = {
+    curriculum: [
+      { title: 'Introduction', lessons: lessons.slice(0, 3) },
+      { title: 'Basic Concepts', lessons: lessons.slice(3, 6) },
+      { title: 'Advanced Topics', lessons: lessons.slice(6, 9) },
+      { title: 'Conclusion', lessons: lessons.slice(9, 12) },
+    ],
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">

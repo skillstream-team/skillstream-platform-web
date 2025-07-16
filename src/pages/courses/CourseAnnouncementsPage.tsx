@@ -1,21 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Announcement, Course } from '../../types';
-import { apiService } from '../../services/api';
-import { 
-  ArrowLeftIcon,
-  PlusIcon,
-  MegaphoneIcon,
-  CalendarIcon,
-  UserIcon,
-  PencilIcon,
-  TrashIcon,
-  ExclamationTriangleIcon
-} from '@heroicons/react/24/outline';
+import { getCourseByIdWithLanguage, getAnnouncements, createAnnouncement, deleteAnnouncement } from '../../services/api';
+import { ArrowLeftIcon, PlusIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
+import { useAuthStore } from '../../store/auth';
 
 const CourseAnnouncementsPage: React.FC = () => {
   const { courseId } = useParams<{ courseId: string }>();
   const navigate = useNavigate();
+  const { user } = useAuthStore();
   const [course, setCourse] = useState<Course | null>(null);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [loading, setLoading] = useState(true);
@@ -34,8 +27,8 @@ const CourseAnnouncementsPage: React.FC = () => {
     try {
       setLoading(true);
       const [courseData, announcementsData] = await Promise.all([
-        apiService.getCourse(courseId!),
-        apiService.getAnnouncements(courseId!)
+        getCourseByIdWithLanguage(Number(courseId)),
+        getAnnouncements(Number(courseId))
       ]);
       setCourse(courseData);
       setAnnouncements(announcementsData);
@@ -59,8 +52,8 @@ const CourseAnnouncementsPage: React.FC = () => {
       setSubmitting(true);
       setError('');
       
-      const announcement = await apiService.createAnnouncement(
-        courseId!,
+      const announcement = await createAnnouncement(
+        Number(courseId),
         newAnnouncement.title,
         newAnnouncement.content
       );
@@ -77,11 +70,10 @@ const CourseAnnouncementsPage: React.FC = () => {
   };
 
   const handleDeleteAnnouncement = async (announcementId: string) => {
+    if (!courseId) return;
     if (!confirm('Are you sure you want to delete this announcement?')) return;
-
     try {
-      // Note: This would need to be added to the API service
-      // await apiService.deleteAnnouncement(announcementId);
+      await deleteAnnouncement(Number(courseId), announcementId);
       setAnnouncements(prev => prev.filter(a => a.id !== announcementId));
     } catch (error) {
       console.error('Failed to delete announcement:', error);
@@ -153,7 +145,7 @@ const CourseAnnouncementsPage: React.FC = () => {
                 Stay updated with the latest news and updates for "{course.title}"
               </p>
             </div>
-            {course.teacherId === 'current-user-id' && ( // Replace with actual user check
+            {user && course.teacherId === user.id && (
               <button
                 onClick={() => setShowCreateForm(true)}
                 className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
@@ -241,7 +233,6 @@ const CourseAnnouncementsPage: React.FC = () => {
         <div className="space-y-6">
           {announcements.length === 0 ? (
             <div className="text-center py-12">
-              <MegaphoneIcon className="mx-auto h-12 w-12 text-gray-400" />
               <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">No announcements</h3>
               <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                 There are no announcements for this course yet.
@@ -257,7 +248,6 @@ const CourseAnnouncementsPage: React.FC = () => {
                   <div className="flex items-start justify-between">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center space-x-3 mb-3">
-                        <MegaphoneIcon className="w-5 h-5 text-indigo-500" />
                         <h3 className="text-lg font-medium text-gray-900 dark:text-white">
                           {announcement.title}
                         </h3>
@@ -269,33 +259,28 @@ const CourseAnnouncementsPage: React.FC = () => {
                       
                       <div className="flex items-center space-x-6 text-sm text-gray-500 dark:text-gray-400">
                         <div className="flex items-center">
-                          <UserIcon className="w-4 h-4 mr-1" />
                           {announcement.author.name}
                         </div>
                         <div className="flex items-center">
-                          <CalendarIcon className="w-4 h-4 mr-1" />
                           {new Date(announcement.createdAt).toLocaleDateString()} at{' '}
                           {new Date(announcement.createdAt).toLocaleTimeString()}
                         </div>
                       </div>
                     </div>
                     
-                    {announcement.authorId === 'current-user-id' && ( // Replace with actual user check
+                    {user && announcement.authorId === user.id && (
                       <div className="flex items-center space-x-2 ml-4">
                         <button
-                          onClick={() => {
-                            // Handle edit - would need to implement edit functionality
-                            console.log('Edit announcement:', announcement.id);
-                          }}
-                          className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                          className="inline-flex items-center text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-200"
+                          // onClick={() => handleEditAnnouncement(announcement.id)}
                         >
-                          <PencilIcon className="w-4 h-4" />
+                          Edit
                         </button>
                         <button
+                          className="inline-flex items-center text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-200"
                           onClick={() => handleDeleteAnnouncement(announcement.id)}
-                          className="p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400"
                         >
-                          <TrashIcon className="w-4 h-4" />
+                          Delete
                         </button>
                       </div>
                     )}

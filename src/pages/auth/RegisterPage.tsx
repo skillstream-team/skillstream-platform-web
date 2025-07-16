@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, Mail, Lock, User, GraduationCap, BookOpen, AlertCircle } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User, GraduationCap } from 'lucide-react';
 import { useAuthStore } from '../../store/auth';
 import { cn } from '../../lib/utils';
 
@@ -100,7 +100,6 @@ export const RegisterPage: React.FC = () => {
           {error && (
             <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md p-4">
               <div className="flex">
-                <AlertCircle className="h-5 w-5 text-red-400" />
                 <div className="ml-3">
                   <h3 className="text-sm font-medium text-red-800 dark:text-red-200">
                     Registration failed

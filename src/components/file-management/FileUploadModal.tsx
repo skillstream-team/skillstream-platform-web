@@ -4,18 +4,15 @@ import {
   X, 
   Upload, 
   File, 
-  FileText, 
   Image, 
   Video, 
   Music, 
-  Archive,
-  Plus,
-  Tag,
-  Folder,
-  Settings,
-  AlertCircle,
-  CheckCircle,
-  Clock
+  Archive, 
+  Check, 
+  AlertCircle, 
+  FileText, 
+  Plus, 
+  Clock 
 } from 'lucide-react';
 
 interface FileUploadModalProps {
@@ -296,12 +293,12 @@ export const FileUploadModal: React.FC<FileUploadModalProps> = ({
           {uploadedFiles.length > 0 && (
             <div className="space-y-2">
               <h4 className="text-sm font-medium text-green-600 dark:text-green-400 flex items-center">
-                <CheckCircle className="h-4 w-4 mr-2" />
+                <Check className="h-4 w-4 mr-2" />
                 Successfully Uploaded
               </h4>
               {uploadedFiles.map(fileName => (
                 <div key={fileName} className="flex items-center space-x-2 text-sm text-green-600 dark:text-green-400">
-                  <CheckCircle className="h-4 w-4" />
+                  <Check className="h-4 w-4" />
                   <span>{fileName}</span>
                 </div>
               ))}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Bell, MessageCircle, Video, CheckCircle, AlertCircle, Info } from 'lucide-react';
+import { X, Bell, CheckCircle, AlertCircle, Info } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
 export interface Notification {

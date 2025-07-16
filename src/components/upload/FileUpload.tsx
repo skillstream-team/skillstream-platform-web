@@ -90,7 +90,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
     if (courseId) formData.append('courseId', courseId);
     if (lessonId) formData.append('lessonId', lessonId);
 
-    const response = await apiService.uploadFile(file, 'course-material');
+    const response = await apiService.uploadFile(file, 'shared', {});
     return response;
   };
 

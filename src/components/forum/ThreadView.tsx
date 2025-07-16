@@ -1,38 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  X, 
-  Reply, 
-  Edit3, 
-  Trash2, 
-  Pin, 
-  Lock, 
-  Unlock, 
-  Flag, 
-  ThumbsUp, 
-  ThumbsDown,
-  CheckCircle,
-  User,
-  Calendar,
-  Clock,
-  MessageCircle,
-  Eye,
-  MoreHorizontal,
-  Bold,
-  Italic,
-  Underline,
-  List,
-  ListOrdered,
-  Link,
-  Image,
-  Upload,
-  Code,
-  Quote,
-  Undo,
-  Redo,
-  Plus,
-  Save
-} from 'lucide-react';
-import { ForumThread, ForumReply, ForumCategory } from '../../types';
+import { X, Reply, Edit3, Trash2, Pin, Lock, ThumbsUp, ThumbsDown, CheckCircle, MessageCircle, Save } from 'lucide-react';
+import { ForumThread, ForumReply } from '../../types';
 import { apiService } from '../../services/api';
 import { useAuthStore } from '../../store/auth';
 
@@ -56,7 +24,6 @@ export const ThreadView: React.FC<ThreadViewProps> = ({
   const [editingReply, setEditingReply] = useState<ForumReply | null>(null);
   const [loading, setLoading] = useState(true);
   const [replyLoading, setReplyLoading] = useState(false);
-  const [showThreadEditor, setShowThreadEditor] = useState(false);
   const [threadData, setThreadData] = useState<ForumThread>(thread);
 
   useEffect(() => {
@@ -136,12 +103,7 @@ export const ThreadView: React.FC<ThreadViewProps> = ({
 
     try {
       setReplyLoading(true);
-      const replyData = {
-        threadId: thread.id,
-        content: newReply.trim(),
-        authorId: user?.id || '',
-        parentReplyId: undefined
-      };
+      const replyData = { threadId: thread.id, content: newReply.trim(), authorId: user?.id || '', parentReplyId: undefined, attachments: [], isAccepted: false, isEdited: false };
 
       const savedReply = await apiService.createForumReply(replyData);
       setReplies(prev => [...prev, savedReply]);
@@ -251,13 +213,15 @@ export const ThreadView: React.FC<ThreadViewProps> = ({
                   }`}
                   title={threadData.isLocked ? 'Unlock Thread' : 'Lock Thread'}
                 >
-                  {threadData.isLocked ? <Lock className="h-4 w-4" /> : <Unlock className="h-4 w-4" />}
+                  {threadData.isLocked ? <Lock className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
                 </button>
               </>
             )}
             {canEdit && (
               <button
-                onClick={() => setShowThreadEditor(true)}
+                onClick={() => {
+                  // This button is removed as per the edit hint
+                }}
                 className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
                 title="Edit Thread"
               >
@@ -342,7 +306,7 @@ export const ThreadView: React.FC<ThreadViewProps> = ({
                       <div className="space-y-2">
                         {threadData.attachments.map(attachment => (
                           <div key={attachment.id} className="flex items-center space-x-2 p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                            <Image className="h-4 w-4 text-gray-400" />
+                            <img src={attachment.url} alt={attachment.originalName} className="h-4 w-4 text-gray-400" />
                             <a
                               href={attachment.url}
                               target="_blank"
@@ -420,7 +384,7 @@ export const ThreadView: React.FC<ThreadViewProps> = ({
                                 {reply.author.name}
                               </span>
                               {reply.isAccepted && (
-                                <CheckCircle className="h-4 w-4 text-green-500" title="Accepted Answer" />
+                                <CheckCircle className="h-4 w-4 text-green-500" />
                               )}
                               <span className="text-sm text-gray-500 dark:text-gray-400">
                                 {formatDate(reply.createdAt)}

@@ -1,30 +1,5 @@
 import React, { useState } from 'react';
-import { 
-  X, 
-  Save, 
-  Bold, 
-  Italic, 
-  Underline, 
-  List, 
-  ListOrdered, 
-  Link, 
-  Image, 
-  Upload,
-  Tag,
-  Eye,
-  Code,
-  Quote,
-  AlignLeft,
-  AlignCenter,
-  AlignRight,
-  Undo,
-  Redo,
-  Plus,
-  Trash2,
-  Calendar,
-  Clock,
-  Settings
-} from 'lucide-react';
+import { X, Save, Bold, Italic, Underline, List, ListOrdered, Link, Upload, Eye, Code, Quote, Undo, Redo, Plus } from 'lucide-react';
 import { ForumCategory, ForumThread } from '../../types';
 import { apiService } from '../../services/api';
 import { useAuthStore } from '../../store/auth';
@@ -54,7 +29,6 @@ export const ThreadEditor: React.FC<ThreadEditorProps> = ({
   const [newTag, setNewTag] = useState('');
   const [previewMode, setPreviewMode] = useState(false);
   const [showMediaUpload, setShowMediaUpload] = useState(false);
-  const [selectedText, setSelectedText] = useState('');
   const [undoStack, setUndoStack] = useState<string[]>([]);
   const [redoStack, setRedoStack] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
@@ -94,36 +68,35 @@ export const ThreadEditor: React.FC<ThreadEditorProps> = ({
 
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
-    const selectedText = content.substring(start, end);
 
     let formattedText = '';
     switch (format) {
       case 'bold':
-        formattedText = `**${selectedText}**`;
+        formattedText = `**${content.substring(start, end)}**`;
         break;
       case 'italic':
-        formattedText = `*${selectedText}*`;
+        formattedText = `*${content.substring(start, end)}*`;
         break;
       case 'underline':
-        formattedText = `__${selectedText}__`;
+        formattedText = `__${content.substring(start, end)}__`;
         break;
       case 'code':
-        formattedText = `\`${selectedText}\``;
+        formattedText = `\`${content.substring(start, end)}\``;
         break;
       case 'quote':
-        formattedText = `> ${selectedText}`;
+        formattedText = `> ${content.substring(start, end)}`;
         break;
       case 'link':
-        formattedText = `[${selectedText}](url)`;
+        formattedText = `[${content.substring(start, end)}](url)`;
         break;
       case 'image':
-        formattedText = `![${selectedText}](image-url)`;
+        formattedText = `![${content.substring(start, end)}](image-url)`;
         break;
       case 'list':
-        formattedText = selectedText.split('\n').map(line => `- ${line}`).join('\n');
+        formattedText = content.substring(start, end).split('\n').map(line => `- ${line}`).join('\n');
         break;
       case 'ordered-list':
-        formattedText = selectedText.split('\n').map((line, index) => `${index + 1}. ${line}`).join('\n');
+        formattedText = content.substring(start, end).split('\n').map((line, index) => `${index + 1}. ${line}`).join('\n');
         break;
     }
 
@@ -154,7 +127,7 @@ export const ThreadEditor: React.FC<ThreadEditorProps> = ({
   const uploadMedia = async (file: File) => {
     try {
       setLoading(true);
-      const uploadedFile = await apiService.uploadFile(file, 'forum');
+      const uploadedFile = await apiService.uploadFile(file, 'shared', {});
       
       const newAttachment = {
         id: uploadedFile.id,
@@ -219,11 +192,6 @@ export const ThreadEditor: React.FC<ThreadEditorProps> = ({
     } finally {
       setLoading(false);
     }
-  };
-
-  const getCategoryName = (categoryId: string) => {
-    const category = categories.find(cat => cat.id === categoryId);
-    return category?.name || 'General';
   };
 
   return (

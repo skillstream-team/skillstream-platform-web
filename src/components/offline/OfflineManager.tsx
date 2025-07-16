@@ -1,31 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Download, 
-  Upload, 
-  Wifi, 
-  WifiOff, 
-  CheckCircle, 
-  AlertCircle, 
-  Clock, 
-  FileText, 
-  Video, 
-  BookOpen, 
-  HardDrive,
-  RefreshCw,
-  Trash2,
-  Settings,
-  Info,
-  Play,
-  Pause,
-  X
-} from 'lucide-react';
-import { useAuthStore } from '../../store/auth';
-import { apiService } from '../../services/api';
-import { Course, Lesson, Material } from '../../types';
+import { Download, Wifi, WifiOff, CheckCircle, AlertCircle, FileText, Video, RefreshCw, Trash2, X } from 'lucide-react';
+import { apiService, getMyCourses, getOfflineContent, prepareOfflineContent, syncOfflineData } from '../../services/api';
+import { Course } from '../../types';
 
 interface OfflineContent {
   id: string;
-  type: 'course' | 'lesson' | 'material';
+  type: 'course' | 'material';
   title: string;
   description?: string;
   size: number;
@@ -34,7 +14,7 @@ interface OfflineContent {
   isAvailable: boolean;
   progress?: number;
   courseId?: string;
-  lessonId?: string;
+  materialId?: string;
 }
 
 interface DownloadProgress {
@@ -53,7 +33,6 @@ export const OfflineManager: React.FC<OfflineManagerProps> = ({
   isOpen,
   onClose
 }) => {
-  const { user } = useAuthStore();
   const [offlineContent, setOfflineContent] = useState<OfflineContent[]>([]);
   const [downloadQueue, setDownloadQueue] = useState<DownloadProgress[]>([]);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
@@ -61,7 +40,6 @@ export const OfflineManager: React.FC<OfflineManagerProps> = ({
   const [storageUsage, setStorageUsage] = useState({ used: 0, total: 0 });
   const [selectedCourse, setSelectedCourse] = useState<string>('');
   const [courses, setCourses] = useState<Course[]>([]);
-  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -86,7 +64,7 @@ export const OfflineManager: React.FC<OfflineManagerProps> = ({
 
   const loadOfflineContent = async () => {
     try {
-      const content = await apiService.getOfflineContent();
+      const content = await getOfflineContent();
       setOfflineContent(content);
     } catch (error) {
       console.error('Error loading offline content:', error);
@@ -100,7 +78,7 @@ export const OfflineManager: React.FC<OfflineManagerProps> = ({
 
   const loadCourses = async () => {
     try {
-      const userCourses = await apiService.getMyCourses();
+      const userCourses = await getMyCourses();
       setCourses(userCourses);
     } catch (error) {
       console.error('Error loading courses:', error);
@@ -136,7 +114,7 @@ export const OfflineManager: React.FC<OfflineManagerProps> = ({
 
     try {
       // Prepare course content for offline
-      const offlineData = await apiService.prepareOfflineContent(courseId);
+      const offlineData = await prepareOfflineContent(courseId);
       
       // Simulate download progress
       for (let i = 0; i <= 100; i += 10) {
@@ -186,65 +164,6 @@ export const OfflineManager: React.FC<OfflineManagerProps> = ({
     }
   };
 
-  const downloadLesson = async (lessonId: string, courseId: string) => {
-    const downloadId = `lesson-${lessonId}`;
-    
-    setDownloadQueue(prev => [...prev, {
-      id: downloadId,
-      progress: 0,
-      status: 'downloading'
-    }]);
-
-    try {
-      const lesson = await apiService.getLesson(lessonId);
-      const offlineData = await apiService.prepareOfflineContent(lessonId);
-
-      // Simulate download progress
-      for (let i = 0; i <= 100; i += 20) {
-        await new Promise(resolve => setTimeout(resolve, 150));
-        setDownloadQueue(prev => prev.map(item => 
-          item.id === downloadId 
-            ? { ...item, progress: i }
-            : item
-        ));
-      }
-
-      const content: OfflineContent = {
-        id: lessonId,
-        type: 'lesson',
-        title: lesson.title,
-        description: lesson.content.substring(0, 100) + '...',
-        size: offlineData.size || 512 * 1024, // 512KB default
-        downloadedAt: new Date().toISOString(),
-        lastAccessed: new Date().toISOString(),
-        isAvailable: true,
-        courseId: courseId,
-        lessonId: lessonId
-      };
-
-      setOfflineContent(prev => [...prev, content]);
-      localStorage.setItem('offlineContent', JSON.stringify([...offlineContent, content]));
-
-      setDownloadQueue(prev => prev.map(item => 
-        item.id === downloadId 
-          ? { ...item, progress: 100, status: 'completed' }
-          : item
-      ));
-
-      setTimeout(() => {
-        setDownloadQueue(prev => prev.filter(item => item.id !== downloadId));
-      }, 2000);
-
-    } catch (error) {
-      console.error('Error downloading lesson:', error);
-      setDownloadQueue(prev => prev.map(item => 
-        item.id === downloadId 
-          ? { ...item, status: 'error', error: 'Download failed' }
-          : item
-      ));
-    }
-  };
-
   const removeOfflineContent = async (contentId: string) => {
     try {
       // Remove from localStorage
@@ -273,7 +192,7 @@ export const OfflineManager: React.FC<OfflineManagerProps> = ({
       const offlineChanges = localStorage.getItem('offlineChanges');
       if (offlineChanges) {
         const changes = JSON.parse(offlineChanges);
-        await apiService.syncOfflineData(changes);
+        await syncOfflineData(changes);
         localStorage.removeItem('offlineChanges');
       }
 
@@ -303,8 +222,7 @@ export const OfflineManager: React.FC<OfflineManagerProps> = ({
 
   const getContentIcon = (type: string) => {
     switch (type) {
-      case 'course': return <BookOpen className="h-5 w-5" />;
-      case 'lesson': return <FileText className="h-5 w-5" />;
+      case 'course': return <FileText className="h-5 w-5" />;
       case 'material': return <Video className="h-5 w-5" />;
       default: return <FileText className="h-5 w-5" />;
     }
@@ -322,7 +240,7 @@ export const OfflineManager: React.FC<OfflineManagerProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center space-x-3">
-            <HardDrive className="h-6 w-6 text-blue-600" />
+            <FileText className="h-6 w-6 text-blue-600" />
             <div>
               <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Offline Content Manager</h2>
               <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-300">
@@ -390,7 +308,7 @@ export const OfflineManager: React.FC<OfflineManagerProps> = ({
                       className="w-full flex items-center justify-between p-3 bg-white dark:bg-gray-600 rounded-lg border border-gray-200 dark:border-gray-500 hover:bg-gray-50 dark:hover:bg-gray-500 transition-colors"
                     >
                       <div className="flex items-center space-x-3">
-                        <BookOpen className="h-5 w-5 text-blue-600" />
+                        <FileText className="h-5 w-5 text-blue-600" />
                         <div className="text-left">
                           <div className="font-medium text-gray-900 dark:text-white">Full Course</div>
                           <div className="text-sm text-gray-600 dark:text-gray-300">All lessons and materials</div>
@@ -464,7 +382,7 @@ export const OfflineManager: React.FC<OfflineManagerProps> = ({
 
             {offlineContent.length === 0 ? (
               <div className="text-center py-12">
-                <HardDrive className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                 <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No offline content</h4>
                 <p className="text-gray-600 dark:text-gray-300">
                   Download courses and lessons to access them offline

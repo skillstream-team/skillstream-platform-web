@@ -9,13 +9,10 @@ import {
   Paperclip, 
   Smile,
   X,
-  User,
-  Clock,
-  Check,
   CheckCheck,
   File
 } from 'lucide-react';
-import { apiService } from '../../services/api';
+import { getDirectMessages, sendDirectMessage } from '../../services/api';
 import { DirectMessage, User as UserType } from '../../types';
 import { useAuthStore } from '../../store/auth';
 import { AttachmentMenu, Attachment } from './AttachmentMenu';
@@ -82,95 +79,39 @@ export const MessagingPanel: React.FC<MessagingPanelProps> = ({
 
   const loadUsers = async () => {
     try {
-      const usersData = await apiService.getUsers();
-      setUsers(usersData);
+      // TODO: Implement getUsers API call
+      setUsers([]);
     } catch (error) {
-      console.error('Error loading users:', error);
-      // Mock data for demonstration
-      setUsers([
-        { id: '1', name: 'John Doe', email: 'john@example.com', role: 'STUDENT', createdAt: '2024-01-01T00:00:00Z', updatedAt: '2024-01-01T00:00:00Z' },
-        { id: '2', name: 'Jane Smith', email: 'jane@example.com', role: 'TEACHER', createdAt: '2024-01-01T00:00:00Z', updatedAt: '2024-01-01T00:00:00Z' },
-        { id: '3', name: 'Mike Johnson', email: 'mike@example.com', role: 'STUDENT', createdAt: '2024-01-01T00:00:00Z', updatedAt: '2024-01-01T00:00:00Z' },
-        { id: '4', name: 'Sarah Wilson', email: 'sarah@example.com', role: 'TEACHER', createdAt: '2024-01-01T00:00:00Z', updatedAt: '2024-01-01T00:00:00Z' },
-        { id: '5', name: 'Alex Brown', email: 'alex@example.com', role: 'STUDENT', createdAt: '2024-01-01T00:00:00Z', updatedAt: '2024-01-01T00:00:00Z' }
-      ]);
+      setUsers([]);
     }
   };
 
   const loadMessages = async () => {
     if (!selectedUser) return;
-    
     try {
       setIsLoading(true);
-      const messagesData = await apiService.getDirectMessages();
+      const messagesData = await getDirectMessages();
       // Filter messages for the selected user
-      const userMessages = messagesData.filter(msg => 
+      const userMessages = messagesData.filter((msg: any) => 
         (msg.senderId === user?.id && msg.receiverId === selectedUser.id) ||
         (msg.senderId === selectedUser.id && msg.receiverId === user?.id)
       );
       setMessages(userMessages);
     } catch (error) {
       console.error('Error loading messages:', error);
-      // Mock data for demonstration
-      const mockMessages: DirectMessage[] = [
-        {
-          id: '1',
-          senderId: selectedUser.id,
-          receiverId: user?.id || '',
-          content: 'Hi! How are you doing with the course?',
-          createdAt: new Date(Date.now() - 3600000).toISOString(),
-          sender: { id: selectedUser.id, name: selectedUser.name, avatarUrl: undefined },
-          receiver: { id: user?.id || '', name: user?.name || '', avatarUrl: undefined }
-        },
-        {
-          id: '2',
-          senderId: user?.id || '',
-          receiverId: selectedUser.id,
-          content: 'I\'m doing great! The course is really helpful.',
-          createdAt: new Date(Date.now() - 1800000).toISOString(),
-          sender: { id: user?.id || '', name: user?.name || '', avatarUrl: undefined },
-          receiver: { id: selectedUser.id, name: selectedUser.name, avatarUrl: undefined }
-        },
-        {
-          id: '3',
-          senderId: selectedUser.id,
-          receiverId: user?.id || '',
-          content: 'That\'s wonderful to hear! Do you have any questions about the latest assignment?',
-          createdAt: new Date(Date.now() - 900000).toISOString(),
-          sender: { id: selectedUser.id, name: selectedUser.name, avatarUrl: undefined },
-          receiver: { id: user?.id || '', name: user?.name || '', avatarUrl: undefined }
-        }
-      ];
-      setMessages(mockMessages);
+      setMessages([]); // Show empty state on error
     } finally {
       setIsLoading(false);
     }
   };
 
-  const sendMessage = async () => {
-    if (!newMessage.trim() || !selectedUser || !user) return;
-
+  const handleSendMessage = async (content: string) => {
+    if (!selectedUser) return;
     try {
-      setIsSending(true);
-      const sentMessage = await apiService.sendDirectMessage(selectedUser.id, newMessage.trim());
-      setMessages(prev => [...prev, sentMessage]);
-      setNewMessage('');
+      await sendDirectMessage(selectedUser.id, content);
+      await loadMessages(); // Refresh messages
     } catch (error) {
       console.error('Error sending message:', error);
-      // Add message locally for demo
-      const mockMessage: DirectMessage = {
-        id: Date.now().toString(),
-        senderId: user.id,
-        receiverId: selectedUser.id,
-        content: newMessage.trim(),
-        createdAt: new Date().toISOString(),
-        sender: { id: user.id, name: user.name, avatarUrl: undefined },
-        receiver: { id: selectedUser.id, name: selectedUser.name, avatarUrl: undefined }
-      };
-      setMessages(prev => [...prev, mockMessage]);
-      setNewMessage('');
-    } finally {
-      setIsSending(false);
     }
   };
 
@@ -195,7 +136,7 @@ export const MessagingPanel: React.FC<MessagingPanelProps> = ({
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      sendMessage();
+      handleSendMessage(newMessage);
     }
   };
 
@@ -428,7 +369,7 @@ export const MessagingPanel: React.FC<MessagingPanelProps> = ({
                       </button>
                     </div>
                     <button
-                      onClick={sendMessage}
+                      onClick={() => handleSendMessage(newMessage)}
                       disabled={(!newMessage.trim() && attachments.length === 0) || isSending}
                       className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                     >

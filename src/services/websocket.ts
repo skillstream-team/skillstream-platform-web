@@ -1,8 +1,13 @@
-import { WebSocketMessage, ChatMessage, VideoChatMessage } from '../types';
-import apiService from './api';
+import { getWebSocketToken } from './api';
 
 type MessageHandler = (message: WebSocketMessage) => void;
 type ConnectionHandler = (connected: boolean) => void;
+type WebSocketMessage = {
+  type: 'CHAT' | 'VIDEO'; // based on usage
+  data: any;              // could be refined
+  timestamp: string;
+};
+
 
 class WebSocketService {
   private ws: WebSocket | null = null;
@@ -22,7 +27,7 @@ class WebSocketService {
 
     try {
       // Get WebSocket token from API
-      const { token } = await apiService.getWebSocketToken();
+      const { token } = await getWebSocketToken();
       
       // Connect to WebSocket server
       const wsUrl = import.meta.env.VITE_WS_URL || 'ws://localhost:3000/ws';

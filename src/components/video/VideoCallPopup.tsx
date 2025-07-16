@@ -10,7 +10,6 @@ import {
 } from 'lucide-react';
 import { apiService } from '../../services/api';
 import { User as UserType } from '../../types';
-import { useAuthStore } from '../../store/auth';
 
 interface VideoCallPopupProps {
   isOpen: boolean;
@@ -32,7 +31,6 @@ export const VideoCallPopup: React.FC<VideoCallPopupProps> = ({
   onStartCall,
   buttonRef
 }) => {
-  const { user } = useAuthStore();
   const [users, setUsers] = useState<UserType[]>([]);
   const [recentContacts, setRecentContacts] = useState<RecentContact[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -77,97 +75,18 @@ export const VideoCallPopup: React.FC<VideoCallPopupProps> = ({
       setUsers(usersData);
     } catch (error) {
       console.error('Error loading users:', error);
-      // Mock data for demonstration
-      setUsers([
-        { 
-          id: '1', 
-          name: 'John Doe', 
-          email: 'john@example.com', 
-          role: 'STUDENT', 
-          avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80',
-          createdAt: '2024-01-01T00:00:00Z', 
-          updatedAt: '2024-01-01T00:00:00Z' 
-        },
-        { 
-          id: '2', 
-          name: 'Jane Smith', 
-          email: 'jane@example.com', 
-          role: 'TEACHER', 
-          avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80',
-          createdAt: '2024-01-01T00:00:00Z', 
-          updatedAt: '2024-01-01T00:00:00Z' 
-        },
-        { 
-          id: '3', 
-          name: 'Mike Johnson', 
-          email: 'mike@example.com', 
-          role: 'STUDENT', 
-          avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80',
-          createdAt: '2024-01-01T00:00:00Z', 
-          updatedAt: '2024-01-01T00:00:00Z' 
-        },
-        { 
-          id: '4', 
-          name: 'Sarah Wilson', 
-          email: 'sarah@example.com', 
-          role: 'TEACHER', 
-          avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80',
-          createdAt: '2024-01-01T00:00:00Z', 
-          updatedAt: '2024-01-01T00:00:00Z' 
-        },
-        { 
-          id: '5', 
-          name: 'Alex Brown', 
-          email: 'alex@example.com', 
-          role: 'STUDENT', 
-          avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80',
-          createdAt: '2024-01-01T00:00:00Z', 
-          updatedAt: '2024-01-01T00:00:00Z' 
-        }
-      ]);
+      setUsers([]); // Show empty state on error
     }
   };
 
   const loadRecentContacts = async () => {
     try {
       setIsLoading(true);
-      // In a real app, you would fetch recent contacts from the API
-      // For now, we'll create mock recent contacts based on the users
-      const mockRecentContacts: RecentContact[] = [
-        {
-          user: users[0] || { id: '1', name: 'John Doe', email: 'john@example.com', role: 'STUDENT', createdAt: '2024-01-01T00:00:00Z', updatedAt: '2024-01-01T00:00:00Z' },
-          lastContact: new Date(Date.now() - 1800000).toISOString(), // 30 minutes ago
-          contactType: 'call',
-          isOnline: true
-        },
-        {
-          user: users[1] || { id: '2', name: 'Jane Smith', email: 'jane@example.com', role: 'TEACHER', createdAt: '2024-01-01T00:00:00Z', updatedAt: '2024-01-01T00:00:00Z' },
-          lastContact: new Date(Date.now() - 3600000).toISOString(), // 1 hour ago
-          contactType: 'message',
-          isOnline: false
-        },
-        {
-          user: users[2] || { id: '3', name: 'Mike Johnson', email: 'mike@example.com', role: 'STUDENT', createdAt: '2024-01-01T00:00:00Z', updatedAt: '2024-01-01T00:00:00Z' },
-          lastContact: new Date(Date.now() - 7200000).toISOString(), // 2 hours ago
-          contactType: 'call',
-          isOnline: true
-        },
-        {
-          user: users[3] || { id: '4', name: 'Sarah Wilson', email: 'sarah@example.com', role: 'TEACHER', createdAt: '2024-01-01T00:00:00Z', updatedAt: '2024-01-01T00:00:00Z' },
-          lastContact: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
-          contactType: 'message',
-          isOnline: false
-        },
-        {
-          user: users[4] || { id: '5', name: 'Alex Brown', email: 'alex@example.com', role: 'STUDENT', createdAt: '2024-01-01T00:00:00Z', updatedAt: '2024-01-01T00:00:00Z' },
-          lastContact: new Date(Date.now() - 172800000).toISOString(), // 2 days ago
-          contactType: 'call',
-          isOnline: true
-        }
-      ];
-      setRecentContacts(mockRecentContacts);
+      // TODO: Replace with real API call
+      setRecentContacts([]); // Show empty state if API fails or not implemented
     } catch (error) {
       console.error('Error loading recent contacts:', error);
+      setRecentContacts([]);
     } finally {
       setIsLoading(false);
     }

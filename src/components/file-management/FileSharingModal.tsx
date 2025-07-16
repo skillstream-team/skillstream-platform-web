@@ -1,29 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  X, 
-  Share2, 
-  Users, 
-  User, 
-  UserPlus, 
-  Mail, 
-  Copy, 
-  Link, 
-  Lock, 
-  Unlock,
-  Eye,
-  Download,
-  Edit,
-  Trash2,
-  Search,
-  Check,
-  AlertCircle,
-  Settings,
-  Globe,
-  Shield,
-  Clock,
-  Calendar
-} from 'lucide-react';
-import { apiService } from '../../services/api';
+import { X, Share2, User, Copy, Eye, Download, Edit, Settings, Check, Search, UserPlus, Calendar, Clock, Trash2 } from 'lucide-react';
+import { apiService, listUsers } from '../../services/api';
 import { FileUpload, User as UserType } from '../../types';
 
 interface FileSharingModalProps {
@@ -64,7 +41,7 @@ export const FileSharingModal: React.FC<FileSharingModalProps> = ({
 
   const loadUsers = async () => {
     try {
-      const userList = await apiService.getUsers();
+      const userList = await listUsers();
       setUsers(userList);
     } catch (error) {
       console.error('Error loading users:', error);
@@ -216,7 +193,7 @@ export const FileSharingModal: React.FC<FileSharingModalProps> = ({
                     : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
                 }`}
               >
-                {isPublic ? <Globe className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
+                {isPublic ? <Eye className="h-4 w-4" /> : <X className="h-4 w-4" />}
                 <span>{isPublic ? 'Public' : 'Private'}</span>
               </button>
             </div>

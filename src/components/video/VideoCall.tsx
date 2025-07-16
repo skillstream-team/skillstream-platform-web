@@ -1,11 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { VideoConference, VideoParticipant, VideoSession } from '../../types';
+import { VideoConference, VideoParticipant } from '../../types';
 import { apiService } from '../../services/api';
 import { 
   VideoCameraIcon,
   VideoCameraSlashIcon,
   MicrophoneIcon,
-  PhoneIcon,
   PhoneXMarkIcon,
   ComputerDesktopIcon,
   HandRaisedIcon,
@@ -27,7 +26,6 @@ interface VideoCallProps {
 
 const VideoCall: React.FC<VideoCallProps> = ({ conferenceId, onLeave }) => {
   const [conference, setConference] = useState<VideoConference | null>(null);
-  const [session, setSession] = useState<VideoSession | null>(null);
   const [participants, setParticipants] = useState<VideoParticipant[]>([]);
   const [localParticipant, setLocalParticipant] = useState<VideoParticipant | null>(null);
   const [isMuted, setIsMuted] = useState(false);
@@ -44,7 +42,6 @@ const VideoCall: React.FC<VideoCallProps> = ({ conferenceId, onLeave }) => {
   const [error, setError] = useState('');
 
   const localVideoRef = useRef<HTMLVideoElement>(null);
-  const remoteVideoRef = useRef<HTMLVideoElement>(null);
   const screenShareRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
@@ -67,7 +64,6 @@ const VideoCall: React.FC<VideoCallProps> = ({ conferenceId, onLeave }) => {
       const result = await apiService.joinVideoConference(conferenceId);
       setConference(result.conference);
       setLocalParticipant(result.participant);
-      setSession(result.session);
       setParticipants(result.session.participants);
       setIsMuted(result.participant.isMuted);
       setIsVideoOn(result.participant.isVideoOn);

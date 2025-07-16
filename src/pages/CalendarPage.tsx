@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { CalendarEvent } from '../types';
-import { apiService } from '../services/api';
+import { getCalendarEvents, getMyCalendarEvents, createCalendarEvent, joinCalendarEvent } from '../services/api';
 import { BackButton } from '../components/common/BackButton';
 import { TodoList } from '../components/calendar/TodoList';
 import { 
@@ -56,80 +56,19 @@ const CalendarPage: React.FC = () => {
   const loadEvents = async () => {
     try {
       setLoading(true);
-      const eventsData = await apiService.getCalendarEvents();
+      // Get events for the current month
+      const startDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).toISOString().split('T')[0];
+      const endDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).toISOString().split('T')[0];
+      
+      const eventsData = await getCalendarEvents({
+        startDate,
+        endDate
+      });
       setEvents(eventsData);
     } catch (error) {
       console.error('Failed to load events:', error);
       setError('Failed to load calendar events');
-      // Mock data for demo
-      setEvents([
-        {
-          id: '1',
-          userId: 'current-user-id',
-          title: 'React Fundamentals - Lesson 1',
-          description: 'Introduction to React components and JSX',
-          startTime: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
-          endTime: new Date(Date.now() + 3 * 60 * 60 * 1000).toISOString(),
-          type: 'lesson',
-          category: 'Programming',
-          priority: 'high'
-        },
-        {
-          id: '2',
-          userId: 'current-user-id',
-          title: 'JavaScript Quiz',
-          description: 'Assessment on JavaScript fundamentals',
-          startTime: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-          endTime: new Date(Date.now() + 24 * 60 * 60 * 1000 + 60 * 60 * 1000).toISOString(),
-          type: 'quiz',
-          category: 'Assessment',
-          priority: 'urgent'
-        },
-        {
-          id: '3',
-          userId: 'current-user-id',
-          title: 'Team Study Session',
-          description: 'Group study session for advanced topics',
-          startTime: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(),
-          endTime: new Date(Date.now() + 48 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000).toISOString(),
-          type: 'study',
-          category: 'Collaboration',
-          priority: 'medium'
-        },
-        {
-          id: '4',
-          userId: 'current-user-id',
-          title: 'Personal Project Review',
-          description: 'Review personal coding project',
-          startTime: new Date(Date.now() + 72 * 60 * 60 * 1000).toISOString(),
-          endTime: new Date(Date.now() + 72 * 60 * 60 * 1000 + 90 * 60 * 1000).toISOString(),
-          type: 'assignment',
-          category: 'Personal',
-          priority: 'low'
-        },
-        {
-          id: '5',
-          userId: 'current-user-id',
-          title: 'Video Conference - Q&A',
-          description: 'Live Q&A session with instructor',
-          startTime: new Date(Date.now() + 96 * 60 * 60 * 1000).toISOString(),
-          endTime: new Date(Date.now() + 96 * 60 * 60 * 1000 + 60 * 60 * 1000).toISOString(),
-          type: 'video',
-          category: 'Live Session',
-          priority: 'high'
-        },
-        {
-          id: '6',
-          userId: 'current-user-id',
-          title: 'Final Exam Preparation',
-          description: 'Comprehensive exam covering all topics',
-          startTime: new Date(Date.now() + 120 * 60 * 60 * 1000).toISOString(),
-          endTime: new Date(Date.now() + 120 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000).toISOString(),
-          type: 'exam',
-          category: 'Assessment',
-          priority: 'urgent'
-        }
-      ]);
+      setEvents([]); // Show empty state on error
     } finally {
       setLoading(false);
     }
@@ -144,17 +83,15 @@ const CalendarPage: React.FC = () => {
     }
 
     try {
-      const event = await apiService.createCalendarEvent({
-        userId: 'current-user-id', // Replace with actual user ID
+      const event = await createCalendarEvent({
         title: newEvent.title,
         description: newEvent.description,
         startTime: newEvent.startTime,
         endTime: newEvent.endTime,
-        type: newEvent.type,
+        type: newEvent.type.toUpperCase() as 'GENERAL' | 'LESSON' | 'ASSIGNMENT' | 'QUIZ' | 'MEETING' | 'STUDY',
         location: newEvent.location,
-        priority: newEvent.priority,
-        category: newEvent.category,
-        tags: newEvent.tags
+        courseId: newEvent.category, // Use category as courseId if it's a course-related event
+        isRecurring: false
       });
       
       setEvents(prev => [...prev, event]);

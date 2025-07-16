@@ -1,29 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  MessageSquare, 
-  Plus, 
-  Search, 
-  Filter, 
-  Pin, 
-  Clock, 
-  User, 
-  Eye, 
-  MessageCircle,
-  TrendingUp,
-  Bookmark,
-  MoreHorizontal,
-  Edit3,
-  Trash2,
-  Flag,
-  Lock,
-  Unlock,
-  Tag,
-  Calendar,
-  ThumbsUp,
-  ThumbsDown
-} from 'lucide-react';
+import { MessageSquare, Plus, Search, Pin, User, Eye, MessageCircle, ThumbsUp } from 'lucide-react';
 import { apiService } from '../../services/api';
-import { ForumThread, ForumCategory, User as UserType } from '../../types';
+import { ForumThread, ForumCategory } from '../../types';
 import { ThreadEditor } from './ThreadEditor';
 import { ThreadView } from './ThreadView';
 
@@ -309,7 +287,9 @@ export const ForumBoard: React.FC<ForumBoardProps> = ({ courseId, courseTitle })
                             <Pin className="h-4 w-4 text-yellow-500" />
                           )}
                           {thread.isLocked && (
-                            <Lock className="h-4 w-4 text-red-500" />
+                            <span className="px-2 py-1 bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 rounded-full text-xs">
+                                Locked
+                              </span>
                           )}
                           <div className="flex flex-col items-center">
                             <ThumbsUp className="h-4 w-4 text-gray-400" />
@@ -352,7 +332,6 @@ export const ForumBoard: React.FC<ForumBoardProps> = ({ courseId, courseTitle })
                                 <span>{thread.author.name}</span>
                               </div>
                               <div className="flex items-center space-x-1">
-                                <Calendar className="h-4 w-4" />
                                 <span>{formatDate(thread.createdAt)}</span>
                               </div>
                             </div>

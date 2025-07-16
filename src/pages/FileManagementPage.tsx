@@ -1,50 +1,12 @@
-import React, { useState } from 'react';
 import { FileManager } from '../components/file-management/FileManager';
 import { BackButton } from '../components/common/BackButton';
-import { useAuthStore } from '../store/auth';
 import { 
-  Folder, 
-  Users, 
-  User, 
-  BookOpen,
-  Grid,
-  List,
-  Search,
-  Filter,
-  Plus,
+  Folder,
   Upload,
-  FolderPlus,
-  Settings,
-  Star,
-  Clock,
-  Calendar
+  FolderPlus
 } from 'lucide-react';
 
 export const FileManagementPage: React.FC = () => {
-  const { user } = useAuthStore();
-  const [activeMode, setActiveMode] = useState<'course' | 'personal' | 'shared'>('personal');
-  const [selectedCourseId, setSelectedCourseId] = useState<string>('');
-
-  const modes = [
-    {
-      id: 'personal',
-      name: 'My Files',
-      icon: <User className="h-5 w-5" />,
-      description: 'Your personal file storage'
-    },
-    {
-      id: 'course',
-      name: 'Course Materials',
-      icon: <BookOpen className="h-5 w-5" />,
-      description: 'Files shared in your courses'
-    },
-    {
-      id: 'shared',
-      name: 'Shared with Me',
-      icon: <Users className="h-5 w-5" />,
-      description: 'Files shared by others'
-    }
-  ];
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">

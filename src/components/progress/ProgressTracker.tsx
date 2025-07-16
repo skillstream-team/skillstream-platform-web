@@ -9,13 +9,11 @@ import {
   Download,
   Share2,
   Star,
-  TrendingUp,
-  Calendar,
-  Users
+  TrendingUp
 } from 'lucide-react';
 import { useAuthStore } from '../../store/auth';
-import { apiService } from '../../services/api';
 import { Progress, Course, Certificate } from '../../types';
+import { getStreaks, getProgress, getMyCourses, getCertificates } from '../../services/api';
 
 interface ProgressTrackerProps {
   courseId?: string;
@@ -39,57 +37,25 @@ export const ProgressTracker: React.FC<ProgressTrackerProps> = ({
 
   const loadData = async () => {
     try {
-      if (selectedCourse) {
-        const courseProgress = await apiService.getProgress(selectedCourse);
-        setProgress(courseProgress);
-      }
-      
-      const userCourses = await apiService.getMyCourses();
-      setCourses(userCourses);
-      
+      setLoading(true);
+      // Load user progress
+      const progressData = selectedCourse ? await getProgress(selectedCourse) : null;
+      setProgress(progressData);
+      // Load user courses
+      const coursesData = await getMyCourses();
+      setCourses(coursesData);
+      // Load certificates if enabled
       if (showCertificates) {
-        // Mock certificates data - replace with actual API call
-        setCertificates([
-          {
-            id: '1',
-            userId: user?.id || '',
-            courseId: '1',
-            courseName: 'React Fundamentals',
-            issuedDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-            certificateUrl: '/certificates/react-fundamentals.pdf',
-            grade: 'A+',
-            completionPercentage: 95
-          },
-          {
-            id: '2',
-            userId: user?.id || '',
-            courseId: '2',
-            courseName: 'JavaScript Advanced',
-            issuedDate: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString(),
-            certificateUrl: '/certificates/javascript-advanced.pdf',
-            grade: 'A',
-            completionPercentage: 88
-          }
-        ]);
+        const certs = await getCertificates();
+        setCertificates(certs);
       }
+      // Optionally, load streaks if needed
+      // const streaks = await getStreaks();
     } catch (error) {
       console.error('Error loading progress data:', error);
-      // Mock data for demo
-      setProgress({
-        courseId: selectedCourse || '1',
-        userId: user?.id || '',
-        completedLessons: 8,
-        totalLessons: 12,
-        completedQuizzes: 3,
-        totalQuizzes: 5,
-        completedAssignments: 2,
-        totalAssignments: 3,
-        overallProgress: 75,
-        timeSpent: 1440, // minutes
-        lastActivity: new Date().toISOString(),
-        achievements: ['First Lesson', 'Quiz Master', 'Assignment Complete'],
-        streak: 5
-      });
+      setProgress(null);
+      setCourses([]);
+      setCertificates([]);
     } finally {
       setLoading(false);
     }

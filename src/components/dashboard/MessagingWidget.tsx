@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { MessageCircle, Send, User, Clock } from 'lucide-react';
-import { apiService } from '../../services/api';
-import { DirectMessage, User as UserType } from '../../types';
+import { MessageCircle, Send, Clock } from 'lucide-react';
+import { apiService, getDirectMessages } from '../../services/api';
+import { DirectMessage } from '../../types';
 import { useAuthStore } from '../../store/auth';
 
 export const MessagingWidget: React.FC = () => {
   const { user } = useAuthStore();
   const [recentMessages, setRecentMessages] = useState<DirectMessage[]>([]);
-  const [users, setUsers] = useState<UserType[]>([]);
+  const [users, setUsers] = useState<any[]>([]); // Changed to any[] as UserType is removed
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -18,57 +18,12 @@ export const MessagingWidget: React.FC = () => {
   const loadRecentMessages = async () => {
     try {
       setIsLoading(true);
-      const messagesData = await apiService.getDirectMessages();
-      const usersData = await apiService.getUsers();
-      
-      setUsers(usersData);
-      
-      // Get recent messages (last 5)
-      const recent = messagesData
-        .filter(msg => msg.senderId === user?.id || msg.receiverId === user?.id)
-        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-        .slice(0, 5);
-      
-      setRecentMessages(recent);
+      const messagesData = await getDirectMessages();
+      // Optionally, filter or sort messages as needed for recent display
+      setRecentMessages(messagesData);
     } catch (error) {
       console.error('Error loading recent messages:', error);
-      // Mock data for demonstration
-      setUsers([
-        { id: '1', name: 'John Doe', email: 'john@example.com', role: 'STUDENT', createdAt: '2024-01-01T00:00:00Z', updatedAt: '2024-01-01T00:00:00Z' },
-        { id: '2', name: 'Jane Smith', email: 'jane@example.com', role: 'TEACHER', createdAt: '2024-01-01T00:00:00Z', updatedAt: '2024-01-01T00:00:00Z' },
-        { id: '3', name: 'Mike Johnson', email: 'mike@example.com', role: 'STUDENT', createdAt: '2024-01-01T00:00:00Z', updatedAt: '2024-01-01T00:00:00Z' }
-      ]);
-      
-      const mockMessages: DirectMessage[] = [
-        {
-          id: '1',
-          senderId: '1',
-          receiverId: user?.id || '',
-          content: 'Hi! How are you doing with the course?',
-          createdAt: new Date(Date.now() - 3600000).toISOString(),
-          sender: { id: '1', name: 'John Doe', avatarUrl: undefined },
-          receiver: { id: user?.id || '', name: user?.name || '', avatarUrl: undefined }
-        },
-        {
-          id: '2',
-          senderId: user?.id || '',
-          receiverId: '2',
-          content: 'I\'m doing great! The course is really helpful.',
-          createdAt: new Date(Date.now() - 1800000).toISOString(),
-          sender: { id: user?.id || '', name: user?.name || '', avatarUrl: undefined },
-          receiver: { id: '2', name: 'Jane Smith', avatarUrl: undefined }
-        },
-        {
-          id: '3',
-          senderId: '3',
-          receiverId: user?.id || '',
-          content: 'That\'s wonderful to hear! Do you have any questions?',
-          createdAt: new Date(Date.now() - 900000).toISOString(),
-          sender: { id: '3', name: 'Mike Johnson', avatarUrl: undefined },
-          receiver: { id: user?.id || '', name: user?.name || '', avatarUrl: undefined }
-        }
-      ];
-      setRecentMessages(mockMessages);
+      setRecentMessages([]);
     } finally {
       setIsLoading(false);
     }

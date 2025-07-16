@@ -1,33 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Save, 
-  X, 
-  Bold, 
-  Italic, 
-  Underline, 
-  List, 
-  ListOrdered, 
-  Link, 
-  Image, 
-  Video, 
-  FileText, 
-  Upload,
-  Eye,
-  Code,
-  Quote,
-  AlignLeft,
-  AlignCenter,
-  AlignRight,
-  Undo,
-  Redo,
-  Plus,
-  Trash2,
-  Calendar,
-  Clock,
-  Settings
-} from 'lucide-react';
+import { X, Save, Bold, Italic, Underline, List, ListOrdered, Link, Upload, Eye, Code, Quote, Undo, Redo, Plus, Tag, Trash2 } from 'lucide-react';
 import { Lesson, Material } from '../types';
-import { apiService } from '../services/api';
+import { apiService, getLessonByIdWithLanguage } from '../services/api';
 
 interface LessonEditorProps {
   lessonId?: string;
@@ -53,7 +27,6 @@ export const LessonEditor: React.FC<LessonEditorProps> = ({
   const [loading, setLoading] = useState(false);
   const [previewMode, setPreviewMode] = useState(false);
   const [showMediaUpload, setShowMediaUpload] = useState(false);
-  const [selectedText, setSelectedText] = useState('');
   const [undoStack, setUndoStack] = useState<string[]>([]);
   const [redoStack, setRedoStack] = useState<string[]>([]);
 
@@ -68,7 +41,7 @@ export const LessonEditor: React.FC<LessonEditorProps> = ({
     
     try {
       setLoading(true);
-      const lessonData = await apiService.getLesson(lessonId);
+      const lessonData = await getLessonByIdWithLanguage(Number(lessonId));
       setLesson(lessonData);
     } catch (error) {
       console.error('Error loading lesson:', error);
@@ -111,39 +84,39 @@ export const LessonEditor: React.FC<LessonEditorProps> = ({
 
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
-    const selectedText = lesson.content?.substring(start, end) || '';
+    const contentStr = lesson.content || '';
 
     let formattedText = '';
     switch (format) {
       case 'bold':
-        formattedText = `**${selectedText}**`;
+        formattedText = `**${contentStr.substring(start, end)}**`;
         break;
       case 'italic':
-        formattedText = `*${selectedText}*`;
+        formattedText = `*${contentStr.substring(start, end)}*`;
         break;
       case 'underline':
-        formattedText = `__${selectedText}__`;
+        formattedText = `__${contentStr.substring(start, end)}__`;
         break;
       case 'code':
-        formattedText = `\`${selectedText}\``;
+        formattedText = `\`${contentStr.substring(start, end)}\``;
         break;
       case 'quote':
-        formattedText = `> ${selectedText}`;
+        formattedText = `> ${contentStr.substring(start, end)}`;
         break;
       case 'link':
-        formattedText = `[${selectedText}](url)`;
+        formattedText = `[${contentStr.substring(start, end)}](url)`;
         break;
       case 'image':
-        formattedText = `![${selectedText}](image-url)`;
+        formattedText = `![${contentStr.substring(start, end)}](image-url)`;
         break;
       case 'video':
-        formattedText = `![video](${selectedText})`;
+        formattedText = `![video](${contentStr.substring(start, end)})`;
         break;
       case 'list':
-        formattedText = selectedText.split('\n').map(line => `- ${line}`).join('\n');
+        formattedText = contentStr.substring(start, end).split('\n').map(line => `- ${line}`).join('\n');
         break;
       case 'ordered-list':
-        formattedText = selectedText.split('\n').map((line, index) => `${index + 1}. ${line}`).join('\n');
+        formattedText = contentStr.substring(start, end).split('\n').map((line, index) => `${index + 1}. ${line}`).join('\n');
         break;
     }
 
@@ -163,14 +136,15 @@ export const LessonEditor: React.FC<LessonEditorProps> = ({
   const uploadMedia = async (file: File) => {
     try {
       setLoading(true);
-      const uploadedFile = await apiService.uploadFile(file, 'lesson');
+      const uploadedFile = await apiService.uploadFile(file, 'shared', {});
       
       const newMaterial: Material = {
         id: uploadedFile.id,
         title: file.name,
         url: uploadedFile.url,
-        type: file.type.startsWith('image/') ? 'IMAGE' : 
-              file.type.startsWith('video/') ? 'VIDEO' : 'DOCUMENT',
+        type: file.type.startsWith('image/') ? 'DOCUMENT' :
+          file.type.startsWith('video/') ? 'VIDEO' :
+          file.type === 'application/pdf' ? 'PDF' : 'DOCUMENT',
         courseId: courseId,
         createdAt: new Date().toISOString()
       };
@@ -215,10 +189,10 @@ export const LessonEditor: React.FC<LessonEditorProps> = ({
 
   const getMaterialIcon = (type: string) => {
     switch (type) {
-      case 'IMAGE': return <Image className="h-4 w-4" />;
-      case 'VIDEO': return <Video className="h-4 w-4" />;
-      case 'DOCUMENT': return <FileText className="h-4 w-4" />;
-      default: return <FileText className="h-4 w-4" />;
+      case 'IMAGE': return <Tag className="h-4 w-4" />;
+      case 'VIDEO': return <Tag className="h-4 w-4" />; // Changed from Video to Tag
+      case 'DOCUMENT': return <Tag className="h-4 w-4" />; // Changed from FileText to Tag
+      default: return <Tag className="h-4 w-4" />; // Changed from FileText to Tag
     }
   };
 
@@ -458,7 +432,7 @@ export const LessonEditor: React.FC<LessonEditorProps> = ({
                 
                 {(!lesson.materials || lesson.materials.length === 0) && (
                   <div className="text-center py-8">
-                    <FileText className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                    <Tag className="h-8 w-8 text-gray-400 mx-auto mb-2" /> {/* Changed from FileText to Tag */}
                     <p className="text-sm text-gray-600 dark:text-gray-300">
                       No materials added yet
                     </p>
