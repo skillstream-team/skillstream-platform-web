@@ -8,7 +8,7 @@ export const DashboardPage: React.FC = () => {
   const { user } = useAuthStore();
 
   useEffect(() => {
-    // Mock data - replace with actual API call
+    
   }, []);
 
   return (
