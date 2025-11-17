@@ -74,7 +74,10 @@ process.on('SIGTERM', () => {
   process.exit();
 });
 
-// Serve the built bundle FIRST (before catch-all route)
+// Serve the built bundle files from root (for bundle.css and bundle.js)
+app.use(express.static('dist'));
+
+// Also serve from /dist path for compatibility
 app.use('/dist', express.static('dist'));
 
 // Serve static files from public directory (if it exists)
@@ -112,9 +115,21 @@ const ctx = await esbuild.context({
 await ctx.watch();
 console.log('Initial build complete, watching for changes...');
 
-// Start server
-app.listen(PORT, () => {
+// Start server with error handling
+const server = app.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`);
+});
+
+server.on('error', (error) => {
+  if (error.code === 'EADDRINUSE') {
+    console.error(`\n❌ Port ${PORT} is already in use.`);
+    console.error(`   To fix this, run: kill -9 $(lsof -ti:${PORT})`);
+    console.error(`   Or use a different port by setting PORT environment variable.\n`);
+    process.exit(1);
+  } else {
+    console.error('Server error:', error);
+    process.exit(1);
+  }
 });
 
 })().catch((error) => {

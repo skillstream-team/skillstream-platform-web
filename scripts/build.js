@@ -35,9 +35,23 @@ const cssDest = path.join(distDir, 'bundle.css');
   }
 })();
 
-// Copy index.html to dist
+// Copy index.html to dist and fix paths for production
 const indexHtml = fs.readFileSync(path.join(__dirname, '../index.html'), 'utf8');
-fs.writeFileSync(path.join(distDir, 'index.html'), indexHtml);
+// Update paths for production (remove /dist prefix since files are in root of dist folder)
+const updatedHtml = indexHtml
+  .replace(/href="\/dist\//g, 'href="/')
+  .replace(/src="\/dist\//g, 'src="/');
+fs.writeFileSync(path.join(distDir, 'index.html'), updatedHtml);
+
+// Copy _redirects file if it exists (for Cloudflare Pages SPA routing)
+const redirectsSource = path.join(__dirname, '../public/_redirects');
+const redirectsDest = path.join(distDir, '_redirects');
+if (fs.existsSync(redirectsSource)) {
+  fs.copyFileSync(redirectsSource, redirectsDest);
+} else {
+  // Create default _redirects for SPA routing
+  fs.writeFileSync(redirectsDest, '/* /index.html 200\n');
+}
 
 // Build with esbuild
 esbuild.build({
