@@ -86,7 +86,7 @@ export const NotificationPopup: React.FC<NotificationPopupProps> = ({
 
   // Mark as read
   const markAsRead = async (id: string) => {
-    await markNotificationAsRead(id);
+    await markNotificationAsRead(Number(id));
     if (showAllNotifications) fetchModalNotifications();
     else fetchPopupNotifications();
   };
@@ -100,7 +100,7 @@ export const NotificationPopup: React.FC<NotificationPopupProps> = ({
 
   // Delete notification
   const handleDeleteNotification = async (id: string) => {
-    await deleteNotification(id);
+    await deleteNotification(Number(id));
     if (showAllNotifications) fetchModalNotifications();
     else fetchPopupNotifications();
   };

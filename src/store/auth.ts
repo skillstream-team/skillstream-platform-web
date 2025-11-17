@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { User } from '../types';
-import apiService from '../services/api';
+import { apiService, setAuthToken } from '../services/api';
 
 interface AuthState {
   user: User | null;
@@ -22,9 +22,18 @@ interface AuthActions {
 type AuthStore = AuthState & AuthActions;
 
 export const useAuthStore = create<AuthStore>((set, get) => ({
-  user: null,
-  token: null,
-  isAuthenticated: false,
+  user: (() => {
+    const storedUser = localStorage.getItem('user');
+    return storedUser ? (JSON.parse(storedUser) as User) : null;
+  })(),
+  token: (() => {
+    const storedToken = localStorage.getItem('token');
+    if (storedToken) {
+      setAuthToken(storedToken);
+    }
+    return storedToken;
+  })(),
+  isAuthenticated: !!localStorage.getItem('token'),
   isLoading: false,
   error: null,
 
@@ -33,6 +42,9 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const { user, token } = await apiService.login({ email, password });
+      setAuthToken(token);
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(user));
       set({
         user,
         token,
@@ -52,8 +64,17 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   register: async (name: string, email: string, password: string, role: 'STUDENT' | 'TEACHER') => {
     set({ isLoading: true, error: null });
     try {
-      await apiService.register({ name, email, password, role });
-      set({ isLoading: false, error: null });
+      const { user, token } = await apiService.register({ name, email, password, role });
+      setAuthToken(token);
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(user));
+      set({
+        user,
+        token,
+        isAuthenticated: true,
+        isLoading: false,
+        error: null,
+      });
     } catch (error: any) {
       set({
         isLoading: false,
@@ -64,6 +85,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   },
 
   logout: () => {
+    setAuthToken(null);
     set({
       user: null,
       token: null,

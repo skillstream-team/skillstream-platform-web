@@ -1,6 +1,7 @@
-import axios, { AxiosInstance, AxiosResponse } from 'axios';
-import { 
-  User, 
+//AxiosResponse
+import axios, { AxiosInstance } from 'axios';
+import {
+  User,
   Course, 
   Lesson, 
   Quiz, 
@@ -8,40 +9,55 @@ import {
   Assignment, 
   Progress, 
   Notification,
-  Analytics,
+//  Analytics,
   LoginForm,
   RegisterForm,
-  CourseForm,
-  LessonForm,
-  QuizForm,
+//    CourseForm,
+//  LessonForm,
+//  QuizForm,
   DirectMessage,
   Announcement,
-  VideoConference,
-  VideoParticipant,
-  VideoSession,
+  Conversation,
+  Message,
+  MessageAttachment,
+//  VideoConference,
+// VideoParticipant,
+//  VideoSession,
   CalendarEvent,
   ForumCategory,
   ForumThread,
   ForumReply,
-  FileUpload,
-  StudentProfile,
+  //FileUpload,
+ // StudentProfile,
   AssignmentSubmissionSummary,
   Certificate
 } from '../types';
 
-interface FilePermission {
-  id: string;
-  fileId: string;
-  userId: string;
-  userName: string;
-  userEmail: string;
-  permission: 'view' | 'download' | 'edit' | 'admin';
-  grantedAt: string;
-  expiresAt?: string;
-}
+//interface FilePermission {
+//  id: string;
+//  fileId: string;
+ // userId: string;
+ // userName: string;
+ // userEmail: string;
+ // permission: 'view' | 'download' | 'edit' | 'admin';
+ // grantedAt: string;
+ // expiresAt?: string;
+//}
 
 // API Configuration
-const API_BASE_URL = 'http://localhost:3001/api';
+// All API calls go directly to the SkillStream backend (or a URL you configure).
+// Set REACT_APP_API_URL to override this in different environments.
+// Example: REACT_APP_API_URL="https://skillstream-platform-api.onrender.com/api"
+const API_BASE_URL = (process.env.REACT_APP_API_URL as string) || 'https://skillstream-platform-api.onrender.com/api';
+
+// Allow attaching auth token from auth store/localStorage
+export const setAuthToken = (token: string | null) => {
+  if (token) {
+    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+  } else {
+    delete axios.defaults.headers.common['Authorization'];
+  }
+};
 
 // Integration Services
 export async function getIntegrations(): Promise<any[]> {
@@ -75,8 +91,8 @@ export async function prepareOfflineContent(contentId: string): Promise<any> {
   return response.data;
 }
 
-export async function syncOfflineData(data: any): Promise<any> {
-  const response = await axios.post(`${API_BASE_URL}/offline/sync`, data);
+export async function syncOfflineData(data?: any): Promise<any> {
+  const response = await axios.post(`${API_BASE_URL}/offline/sync`, data || {}, { withCredentials: true });
   return response.data;
 }
 
@@ -208,6 +224,9 @@ export interface PayoutRequest {
   receiptUrl?: string;
 }
 
+// Also export as type for esbuild compatibility
+export type { PayoutRequest as PayoutRequestType };
+
 // Revenue Data Interface
 export interface RevenueData {
   currentMonthEarnings: number;
@@ -219,7 +238,7 @@ export interface RevenueData {
   payoutCutoffDate: string;
 }
 
-// Direct Messages
+// Direct Messages (Legacy - kept for backward compatibility)
 export async function getDirectMessages(): Promise<DirectMessage[]> {
   const response = await axios.get(`${API_BASE_URL}/messages`, { withCredentials: true });
   return response.data;
@@ -228,6 +247,153 @@ export async function getDirectMessages(): Promise<DirectMessage[]> {
 export async function sendDirectMessage(receiverId: string, content: string): Promise<DirectMessage> {
   const response = await axios.post(`${API_BASE_URL}/messages`, { receiverId, content }, { withCredentials: true });
   return response.data;
+}
+
+// Messaging API - Conversations
+const MESSAGING_BASE_URL = `${API_BASE_URL}/messaging`;
+
+export async function createConversation(data: {
+  type: 'direct' | 'group';
+  participantIds: string[];
+  name?: string;
+  description?: string;
+}): Promise<Conversation> {
+  const response = await axios.post(`${MESSAGING_BASE_URL}/conversations`, data);
+  return response.data.data;
+}
+
+export async function getConversations(params?: {
+  type?: 'direct' | 'group';
+  search?: string;
+  limit?: number;
+  offset?: number;
+}): Promise<{ data: Conversation[]; count: number }> {
+  const queryParams = new URLSearchParams();
+  if (params?.type) queryParams.append('type', params.type);
+  if (params?.search) queryParams.append('search', params.search);
+  if (params?.limit) queryParams.append('limit', params.limit.toString());
+  if (params?.offset) queryParams.append('offset', params.offset.toString());
+  
+  const response = await axios.get(`${MESSAGING_BASE_URL}/conversations?${queryParams.toString()}`);
+  return response.data;
+}
+
+export async function getConversation(conversationId: string): Promise<Conversation> {
+  const response = await axios.get(`${MESSAGING_BASE_URL}/conversations/${conversationId}`);
+  return response.data.data;
+}
+
+export async function updateConversation(conversationId: string, data: {
+  name?: string;
+  description?: string;
+}): Promise<Conversation> {
+  const response = await axios.put(`${MESSAGING_BASE_URL}/conversations/${conversationId}`, data);
+  return response.data.data;
+}
+
+export async function addConversationParticipants(conversationId: string, participantIds: string[]): Promise<Conversation> {
+  const response = await axios.post(`${MESSAGING_BASE_URL}/conversations/${conversationId}/participants`, { participantIds });
+  return response.data.data;
+}
+
+export async function removeConversationParticipant(conversationId: string, participantId: string): Promise<void> {
+  await axios.delete(`${MESSAGING_BASE_URL}/conversations/${conversationId}/participants/${participantId}`);
+}
+
+export async function markConversationAsRead(conversationId: string): Promise<void> {
+  await axios.post(`${MESSAGING_BASE_URL}/conversations/${conversationId}/read`);
+}
+
+// Messaging API - Messages
+export async function sendMessage(data: {
+  conversationId?: string;
+  receiverId?: string;
+  content: string;
+  type?: 'text' | 'image' | 'file' | 'system';
+  attachments?: MessageAttachment[];
+  replyToId?: string;
+  metadata?: Record<string, any>;
+}): Promise<Message> {
+  const response = await axios.post(`${MESSAGING_BASE_URL}/messages`, data);
+  return response.data.data;
+}
+
+export async function getMessages(conversationId: string, params?: {
+  limit?: number;
+  offset?: number;
+  before?: string;
+  after?: string;
+}): Promise<{ data: Message[]; count: number }> {
+  const queryParams = new URLSearchParams();
+  if (params?.limit) queryParams.append('limit', params.limit.toString());
+  if (params?.offset) queryParams.append('offset', params.offset.toString());
+  if (params?.before) queryParams.append('before', params.before);
+  if (params?.after) queryParams.append('after', params.after);
+  
+  const response = await axios.get(`${MESSAGING_BASE_URL}/conversations/${conversationId}/messages?${queryParams.toString()}`);
+  return response.data;
+}
+
+export async function updateMessage(messageId: string, data: {
+  content: string;
+  metadata?: Record<string, any>;
+}): Promise<Message> {
+  const response = await axios.put(`${MESSAGING_BASE_URL}/messages/${messageId}`, data);
+  return response.data.data;
+}
+
+export async function deleteMessage(messageId: string): Promise<void> {
+  await axios.delete(`${MESSAGING_BASE_URL}/messages/${messageId}`);
+}
+
+export async function searchMessages(params: {
+  query: string;
+  conversationId?: string;
+  limit?: number;
+  offset?: number;
+}): Promise<{ data: Message[]; count: number }> {
+  const queryParams = new URLSearchParams();
+  queryParams.append('query', params.query);
+  if (params.conversationId) queryParams.append('conversationId', params.conversationId);
+  if (params.limit) queryParams.append('limit', params.limit.toString());
+  if (params.offset) queryParams.append('offset', params.offset.toString());
+  
+  const response = await axios.get(`${MESSAGING_BASE_URL}/messages/search?${queryParams.toString()}`);
+  return response.data;
+}
+
+// Messaging API - Reactions
+export async function addMessageReaction(messageId: string, emoji: string): Promise<Message> {
+  const response = await axios.post(`${MESSAGING_BASE_URL}/messages/${messageId}/reactions`, { emoji });
+  return response.data.data;
+}
+
+export async function removeMessageReaction(messageId: string, emoji: string): Promise<void> {
+  await axios.delete(`${MESSAGING_BASE_URL}/messages/${messageId}/reactions`, { data: { emoji } });
+}
+
+// Messaging API - Read Receipts
+export async function markMessageAsRead(messageId: string): Promise<Message> {
+  const response = await axios.post(`${MESSAGING_BASE_URL}/messages/${messageId}/read`);
+  return response.data.data;
+}
+
+// Messaging API - File Upload
+export async function uploadMessageFile(data: {
+  file: string; // base64 encoded
+  filename: string;
+  contentType: string;
+  conversationId?: string;
+}): Promise<{
+  key: string;
+  url: string;
+  filename: string;
+  size: number;
+  contentType: string;
+  uploadedAt: string;
+}> {
+  const response = await axios.post(`${MESSAGING_BASE_URL}/upload`, data);
+  return response.data.data;
 }
 
 // User Preferences
@@ -396,6 +562,31 @@ export async function getFriends(): Promise<any[]> {
   return response.data;
 }
 
+// Study Groups and Collaboration
+export async function getStudyGroups(courseId?: string): Promise<any[]> {
+  const url = courseId 
+    ? `${API_BASE_URL}/study-groups?courseId=${courseId}`
+    : `${API_BASE_URL}/study-groups`;
+  const response = await axios.get(url, { withCredentials: true });
+  return response.data;
+}
+
+export async function getTeachers(courseId?: string): Promise<any[]> {
+  const url = courseId
+    ? `${API_BASE_URL}/users?role=TEACHER&courseId=${courseId}`
+    : `${API_BASE_URL}/users?role=TEACHER`;
+  const response = await axios.get(url, { withCredentials: true });
+  return response.data;
+}
+
+export async function getStudents(courseId?: string): Promise<any[]> {
+  const url = courseId
+    ? `${API_BASE_URL}/users?role=STUDENT&courseId=${courseId}`
+    : `${API_BASE_URL}/users?role=STUDENT`;
+  const response = await axios.get(url, { withCredentials: true });
+  return response.data;
+}
+
 // Rewards
 export async function createReward(data: { name: string, description: string, type: string, value: any, criteria: any, expiryDate?: string }): Promise<any> {
   const response = await axios.post(`${API_BASE_URL}/rewards`, data, { withCredentials: true });
@@ -469,6 +660,22 @@ export async function getRevenueDistribution(timeframe: string = 'month'): Promi
   return response.data;
 }
 
+// Payout API object
+export const payoutApi = {
+  async getTutorRevenue(): Promise<RevenueData> {
+    const response = await axios.get(`${API_BASE_URL}/payouts/revenue`, { withCredentials: true });
+    return response.data;
+  },
+  async getPayoutRequests(tutorId: string): Promise<PayoutRequest[]> {
+    const response = await axios.get(`${API_BASE_URL}/payouts/requests?tutorId=${tutorId}`, { withCredentials: true });
+    return response.data;
+  },
+  async requestPayout(data: { tutorId: string; amount: number; paymentMethod: string }): Promise<PayoutRequest> {
+    const response = await axios.post(`${API_BASE_URL}/payouts/request`, data, { withCredentials: true });
+    return response.data;
+  }
+};
+
 export async function getAnnouncements(courseId: number): Promise<Announcement[]> {
   const response = await axios.get(`${API_BASE_URL}/courses/${courseId}/announcements`, { withCredentials: true });
   return response.data;
@@ -484,50 +691,32 @@ export async function deleteAnnouncement(courseId: number, announcementId: strin
   return response.data;
 }
 
-// Courses
-export async function createCourse(data: { title: string; description: string; isPaid?: boolean; price?: number }): Promise<Course> {
-  const response = await axios.post(`${API_BASE_URL}/courses`, data, { withCredentials: true });
+// Courses (REST)
+export async function createCourse(data: { title: string; description?: string; price: number; order: number; createdBy?: string; instructorId?: string }): Promise<Course> {
+  // Backend: POST /api/courses/course
+  const response = await axios.post(`${API_BASE_URL}/courses/course`, data);
   return response.data;
 }
 
-export async function getCourses(params?: {
-  search?: string;
-  isPaid?: boolean;
-  page?: number;
-  limit?: number;
-}): Promise<Course[]> {
-  const searchParams = new URLSearchParams();
-  if (params?.search) searchParams.append('search', params.search);
-  if (params?.isPaid !== undefined) searchParams.append('isPaid', params.isPaid.toString());
-  if (params?.page) searchParams.append('page', params.page.toString());
-  if (params?.limit) searchParams.append('limit', params.limit.toString());
-  const url = `${API_BASE_URL}/courses/courses${searchParams.toString() ? `?${searchParams.toString()}` : ''}`;
+export async function getCourses(params?: { page?: number; limit?: number }): Promise<Course[]> {
+  // Backend: GET /api/courses/
+  const queryParams = new URLSearchParams();
+  if (params?.page) queryParams.append('page', params.page.toString());
+  if (params?.limit) queryParams.append('limit', params.limit.toString());
+  const url = `${API_BASE_URL}/courses/${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
   const response = await axios.get(url, { withCredentials: true });
   return response.data;
 }
 
-export async function getCoursesByTeacher(teacherId: string, params?: {
-  page?: number;
-  limit?: number;
-}): Promise<Course[]> {
-  const searchParams = new URLSearchParams();
-  if (params?.page) searchParams.append('page', params.page.toString());
-  if (params?.limit) searchParams.append('limit', params.limit.toString());
-  const url = `${API_BASE_URL}/courses/courses?teacherId=${teacherId}${searchParams.toString() ? `&${searchParams.toString()}` : ''}`;
-  const response = await axios.get(url, { withCredentials: true });
-  return response.data;
-}
-
-export async function getTeacherCourses(teacherId: string, params?: {
-  page?: number;
-  limit?: number;
-}): Promise<Course[]> {
-  const searchParams = new URLSearchParams();
-  if (params?.page) searchParams.append('page', params.page.toString());
-  if (params?.limit) searchParams.append('limit', params.limit.toString());
-  const url = `${API_BASE_URL}/courses/teacher/${teacherId}${searchParams.toString() ? `?${searchParams.toString()}` : ''}`;
-  const response = await axios.get(url, { withCredentials: true });
-  return response.data;
+export async function getTeacherCourses(teacherId: string): Promise<Course[]> {
+  // No dedicated teacher-only endpoint in REST; filter client-side by instructorId/createdBy
+  const all = await getCourses();
+  return all.filter(
+    (course: any) =>
+      course.instructorId === teacherId ||
+      course.createdBy === teacherId ||
+      course.teacherId === teacherId
+  );
 }
 
 export async function enrollInCourse(courseId: number): Promise<any> {
@@ -624,6 +813,10 @@ export async function getAssignmentSubmissionSummaries(params?: {
   return response.data;
 }
 
+export async function getCourseDetails(courseId: number): Promise<Course> {
+  const response = await axios.get(`/courses/${courseId}`);
+  return response.data;
+}
 // Lessons
 export async function createLesson(data: { courseId: number; title: string; content: string; scheduledAt: string; videoUrl?: string }): Promise<Lesson> {
   const response = await axios.post(`${API_BASE_URL}/lessons`, data, { withCredentials: true });
@@ -692,6 +885,19 @@ export async function deleteUserById(userId: number): Promise<any> {
 }
 
 // Files
+export async function getFiles(params?: { courseId?: string; userId?: string; shared?: boolean }): Promise<any[]> {
+  const queryParams = new URLSearchParams();
+  if (params?.courseId) queryParams.append('courseId', params.courseId);
+  if (params?.userId) queryParams.append('userId', params.userId);
+  if (params?.shared) queryParams.append('shared', 'true');
+  const response = await axios.get(`${API_BASE_URL}/files?${queryParams.toString()}`, { withCredentials: true });
+  return response.data;
+}
+
+export async function deleteFile(fileId: string): Promise<void> {
+  await axios.delete(`${API_BASE_URL}/files/${fileId}`, { withCredentials: true });
+}
+
 export async function uploadFile(formData: FormData): Promise<any> {
   const response = await axios.post(`${API_BASE_URL}/files/upload`, formData, { withCredentials: true });
   return response.data;
@@ -973,43 +1179,77 @@ export async function getCalendarEvents(params?: {
   startDate?: string;
   endDate?: string;
   courseId?: string;
+  type?: string;
+  includeAllDay?: boolean;
 }): Promise<CalendarEvent[]> {
   const searchParams = new URLSearchParams();
   if (params?.startDate) searchParams.append('startDate', params.startDate);
   if (params?.endDate) searchParams.append('endDate', params.endDate);
   if (params?.courseId) searchParams.append('courseId', params.courseId);
-  const url = `${API_BASE_URL}/calendar${searchParams.toString() ? `?${searchParams.toString()}` : ''}`;
-  const response = await axios.get(url, { withCredentials: true });
-  return response.data;
+  if (params?.type) searchParams.append('type', params.type);
+  if (params?.includeAllDay !== undefined) {
+    searchParams.append('includeAllDay', params.includeAllDay ? 'true' : 'false');
+  }
+  // Backend: GET /api/calendar/events
+  const url = `${API_BASE_URL}/calendar/events${searchParams.toString() ? `?${searchParams.toString()}` : ''}`;
+  const response = await axios.get(url);
+  // REST returns { success, data, count }
+  return response.data.data || [];
 }
 
-export async function getMyCalendarEvents(): Promise<CalendarEvent[]> {
-  const response = await axios.get(`${API_BASE_URL}/calendar/my-events`, { withCredentials: true });
+export async function getPersonalCalendar(params?: {
+  startDate?: string;
+  endDate?: string;
+}): Promise<{ events: CalendarEvent[]; upcomingDeadlines: any }> {
+  const searchParams = new URLSearchParams();
+  if (params?.startDate) searchParams.append('startDate', params.startDate);
+  if (params?.endDate) searchParams.append('endDate', params.endDate);
+  const url = `${API_BASE_URL}/calendar/personal${searchParams.toString() ? `?${searchParams.toString()}` : ''}`;
+  const response = await axios.get(url);
+  return response.data.data;
+}
+
+export async function getMyCalendarEvents(params?: {
+  startDate?: string;
+  endDate?: string;
+}): Promise<CalendarEvent[]> {
+  return getPersonalCalendar(params).then(result => result.events);
+}
+
+export async function joinCalendarEvent(eventId: string): Promise<CalendarEvent> {
+  const response = await axios.post(`${API_BASE_URL}/calendar/events/${eventId}/join`, {}, { withCredentials: true });
   return response.data;
 }
 
 export async function createCalendarEvent(eventData: {
   title: string;
-  startTime: string;
-  endTime: string;
-  type: 'GENERAL' | 'LESSON' | 'ASSIGNMENT' | 'QUIZ' | 'MEETING' | 'STUDY';
   description?: string;
-  courseId?: string;
+  type: 'live_class' | 'deadline' | 'assignment_due' | 'quiz_due' | 'custom';
+  startTime: string;
+  endTime?: string;
+  isAllDay?: boolean;
   location?: string;
+  courseId?: string;
+  assignmentId?: string;
+  quizId?: string;
   isRecurring?: boolean;
-  recurrencePattern?: string;
+  recurrenceRule?: string;
+  reminderMinutes?: number[];
+  attendeeIds?: string[];
+  metadata?: any;
 }): Promise<CalendarEvent> {
-  const response = await axios.post(`${API_BASE_URL}/calendar`, eventData, { withCredentials: true });
+  // Backend: POST /api/calendar/events
+  const response = await axios.post(`${API_BASE_URL}/calendar/events`, eventData);
   return response.data;
 }
 
-export async function joinCalendarEvent(eventId: string, action: 'join' | 'leave'): Promise<any> {
-  const response = await axios.post(`${API_BASE_URL}/calendar/${eventId}/attend`, { action }, { withCredentials: true });
+export async function updateCalendarEvent(eventId: string, updates: Partial<CalendarEvent>): Promise<CalendarEvent> {
+  const response = await axios.put(`${API_BASE_URL}/calendar/events/${eventId}`, updates);
   return response.data;
 }
 
-export async function getUpcomingEvents(): Promise<CalendarEvent[]> {
-  const response = await axios.get(`${API_BASE_URL}/calendar/upcoming`, { withCredentials: true });
+export async function deleteCalendarEvent(eventId: string): Promise<{ success: boolean; message: string }> {
+  const response = await axios.delete(`${API_BASE_URL}/calendar/events/${eventId}`);
   return response.data;
 }
 
@@ -1069,29 +1309,37 @@ class ApiService {
   constructor() {
     this.axios = axios.create({
       baseURL: API_BASE_URL,
-      withCredentials: true,
       headers: { 'Content-Type': 'application/json' }
     });
   }
 
-  // User authentication
-  async login(data: LoginForm): Promise<User> {
-    const response = await this.axios.post('/auth/login', data);
-    return response.data;
+  // User authentication (REST under /api/users/auth)
+  async login(data: LoginForm): Promise<{ user: User; token: string }> {
+    // Backend: POST /api/users/auth/login -> { token, user }
+    const response = await this.axios.post('/users/auth/login', data);
+    const result = response.data;
+    return { user: result.user, token: result.token };
   }
 
-  async register(data: RegisterForm): Promise<User> {
-    const response = await this.axios.post('/auth/register', data);
+  async register(data: RegisterForm): Promise<{ user: User; token: string }> {
+    // Users module: POST /api/users/auth/register expects { email, password, username, role }
+    const payload: any = {
+      email: (data as any).email,
+      password: (data as any).password,
+      username: (data as any).username ?? (data as any).name,
+      role: (data as any).role,
+    };
+    const response = await this.axios.post('/users/auth/register', payload);
     return response.data;
   }
 
   async getProfile(): Promise<User> {
-    const response = await this.axios.get('/auth/profile');
+    const response = await this.axios.get('/users/auth/profile');
     return response.data;
   }
 
   async logout(): Promise<void> {
-    await this.axios.post('/auth/logout');
+    await this.axios.post('/users/auth/logout');
   }
 
   // User management
@@ -1116,11 +1364,200 @@ class ApiService {
 
   // Password management
   async requestPasswordReset(email: string): Promise<void> {
-    await this.axios.post('/auth/request-password-reset', { email });
+    await this.axios.post('/users/auth/forgot-password', { email });
   }
 
   async resetPassword(token: string, newPassword: string): Promise<void> {
-    await this.axios.post('/auth/reset-password', { token, newPassword });
+    await this.axios.post('/users/auth/reset-password', { token, newPassword });
+  }
+
+  // AI helper (REST placeholder): can be wired to a real AI REST endpoint later
+  async askAI(_message: string, _courseId?: string) {
+    // For now, this is a local placeholder response to avoid any GraphQL usage.
+    // You can replace this with a REST call, e.g.:
+    // const response = await this.axios.post('/ai/chat', { message, courseId });
+    // return response.data;
+    return {
+      response:
+        'This AI assistant is connected to the SkillStream platform. ' +
+        'Right now it returns a static response; you can wire it to a REST AI endpoint later.',
+    };
+  }
+
+  async getCourseDetails(courseId: number): Promise<Course> {
+    const response = await this.axios.get(`/courses/${courseId}`);
+    return response.data;
+  }
+
+  async getMyAssignments(): Promise<Assignment[]> {
+    const response = await this.axios.get('/assignments/my', { withCredentials: true });
+    return response.data;
+  }
+
+  async createLesson(data: { courseId: number; title: string; content: string; scheduledAt: string; videoUrl?: string }): Promise<Lesson> {
+    const response = await this.axios.post('/lessons', data, { withCredentials: true });
+    return response.data;
+  }
+
+  async updateLesson(lessonId: number, data: Partial<Lesson>): Promise<Lesson> {
+    const response = await this.axios.put(`/lessons/${lessonId}`, data, { withCredentials: true });
+    return response.data;
+  }
+
+  // Video conference methods (placeholder - these would use WebSocket in real implementation)
+  async joinVideoConference(conferenceId: string): Promise<{ conference: any; participant: any; session: any }> {
+    // This would typically be handled via WebSocket, but we'll add a placeholder REST call
+    const response = await this.axios.post(`/video/conferences/${conferenceId}/join`, {}, { withCredentials: true });
+    return response.data;
+  }
+
+  async leaveVideoConference(conferenceId: string): Promise<void> {
+    await this.axios.post(`/video/conferences/${conferenceId}/leave`, {}, { withCredentials: true });
+  }
+
+  async getVideoParticipants(conferenceId: string): Promise<{ participants: any[] }> {
+    const response = await this.axios.get(`/video/conferences/${conferenceId}/participants`, { withCredentials: true });
+    return { participants: Array.isArray(response.data) ? response.data : (response.data?.participants || []) };
+  }
+
+  async updateVideoStatus(conferenceId: string, status: { isMuted?: boolean; isVideoOn?: boolean; isHandRaised?: boolean }): Promise<void> {
+    await this.axios.post(`/video/conferences/${conferenceId}/status`, status, { withCredentials: true });
+  }
+
+  async controlVideoRecording(conferenceId: string, action: 'start' | 'stop'): Promise<void> {
+    await this.axios.post(`/video/conferences/${conferenceId}/recording/${action}`, {}, { withCredentials: true });
+  }
+
+  async sendVideoReaction(conferenceId: string, reaction: string): Promise<void> {
+    await this.axios.post(`/video/conferences/${conferenceId}/reaction`, { reaction }, { withCredentials: true });
+  }
+
+  // Forum methods - delegate to exported functions
+  async getForumCategories(courseId: string): Promise<ForumCategory[]> {
+    const response = await this.axios.get(`/forum/categories?courseId=${courseId}`, { withCredentials: true });
+    return response.data;
+  }
+
+  async getForumThreads(courseId: string): Promise<ForumThread[]> {
+    const response = await this.axios.get(`/forum/threads?courseId=${courseId}`, { withCredentials: true });
+    return response.data;
+  }
+
+  async getForumReplies(threadId: string): Promise<ForumReply[]> {
+    const response = await this.axios.get(`/forum/replies?threadId=${threadId}`, { withCredentials: true });
+    return response.data;
+  }
+
+  async createForumThread(threadData: Omit<ForumThread, 'id' | 'createdAt' | 'updatedAt' | 'author' | 'upvotes' | 'downvotes' | 'viewsCount' | 'repliesCount'>): Promise<ForumThread> {
+    const response = await this.axios.post('/forum/threads', threadData, { withCredentials: true });
+    return response.data;
+  }
+
+  async updateForumThread(id: string, threadData: Partial<ForumThread>): Promise<ForumThread> {
+    const response = await this.axios.put(`/forum/threads/${id}`, threadData, { withCredentials: true });
+    return response.data;
+  }
+
+  async createForumReply(replyData: Omit<ForumReply, 'id' | 'createdAt' | 'updatedAt' | 'author' | 'upvotes' | 'downvotes'>): Promise<ForumReply> {
+    const response = await this.axios.post('/forum/replies', replyData, { withCredentials: true });
+    return response.data;
+  }
+
+  async updateForumReply(id: string, replyData: Partial<ForumReply>): Promise<ForumReply> {
+    const response = await this.axios.put(`/forum/replies/${id}`, replyData, { withCredentials: true });
+    return response.data;
+  }
+
+  async deleteForumReply(id: string): Promise<void> {
+    await this.axios.delete(`/forum/replies/${id}`, { withCredentials: true });
+  }
+
+  async upvoteThread(id: string): Promise<ForumThread> {
+    const response = await this.axios.post(`/forum/threads/${id}/upvote`, {}, { withCredentials: true });
+    return response.data;
+  }
+
+  async downvoteThread(id: string): Promise<ForumThread> {
+    const response = await this.axios.post(`/forum/threads/${id}/downvote`, {}, { withCredentials: true });
+    return response.data;
+  }
+
+  async upvoteReply(id: string): Promise<ForumReply> {
+    const response = await this.axios.post(`/forum/replies/${id}/upvote`, {}, { withCredentials: true });
+    return response.data;
+  }
+
+  async downvoteReply(id: string): Promise<ForumReply> {
+    const response = await this.axios.post(`/forum/replies/${id}/downvote`, {}, { withCredentials: true });
+    return response.data;
+  }
+
+  async pinForumThread(id: string): Promise<ForumThread> {
+    const response = await this.axios.post(`/forum/threads/${id}/pin`, {}, { withCredentials: true });
+    return response.data;
+  }
+
+  async unpinForumThread(id: string): Promise<ForumThread> {
+    const response = await this.axios.post(`/forum/threads/${id}/unpin`, {}, { withCredentials: true });
+    return response.data;
+  }
+
+  async lockForumThread(id: string): Promise<ForumThread> {
+    const response = await this.axios.post(`/forum/threads/${id}/lock`, {}, { withCredentials: true });
+    return response.data;
+  }
+
+  async unlockForumThread(id: string): Promise<ForumThread> {
+    const response = await this.axios.post(`/forum/threads/${id}/unlock`, {}, { withCredentials: true });
+    return response.data;
+  }
+
+  async acceptReply(id: string): Promise<ForumReply> {
+    const response = await this.axios.post(`/forum/replies/${id}/accept`, {}, { withCredentials: true });
+    return response.data;
+  }
+
+  // File methods
+  async uploadFile(file: File | FormData, type?: string, metadata?: any): Promise<any> {
+    const formData = file instanceof FormData ? file : (() => {
+      const fd = new FormData();
+      fd.append('file', file);
+      if (type) fd.append('type', type);
+      if (metadata) fd.append('metadata', JSON.stringify(metadata));
+      return fd;
+    })();
+    return uploadFile(formData);
+  }
+
+  // File sharing methods (placeholder implementations)
+  async getFilePermissions(fileId: string): Promise<any[]> {
+    const response = await this.axios.get(`/files/${fileId}/permissions`, { withCredentials: true });
+    return response.data;
+  }
+
+  async generateShareLink(fileId: string): Promise<{ link: string }> {
+    const response = await this.axios.post(`/files/${fileId}/share-link`, {}, { withCredentials: true });
+    return response.data;
+  }
+
+  async shareFile(fileId: string, userIds: string[], permission: string, expiryDate?: string): Promise<void> {
+    await this.axios.post(`/files/${fileId}/share`, { userIds, permission, expiryDate }, { withCredentials: true });
+  }
+
+  async removeFilePermission(fileId: string, userId: string): Promise<void> {
+    await this.axios.delete(`/files/${fileId}/permissions/${userId}`, { withCredentials: true });
+  }
+
+  async updateFilePermission(fileId: string, userId: string, permission: string): Promise<void> {
+    await this.axios.put(`/files/${fileId}/permissions/${userId}`, { permission }, { withCredentials: true });
+  }
+
+  async makeFilePrivate(fileId: string): Promise<void> {
+    await this.axios.post(`/files/${fileId}/make-private`, {}, { withCredentials: true });
+  }
+
+  async makeFilePublic(fileId: string): Promise<void> {
+    await this.axios.post(`/files/${fileId}/make-public`, {}, { withCredentials: true });
   }
 }
 

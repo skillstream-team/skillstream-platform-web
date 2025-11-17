@@ -273,6 +273,94 @@ export interface DirectMessage {
   };
 }
 
+// Messaging API Types
+export interface MessageAttachment {
+  filename: string;
+  url: string;
+  size: number;
+  mimeType: string;
+}
+
+export interface MessageReaction {
+  id: string;
+  emoji: string;
+  userId: string;
+  user: {
+    id: string;
+    username: string;
+    email?: string;
+  };
+  createdAt: string;
+}
+
+export interface MessageReadReceipt {
+  id: string;
+  userId: string;
+  user: {
+    id: string;
+    username: string;
+    email?: string;
+  };
+  readAt: string;
+}
+
+export interface Message {
+  id: string;
+  conversationId: string;
+  senderId: string;
+  sender: {
+    id: string;
+    username: string;
+    email: string;
+    avatarUrl?: string;
+  };
+  content: string;
+  type: 'text' | 'image' | 'file' | 'system';
+  attachments?: MessageAttachment[];
+  isRead: boolean;
+  isEdited: boolean;
+  isDeleted: boolean;
+  reactions?: MessageReaction[];
+  readBy?: MessageReadReceipt[];
+  replyToId?: string;
+  replyTo?: Message;
+  metadata?: Record<string, any>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ConversationParticipant {
+  id: string;
+  userId: string;
+  user: {
+    id: string;
+    username: string;
+    email: string;
+    avatarUrl?: string;
+  };
+  joinedAt: string;
+  leftAt?: string;
+}
+
+export interface Conversation {
+  id: string;
+  type: 'direct' | 'group';
+  name?: string;
+  description?: string;
+  createdBy: string;
+  creator: {
+    id: string;
+    username: string;
+    email: string;
+    avatarUrl?: string;
+  };
+  participants: ConversationParticipant[];
+  lastMessage?: Message;
+  unreadCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Announcement {
   id: string;
   courseId: string;

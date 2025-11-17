@@ -30,6 +30,11 @@ import ProfilePage from './pages/ProfilePage';
 import CallsPage from './pages/CallsPage';
 import { MarketingGuidePage } from './pages/MarketingGuidePage';
 import { EarningsReportPage } from './pages/EarningsReportPage';
+import { QuickLessonPage } from './pages/lessons/QuickLessonPage';
+import { TeacherAvailabilityPage } from './pages/lessons/TeacherAvailabilityPage';
+import { StudentBookingPage } from './pages/lessons/StudentBookingPage';
+import { LessonsPage } from './pages/lessons/LessonsPage';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 // Protected Route Component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -180,10 +185,11 @@ function App() {
   }
 
   return (
-    <NotificationManager>
-      <Router>
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-          <Routes>
+    <ErrorBoundary>
+      <NotificationManager>
+        <Router>
+          <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+            <Routes>
             {/* Public Routes */}
             <Route
               path="/login"
@@ -219,6 +225,16 @@ function App() {
                 <ProtectedRoute>
                   <Layout>
                     <CoursesPage />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/lessons"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <LessonsPage />
                   </Layout>
                 </ProtectedRoute>
               }
@@ -450,6 +466,38 @@ function App() {
               }
             />
 
+            {/* Lesson Management Routes */}
+            <Route
+              path="/lessons/create"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <QuickLessonPage />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/lessons/availability"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <TeacherAvailabilityPage />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/lessons/book"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <StudentBookingPage />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+
             {/* Calls Route */}
             <Route
               path="/calls/:contactId"
@@ -514,6 +562,7 @@ function App() {
         </div>
       </Router>
     </NotificationManager>
+    </ErrorBoundary>
   );
 }
 

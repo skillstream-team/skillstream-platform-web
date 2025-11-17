@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
   Menu, 
@@ -11,7 +11,8 @@ import {
   User,
   Settings,
   LogOut,
-  Search
+  Search,
+  Calendar
 } from 'lucide-react';
 import { useAuthStore } from '../../store/auth';
 import { useThemeStore } from '../../store/theme';
@@ -19,6 +20,7 @@ import VideoCall from '../video/VideoCall';
 import { VideoCallPopup } from '../video/VideoCallPopup';
 import { NotificationPopup } from '../notifications/NotificationPopup';
 import { MessagingPopup } from '../messaging/MessagingPopup';
+import { getUnreadNotificationCount, getConversations } from '../../services/api';
 
 export const Header: React.FC = () => {
   const { user, logout } = useAuthStore();
@@ -30,9 +32,41 @@ export const Header: React.FC = () => {
   const [currentCall, setCurrentCall] = useState<{ userId: string; userName: string } | null>(null);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showMessagingPopup, setShowMessagingPopup] = useState(false);
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
+  const [unreadMessageCount, setUnreadMessageCount] = useState(0);
   const videoCallButtonRef = useRef<HTMLButtonElement>(null);
   const messagingButtonRef = useRef<HTMLButtonElement>(null);
   const notificationButtonRef = useRef<HTMLButtonElement>(null);
+
+  // Fetch unread counts
+  useEffect(() => {
+    if (!user) return;
+
+    const fetchCounts = async () => {
+      try {
+        // Fetch unread notification count
+        const notificationCount = await getUnreadNotificationCount();
+        setUnreadNotificationCount(notificationCount || 0);
+
+        // Fetch conversations and sum unread counts
+        const conversationsResult = await getConversations({ limit: 100 });
+        const totalUnread = conversationsResult.data.reduce((sum, conv) => sum + (conv.unreadCount || 0), 0);
+        setUnreadMessageCount(totalUnread);
+      } catch (error) {
+        console.error('Error fetching unread counts:', error);
+        // Set to 0 on error to hide badges
+        setUnreadNotificationCount(0);
+        setUnreadMessageCount(0);
+      }
+    };
+
+    fetchCounts();
+    
+    // Refresh counts every 30 seconds
+    const interval = setInterval(fetchCounts, 30000);
+    
+    return () => clearInterval(interval);
+  }, [user]);
 
   const handleLogout = () => {
     logout();
@@ -60,18 +94,18 @@ export const Header: React.FC = () => {
 
   return (
     <>
-      <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 w-full">
+      <header className="bg-white dark:bg-gray-800 shadow-lg border-b border-gray-200 dark:border-gray-700 w-full">
         <div className="w-full px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-14">
+          <div className="flex items-center justify-between h-16">
             {/* Logo and Brand */}
-            <div className="flex items-center">
-              <Link to="/dashboard" className="flex items-center space-x-2">
-                <div className="w-7 h-7 bg-blue-600 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-base">S</span>
+                <div className="flex items-center">
+                  <Link to="/dashboard" className="flex items-center space-x-3 group">
+                    <div className="w-10 h-10 bg-blue-600 flex items-center justify-center group-hover:bg-blue-700 transition-colors">
+                      <Video className="h-6 w-6 text-white" />
+                    </div>
+                    <span className="text-xl font-semibold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">SkillStream</span>
+                  </Link>
                 </div>
-                <span className="text-lg font-bold text-gray-900 dark:text-white">SkillStream</span>
-              </Link>
-            </div>
 
             {/* Desktop Navigation */}
             <nav className="hidden lg:flex items-center space-x-6 mx-6 flex-1 justify-center">
@@ -81,11 +115,54 @@ export const Header: React.FC = () => {
               >
                 Dashboard
               </Link>
+              {user?.role === 'TEACHER' ? (
+                <>
+                  <Link
+                    to="/lessons/create"
+                    className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium text-sm"
+                  >
+                    Create Lesson
+                  </Link>
+                  <Link
+                    to="/lessons/availability"
+                    className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium text-sm"
+                  >
+                    Availability
+                  </Link>
+                  <Link
+                    to="/calendar"
+                    className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium text-sm"
+                  >
+                    Schedule
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <Link
+                    to="/lessons/book"
+                    className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium text-sm"
+                  >
+                    Find Lessons
+                  </Link>
+                  <Link
+                    to="/courses"
+                    className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium text-sm"
+                  >
+                    My Lessons
+                  </Link>
+                  <Link
+                    to="/calendar"
+                    className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium text-sm"
+                  >
+                    Schedule
+                  </Link>
+                </>
+              )}
               <Link
-                to="/courses"
+                to="/messages"
                 className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium text-sm"
               >
-                Courses
+                Messages
               </Link>
               {(user?.role === 'TEACHER' || user?.role === 'ADMIN') && (
                 <Link
@@ -95,18 +172,6 @@ export const Header: React.FC = () => {
                   Analytics
                 </Link>
               )}
-              <Link
-                to="/calendar"
-                className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium text-sm"
-              >
-                Calendar
-              </Link>
-              <Link
-                to="/messages"
-                className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium text-sm"
-              >
-                Messages
-              </Link>
             </nav>
 
             {/* Right Side Actions */}
@@ -116,8 +181,8 @@ export const Header: React.FC = () => {
                 <Search className="h-3.5 w-3.5 absolute left-2.5 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="Search courses..."
-                  className="pl-8 pr-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-sm w-48"
+                  placeholder={user?.role === 'TEACHER' ? "Search lessons..." : "Search teachers..."}
+                  className="pl-8 pr-3 py-1.5 border border-gray-300 dark:border-gray-600 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white text-sm w-48"
                 />
               </div>
 
@@ -131,15 +196,23 @@ export const Header: React.FC = () => {
                     className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 relative"
                   >
                     <Bell className="h-4 w-4" />
-                    <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 rounded-full text-xs text-white flex items-center justify-center">
-                      3
-                    </span>
+                    {unreadNotificationCount > 0 && (
+                      <span className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 rounded-full text-xs text-white flex items-center justify-center font-semibold min-w-[20px] px-1">
+                        {unreadNotificationCount > 99 ? '99+' : unreadNotificationCount}
+                      </span>
+                    )}
                   </button>
                   
                   {showNotifications && (
                     <NotificationPopup 
                       isOpen={showNotifications}
-                      onClose={() => setShowNotifications(false)}
+                      onClose={() => {
+                        setShowNotifications(false);
+                        // Refresh count when popup closes (notifications may have been read)
+                        if (user) {
+                          getUnreadNotificationCount().then(count => setUnreadNotificationCount(count || 0));
+                        }
+                      }}
                       buttonRef={notificationButtonRef}
                     />
                   )}
@@ -153,15 +226,26 @@ export const Header: React.FC = () => {
                     className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 relative"
                   >
                     <MessageCircle className="h-4 w-4" />
-                    <span className="absolute -top-1 -right-1 h-4 w-4 bg-green-500 rounded-full text-xs text-white flex items-center justify-center">
-                      2
-                    </span>
+                    {unreadMessageCount > 0 && (
+                      <span className="absolute -top-1 -right-1 h-5 w-5 bg-green-500 rounded-full text-xs text-white flex items-center justify-center font-semibold min-w-[20px] px-1">
+                        {unreadMessageCount > 99 ? '99+' : unreadMessageCount}
+                      </span>
+                    )}
                   </button>
                   
                   {showMessagingPopup && (
                     <MessagingPopup 
                       isOpen={showMessagingPopup}
-                      onClose={() => setShowMessagingPopup(false)}
+                      onClose={() => {
+                        setShowMessagingPopup(false);
+                        // Refresh count when popup closes (messages may have been read)
+                        if (user) {
+                          getConversations({ limit: 100 }).then(result => {
+                            const totalUnread = result.data.reduce((sum, conv) => sum + (conv.unreadCount || 0), 0);
+                            setUnreadMessageCount(totalUnread);
+                          });
+                        }
+                      }}
                       onExpand={handleExpandToFullScreen}
                       buttonRef={messagingButtonRef}
                     />
@@ -257,57 +341,92 @@ export const Header: React.FC = () => {
             </div>
           </div>
 
-          {/* Mobile Navigation */}
-          {isMobileMenuOpen && (
-            <div className="lg:hidden border-t border-gray-200 dark:border-gray-700 py-3">
-              <div className="space-y-1">
-                <Link
-                  to="/dashboard"
-                  className="block px-3 py-1.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-sm"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  Dashboard
-                </Link>
-                <Link
-                  to="/courses"
-                  className="block px-3 py-1.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-sm"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  Courses
-                </Link>
-                {(user?.role === 'TEACHER' || user?.role === 'ADMIN') && (
-                  <Link
-                    to="/analytics"
-                    className="block px-3 py-1.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-sm"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    Analytics
-                  </Link>
-                )}
-                <Link
-                  to="/calendar"
-                  className="block px-3 py-1.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-sm"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  Calendar
-                </Link>
-                <Link
-                  to="/messages"
-                  className="block px-3 py-1.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-sm"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  Messages
-                </Link>
-                <Link
-                  to="/profile"
-                  className="block px-3 py-1.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-sm"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  Profile
-                </Link>
-              </div>
-            </div>
-          )}
+              {/* Mobile Navigation */}
+              {isMobileMenuOpen && (
+                <div className="lg:hidden border-t border-gray-200 dark:border-gray-700 py-3">
+                  <div className="space-y-1">
+                    <Link
+                      to="/dashboard"
+                      className="block px-3 py-1.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 text-sm"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      Dashboard
+                    </Link>
+                    {user?.role === 'TEACHER' ? (
+                      <>
+                        <Link
+                          to="/lessons/create"
+                          className="block px-3 py-1.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 text-sm"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                        >
+                          Create Lesson
+                        </Link>
+                        <Link
+                          to="/lessons/availability"
+                          className="block px-3 py-1.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 text-sm"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                        >
+                          Availability
+                        </Link>
+                        <Link
+                          to="/calendar"
+                          className="block px-3 py-1.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 text-sm"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                        >
+                          Schedule
+                        </Link>
+                      </>
+                    ) : (
+                      <>
+                        <Link
+                          to="/lessons/book"
+                          className="block px-3 py-1.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 text-sm"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                        >
+                          Find Lessons
+                        </Link>
+                        <Link
+                          to="/courses"
+                          className="block px-3 py-1.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 text-sm"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                        >
+                          My Lessons
+                        </Link>
+                        <Link
+                          to="/calendar"
+                          className="block px-3 py-1.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 text-sm"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                        >
+                          Schedule
+                        </Link>
+                      </>
+                    )}
+                    <Link
+                      to="/messages"
+                      className="block px-3 py-1.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 text-sm"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      Messages
+                    </Link>
+                    {(user?.role === 'TEACHER' || user?.role === 'ADMIN') && (
+                      <Link
+                        to="/analytics"
+                        className="block px-3 py-1.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 text-sm"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        Analytics
+                      </Link>
+                    )}
+                    <Link
+                      to="/profile"
+                      className="block px-3 py-1.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 text-sm"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      Profile
+                    </Link>
+                  </div>
+                </div>
+              )}
         </div>
       </header>
 

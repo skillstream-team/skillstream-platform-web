@@ -11,7 +11,9 @@ import {
   Maximize2,
   User
 } from 'lucide-react';
-import { mockMessagingService, MockRecentContact } from '../../services/mockMessaging';
+import { getConversations, getUsers } from '../../services/api';
+import { Conversation } from '../../types';
+import { useAuthStore } from '../../store/auth';
 
 interface MessagingPopupProps {
   isOpen: boolean;
@@ -27,391 +29,223 @@ export const MessagingPopup: React.FC<MessagingPopupProps> = ({
   buttonRef
 }) => {
   const navigate = useNavigate();
-  const [recentContacts, setRecentContacts] = useState<MockRecentContact[]>([]);
+  const { user } = useAuthStore();
+  const [conversations, setConversations] = useState<Conversation[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [filteredContacts, setFilteredContacts] = useState<MockRecentContact[]>([]);
-  const [isTransitioning, setIsTransitioning] = useState(false);
-
-  // Load recent contacts from mock service
-  const loadRecentContacts = async () => {
-    try {
-      setIsLoading(true);
-      const contacts = await mockMessagingService.getRecentContacts();
-      setRecentContacts(contacts);
-    } catch (error) {
-      console.error('Error loading recent contacts:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Search functionality
-  const handleSearch = async (query: string) => {
-    if (!query.trim()) {
-      setFilteredContacts(recentContacts);
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-      const searchResults = await mockMessagingService.searchMessages(query);
-      
-      // Create filtered contacts from search results
-      const filtered: MockRecentContact[] = [];
-      
-      // Add matching conversations
-      for (const conversation of searchResults.conversations) {
-        const otherParticipantId = conversation.participants.find(id => id !== 'current-user');
-        if (otherParticipantId) {
-          const user = searchResults.users.find(u => u.id === otherParticipantId);
-          if (user) {
-            filtered.push({
-              user,
-              conversation,
-              lastMessage: conversation.lastMessage,
-              unreadCount: conversation.unreadCount,
-              isOnline: user.isOnline
-            });
-          }
-        }
-      }
-      
-      // Add matching users who aren't in conversations
-      for (const user of searchResults.users) {
-        const existingContact = filtered.find(contact => contact.user.id === user.id);
-        if (!existingContact) {
-          // Create a mock conversation for this user
-          const mockConversation = {
-            id: `search-${user.id}`,
-            participants: ['current-user', user.id],
-            lastMessage: {
-              id: `search-msg-${user.id}`,
-              conversationId: `search-${user.id}`,
-              senderId: 'current-user',
-              content: 'Start a conversation',
-              type: 'text' as const,
-              timestamp: new Date().toISOString(),
-              isRead: true
-            },
-            unreadCount: 0,
-            isGroup: false,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
-          };
-          
-          filtered.push({
-            user,
-            conversation: mockConversation,
-            lastMessage: mockConversation.lastMessage,
-            unreadCount: 0,
-            isOnline: user.isOnline
-          });
-        }
-      }
-      
-      setFilteredContacts(filtered);
-    } catch (error) {
-      console.error('Error searching messages:', error);
-      setFilteredContacts(recentContacts);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const [filteredConversations, setFilteredConversations] = useState<Conversation[]>([]);
 
   useEffect(() => {
     if (isOpen) {
-      loadRecentContacts();
+      loadConversations();
     }
   }, [isOpen]);
 
   useEffect(() => {
-    if (searchQuery) {
-      handleSearch(searchQuery);
-    } else {
-      setFilteredContacts(recentContacts);
-    }
-  }, [searchQuery, recentContacts]);
+    const filtered = conversations.filter(conv => {
+      if (!searchQuery) return true;
+      const searchLower = searchQuery.toLowerCase();
+      if (conv.name?.toLowerCase().includes(searchLower)) return true;
+      return conv.participants.some(p => 
+        p.user.username.toLowerCase().includes(searchLower) ||
+        p.user.email.toLowerCase().includes(searchLower)
+      );
+    });
+    setFilteredConversations(filtered);
+  }, [searchQuery, conversations]);
 
-  // Close popup when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      // Only handle clicks outside if the popup is open and we're not clicking on the button
-      if (isOpen && buttonRef?.current && !buttonRef.current.contains(event.target as Node)) {
-        // Check if the click is outside the popup content
-        const popupElement = document.querySelector('[data-popup="messaging"]');
-        if (popupElement && !popupElement.contains(event.target as Node)) {
-          onClose();
-        }
+  const loadConversations = async () => {
+    try {
+      setIsLoading(true);
+      const result = await getConversations({ limit: 20 });
+      setConversations(result.data);
+      setFilteredConversations(result.data);
+    } catch (error) {
+      console.error('Error loading conversations:', error);
+      setConversations([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const getOtherParticipant = (conversation: Conversation) => {
+    if (conversation.type === 'direct') {
+      return conversation.participants.find(p => p.userId !== user?.id)?.user;
+    }
+    return null;
+  };
+
+  const getConversationName = (conversation: Conversation) => {
+    if (conversation.name) return conversation.name;
+    if (conversation.type === 'direct') {
+      const other = getOtherParticipant(conversation);
+      return other?.username || other?.email || 'Unknown User';
+    }
+    return 'Group Chat';
+  };
+
+  const getConversationAvatar = (conversation: Conversation) => {
+    if (conversation.type === 'direct') {
+      const other = getOtherParticipant(conversation);
+      return other?.avatarUrl;
+    }
+    return null;
+  };
+
+  const formatTime = (dateString?: string) => {
+    if (!dateString) return '';
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return '';
+      const now = new Date();
+      const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
+      
+      if (diffInHours < 1) {
+        const diffInMinutes = Math.floor(diffInHours * 60);
+        return diffInMinutes < 1 ? 'Just now' : `${diffInMinutes}m ago`;
+      } else if (diffInHours < 24) {
+        return `${Math.floor(diffInHours)}h ago`;
+      } else if (diffInHours < 48) {
+        return 'Yesterday';
+      } else {
+        return date.toLocaleDateString();
       }
-    };
-
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
+    } catch {
+      return '';
     }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [isOpen, onClose, buttonRef]);
-
-  const formatLastMessageTime = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffInMinutes = (now.getTime() - date.getTime()) / (1000 * 60);
-
-    if (diffInMinutes < 60) {
-      return `${Math.floor(diffInMinutes)}m ago`;
-    } else if (diffInMinutes < 1440) {
-      return `${Math.floor(diffInMinutes / 60)}h ago`;
-    } else {
-      return `${Math.floor(diffInMinutes / 1440)}d ago`;
-    }
-  };
-
-  const handleStartChat = (contact: MockRecentContact) => {
-    console.log('Starting chat with:', contact.user.name, 'ID:', contact.user.id);
-    // Navigate to the conversation
-    setTimeout(() => {
-      navigate(`/messages/${contact.user.id}`);
-    }, 100);
-    onClose();
-  };
-
-  const handleNewMessage = () => {
-    console.log('Opening new message page');
-    setTimeout(() => {
-      navigate('/messages/new');
-    }, 100);
-    onClose();
-  };
-
-  const handlePhoneCall = (contact: MockRecentContact) => {
-    console.log('Starting phone call with:', contact.user.name, 'ID:', contact.user.id);
-    // Navigate to phone call page or initiate call
-    setTimeout(() => {
-      navigate(`/calls/${contact.user.id}`, { 
-        state: { 
-          contactName: contact.user.name,
-          contactId: contact.user.id,
-          callType: 'audio'
-        }
-      });
-    }, 100);
-    onClose();
-  };
-
-  const handleVideoCall = (contact: MockRecentContact) => {
-    console.log('Starting video call with:', contact.user.name, 'ID:', contact.user.id);
-    // Navigate to video call page or initiate video call
-    setTimeout(() => {
-      navigate(`/calls/${contact.user.id}`, { 
-        state: { 
-          contactName: contact.user.name,
-          contactId: contact.user.id,
-          callType: 'video'
-        }
-      });
-    }, 100);
-    onClose();
-  };
-
-  const handleExpand = () => {
-    setIsTransitioning(true);
-    onExpand();
   };
 
   if (!isOpen) return null;
 
   return (
-    <>
-      {/* Backdrop */}
-      <div className="fixed inset-0 z-40" onClick={(e) => {
-        // Only close if clicking directly on the backdrop, not on popup content
-        if (e.target === e.currentTarget) {
-          onClose();
-        }
-      }} />
-      
-      {/* Popup */}
-      <div 
-        data-popup="messaging"
-        className={`absolute right-0 top-full mt-1 w-80 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-50 ${isTransitioning ? 'pointer-events-none opacity-50' : ''}`}
-      >
-        {/* Arrow pointing up to the button */}
-        <div className="absolute -top-2 right-4 w-4 h-4 bg-white dark:bg-gray-800 border-l border-t border-gray-200 dark:border-gray-700 transform rotate-45"></div>
-        
-        {/* Header */}
-        <div className="flex items-center justify-between p-3 border-b border-gray-200 dark:border-gray-700">
-          <div className="flex items-center space-x-2">
-            <MessageCircle className="h-4 w-4 text-blue-600" />
-            <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
-              Messages
-            </h3>
-            {isTransitioning && (
-              <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600"></div>
-            )}
-          </div>
-          <div className="flex items-center space-x-1">
-            <button
-              onClick={handleExpand}
-              disabled={isTransitioning}
-              className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <Maximize2 className="h-4 w-4" />
-            </button>
-            <button
-              onClick={onClose}
-              disabled={isTransitioning}
-              className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
-
-        {/* Search */}
-        <div className="p-3 border-b border-gray-200 dark:border-gray-700">
-          <div className="relative">
-            <Search className="h-3.5 w-3.5 absolute left-2.5 top-1/2 transform -translate-y-1/2 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search messages..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              disabled={isTransitioning}
-              className="w-full pl-8 pr-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-xs disabled:opacity-50 disabled:cursor-not-allowed"
-            />
-          </div>
-        </div>
-
-        {/* New Message Button */}
-        <div className="p-3 border-b border-gray-200 dark:border-gray-700">
+    <div className="absolute right-0 top-full mt-2 w-96 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg z-50">
+      {/* Header */}
+      <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Messages</h3>
+        <div className="flex items-center space-x-2">
           <button
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              if (!isTransitioning) {
-                handleNewMessage();
-              }
-            }}
-            disabled={isTransitioning}
-            className="w-full flex items-center justify-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white py-2 px-3 rounded-md transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={onExpand}
+            className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+            title="Expand to full screen"
           >
-            <Plus className="h-3.5 w-3.5" />
-            <span>New Message</span>
+            <Maximize2 className="h-4 w-4" />
+          </button>
+          <button
+            onClick={onClose}
+            className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+          >
+            <X className="h-4 w-4" />
           </button>
         </div>
+      </div>
 
-        {/* Recent Conversations */}
-        <div className="max-h-64 overflow-y-auto">
-          {isLoading ? (
-            <div className="flex items-center justify-center py-6">
-              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
-            </div>
-          ) : filteredContacts.length === 0 ? (
-            <div className="text-center py-6 text-gray-500 dark:text-gray-400">
-              <User className="h-8 w-8 mx-auto mb-2 opacity-50" />
-              <p className="text-xs">
-                {searchQuery ? 'No messages found' : 'No recent messages'}
-              </p>
-            </div>
-          ) : (
-            <div className="p-1">
-              {filteredContacts.map((contact) => (
-                <div
-                  key={contact.user.id}
-                  className={`flex items-center space-x-2 p-2 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${isTransitioning ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    if (!isTransitioning) {
-                      handleStartChat(contact);
-                    }
-                  }}
-                >
-                  {/* Avatar */}
-                  <div className="relative flex-shrink-0">
-                    <div className="w-8 h-8 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center overflow-hidden">
-                      {contact.user.avatar ? (
-                        <img
-                          src={contact.user.avatar}
-                          alt={contact.user.name}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <span className="text-xs font-medium text-gray-600 dark:text-gray-300">
-                          {contact.user.name.charAt(0).toUpperCase()}
+      {/* Search */}
+      <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Search conversations..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+          />
+        </div>
+      </div>
+
+      {/* Conversations List */}
+      <div className="max-h-96 overflow-y-auto">
+        {isLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+          </div>
+        ) : filteredConversations.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-8 px-4">
+            <MessageCircle className="h-12 w-12 text-gray-400 mb-2" />
+            <p className="text-sm text-gray-500 dark:text-gray-400 text-center">
+              {searchQuery ? 'No conversations found' : 'No conversations yet'}
+            </p>
+            {!searchQuery && (
+              <button
+                onClick={() => {
+                  onClose();
+                  navigate('/messages/new');
+                }}
+                className="mt-4 px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 transition-colors text-sm font-medium"
+              >
+                Start New Conversation
+              </button>
+            )}
+          </div>
+        ) : (
+          <div>
+            {filteredConversations.map((conversation) => (
+              <div
+                key={conversation.id}
+                onClick={() => {
+                  onClose();
+                  navigate(`/messages/${conversation.id}`);
+                }}
+                className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors border-b border-gray-100 dark:border-gray-700"
+              >
+                <div className="flex items-center space-x-3">
+                  <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center flex-shrink-0">
+                    {getConversationAvatar(conversation) ? (
+                      <img
+                        src={getConversationAvatar(conversation)}
+                        alt={getConversationName(conversation)}
+                        className="w-full h-full rounded-full object-cover"
+                      />
+                    ) : (
+                      <span className="text-sm font-medium text-blue-600 dark:text-blue-400">
+                        {getConversationName(conversation).charAt(0)}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                        {getConversationName(conversation)}
+                      </p>
+                      {conversation.lastMessage && (
+                        <span className="text-xs text-gray-500 dark:text-gray-400 ml-2 flex-shrink-0">
+                          {formatTime(conversation.lastMessage.createdAt)}
                         </span>
                       )}
                     </div>
-                    {/* Online indicator */}
-                    {contact.isOnline && (
-                      <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full border border-white dark:border-gray-800"></div>
+                    {conversation.lastMessage && (
+                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                        {conversation.lastMessage.content}
+                      </p>
                     )}
-                  </div>
-
-                  {/* Contact Info */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between">
-                      <h4 className="text-xs font-medium text-gray-900 dark:text-white truncate">
-                        {contact.user.name}
-                      </h4>
-                      <div className="flex items-center space-x-1">
-                        <Clock className="h-2.5 w-2.5 text-gray-400" />
-                        <span className="text-xs text-gray-500 dark:text-gray-400">
-                          {formatLastMessageTime(contact.lastMessage.timestamp)}
+                    {conversation.unreadCount > 0 && (
+                      <div className="mt-1">
+                        <span className="inline-block px-2 py-0.5 bg-blue-600 text-white text-xs font-medium rounded-full">
+                          {conversation.unreadCount > 99 ? '99+' : conversation.unreadCount} unread
                         </span>
                       </div>
-                    </div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                      {contact.lastMessage.content}
-                    </p>
-                  </div>
-
-                  {/* Unread count and actions */}
-                  <div className="flex items-center space-x-1 flex-shrink-0">
-                    {contact.unreadCount > 0 && (
-                      <div className="bg-blue-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                        {contact.unreadCount}
-                      </div>
                     )}
-                    <div className="flex items-center space-x-0.5">
-                      <button
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          if (!isTransitioning) {
-                            handlePhoneCall(contact);
-                          }
-                        }}
-                        disabled={isTransitioning}
-                        className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        title={`Call ${contact.user.name}`}
-                      >
-                        <Phone className="h-3 w-3" />
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          if (!isTransitioning) {
-                            handleVideoCall(contact);
-                          }
-                        }}
-                        disabled={isTransitioning}
-                        className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        title={`Video call ${contact.user.name}`}
-                      >
-                        <Video className="h-3 w-3" />
-                      </button>
-                    </div>
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
-    </>
+
+      {/* Footer */}
+      <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+        <button
+          onClick={() => {
+            onClose();
+            navigate('/messages/new');
+          }}
+          className="w-full flex items-center justify-center px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 transition-colors font-medium"
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          New Message
+        </button>
+      </div>
+    </div>
   );
-}; 
+};

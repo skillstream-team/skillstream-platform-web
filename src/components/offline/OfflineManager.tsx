@@ -192,7 +192,7 @@ export const OfflineManager: React.FC<OfflineManagerProps> = ({
       const offlineChanges = localStorage.getItem('offlineChanges');
       if (offlineChanges) {
         const changes = JSON.parse(offlineChanges);
-        await syncOfflineData(changes);
+        await syncOfflineData();
         localStorage.removeItem('offlineChanges');
       }
 

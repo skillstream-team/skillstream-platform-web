@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar as CalendarIcon, Clock, Plus, ChevronLeft, ChevronRight, Users, Bell, CheckSquare } from 'lucide-react';
 import { useAuthStore } from '../../store/auth';
-import { getCalendarEvents, getMyCalendarEvents } from '../../services/api';
+import { getCalendarEvents } from '../../services/api';
 import { CalendarEvent } from '../../types';
 import { TodoList } from './TodoList';
 

@@ -25,6 +25,7 @@ import { Course } from '../../types';
 import { BackButton } from '../../components/common/BackButton';
 import { ForumBoard } from '../../components/forum/ForumBoard';
 import { useAuthStore } from '../../store/auth';
+import { apiService } from '../../services/api';
 
 export const CourseDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -52,9 +53,7 @@ export const CourseDetailPage: React.FC = () => {
 
   const tabs = isOwnCourse ? [
     { id: 'overview', label: 'Overview', icon: <BookOpen className="h-4 w-4" /> },
-    { id: 'students', label: 'Students', icon: <Users className="h-4 w-4" /> },
     { id: 'curriculum', label: 'Curriculum', icon: <Play className="h-4 w-4" /> },
-    { id: 'analytics', label: 'Analytics', icon: <BarChart3 className="h-4 w-4" /> },
     { id: 'forum', label: 'Forum', icon: <MessageSquare className="h-4 w-4" /> }
   ] : [
     { id: 'overview', label: 'Overview', icon: <BookOpen className="h-4 w-4" /> },
@@ -65,19 +64,19 @@ export const CourseDetailPage: React.FC = () => {
   ];
 
   useEffect(() => {
-    const fetchCourseData = async () => {
+    const fetchCourseDetails = async () => {
       if (!id) return;
-      // TODO: Replace with actual API call
-      setCourse(null);
-      setIsEnrolled(false);
-      setIsLoading(false);
+      setIsLoading(true);
+      try {
+        const details = await apiService.getCourseDetails(Number(id));
+        setCourse(details);
+      } catch (err) {
+        setCourse(null);
+      } finally {
+        setIsLoading(false);
+      }
     };
-    // Add a timeout to prevent infinite loading
-    const timeoutId = setTimeout(() => {
-      setIsLoading(false);
-    }, 5000); // 5 second timeout
-    fetchCourseData();
-    return () => clearTimeout(timeoutId);
+    fetchCourseDetails();
   }, [id]);
 
   const toggleWeekExpansion = (week: number) => {
@@ -116,17 +115,6 @@ export const CourseDetailPage: React.FC = () => {
     navigate(`/courses/${id}/learning`);
   };
 
-  const getEnrollmentStats = () => {
-    if (!course) return null;
-    
-    const totalStudents = course.enrolledStudents || course.enrollments.length;
-    const activeStudents = Math.floor(totalStudents * 0.85);
-    const completionRate = Math.floor(Math.random() * 30) + 70;
-    const averageScore = Math.floor(Math.random() * 20) + 80;
-    
-    return { totalStudents, activeStudents, completionRate, averageScore };
-  };
-
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -145,11 +133,8 @@ export const CourseDetailPage: React.FC = () => {
     );
   }
 
-  const courseDetails = getCourseDetails(id!);
-  const enrollmentStats = getEnrollmentStats();
-
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/20 to-purple-50/20 dark:from-gray-900 dark:via-gray-900 dark:to-gray-900">
       {/* Hero Section */}
       <div className="relative bg-gradient-to-r from-blue-600 to-purple-600 text-white">
         <div className="absolute inset-0 bg-black opacity-20"></div>
@@ -218,44 +203,7 @@ export const CourseDetailPage: React.FC = () => {
             </div>
             
             <div className="lg:col-span-1">
-              {isOwnCourse ? (
-                // Teacher view - Course management stats
-                <div className="bg-white bg-opacity-10 backdrop-blur-sm rounded-lg p-6 border border-white border-opacity-20">
-                  <h3 className="text-lg font-semibold mb-4">Course Overview</h3>
-                  {enrollmentStats && (
-                    <div className="space-y-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="text-center">
-                          <div className="text-2xl font-bold">{enrollmentStats.totalStudents}</div>
-                          <div className="text-sm text-blue-100">Total Students</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="text-2xl font-bold">{enrollmentStats.activeStudents}</div>
-                          <div className="text-sm text-blue-100">Active Students</div>
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="text-center">
-                          <div className="text-2xl font-bold">{enrollmentStats.completionRate}%</div>
-                          <div className="text-sm text-blue-100">Completion Rate</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="text-2xl font-bold">{enrollmentStats.averageScore}%</div>
-                          <div className="text-sm text-blue-100">Avg Score</div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                  <div className="mt-6 pt-4 border-t border-white border-opacity-20">
-                    <Link
-                      to={`/courses/${course.id}/edit`}
-                      className="w-full bg-white text-blue-600 font-semibold py-3 px-6 rounded-lg hover:bg-gray-100 transition-colors block text-center"
-                    >
-                      Manage Course
-                    </Link>
-                  </div>
-                </div>
-              ) : (
+              {!isOwnCourse && (
                 // Student view - Enrollment card
                 <div className="bg-white bg-opacity-10 backdrop-blur-sm rounded-lg p-6 border border-white border-opacity-20">
                   <div className="text-center mb-6">
@@ -329,7 +277,7 @@ export const CourseDetailPage: React.FC = () => {
                     What you'll learn
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {courseDetails.learningOutcomes.map((outcome, index) => (
+                    {(course as any)?.learningOutcomes?.map((outcome: string, index: number) => (
                       <div key={index} className="flex items-start space-x-3">
                         <Check className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
                         <span className="text-gray-700 dark:text-gray-300">{outcome}</span>
@@ -343,7 +291,7 @@ export const CourseDetailPage: React.FC = () => {
                     Requirements
                   </h3>
                   <ul className="list-disc list-inside space-y-2 text-gray-700 dark:text-gray-300">
-                    {courseDetails.requirements.map((req, index) => (
+                    {(course as any)?.requirements?.map((req: string, index: number) => (
                       <li key={index}>{req}</li>
                     ))}
                   </ul>
@@ -351,105 +299,6 @@ export const CourseDetailPage: React.FC = () => {
               </div>
             )}
 
-            {activeTab === 'students' && isOwnCourse && (
-              <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
-                    Enrolled Students
-                  </h3>
-                  <div className="text-sm text-gray-600 dark:text-gray-400">
-                    {enrollmentStats?.totalStudents} total students
-                  </div>
-                </div>
-
-                {enrollmentStats && (
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                    <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
-                      <div className="flex items-center">
-                        <Users className="h-8 w-8 text-blue-600 dark:text-blue-400" />
-                        <div className="ml-3">
-                          <div className="text-2xl font-bold text-gray-900 dark:text-white">
-                            {enrollmentStats.totalStudents}
-                          </div>
-                          <div className="text-sm text-gray-600 dark:text-gray-400">Total Enrolled</div>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
-                      <div className="flex items-center">
-                        <Activity className="h-8 w-8 text-green-600 dark:text-green-400" />
-                        <div className="ml-3">
-                          <div className="text-2xl font-bold text-gray-900 dark:text-white">
-                            {enrollmentStats.activeStudents}
-                          </div>
-                          <div className="text-sm text-gray-600 dark:text-gray-400">Active Students</div>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-4">
-                      <div className="flex items-center">
-                        <TrendingUp className="h-8 w-8 text-yellow-600 dark:text-yellow-400" />
-                        <div className="ml-3">
-                          <div className="text-2xl font-bold text-gray-900 dark:text-white">
-                            {enrollmentStats.completionRate}%
-                          </div>
-                          <div className="text-sm text-gray-600 dark:text-gray-400">Completion Rate</div>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4">
-                      <div className="flex items-center">
-                        <GraduationCap className="h-8 w-8 text-purple-600 dark:text-purple-400" />
-                        <div className="ml-3">
-                          <div className="text-2xl font-bold text-gray-900 dark:text-white">
-                            {enrollmentStats.averageScore}%
-                          </div>
-                          <div className="text-sm text-gray-600 dark:text-gray-400">Avg Score</div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Mock student list */}
-                <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                  <h4 className="font-medium text-gray-900 dark:text-white mb-3">Recent Enrollments</h4>
-                  <div className="space-y-3">
-                    {[...Array(5)].map((_, index) => (
-                      <div key={index} className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-8 h-8 bg-gray-300 dark:bg-gray-600 rounded-full flex items-center justify-center">
-                            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                              {String.fromCharCode(65 + index)}
-                            </span>
-                          </div>
-                          <div>
-                            <div className="font-medium text-gray-900 dark:text-white">
-                              Student {index + 1}
-                            </div>
-                            <div className="text-sm text-gray-600 dark:text-gray-400">
-                              Enrolled {Math.floor(Math.random() * 30) + 1} days ago
-                            </div>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-sm font-medium text-gray-900 dark:text-white">
-                            {Math.floor(Math.random() * 100)}% complete
-                          </div>
-                          <div className="text-xs text-gray-600 dark:text-gray-400">
-                            Last active {Math.floor(Math.random() * 7) + 1} days ago
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-            
             {activeTab === 'curriculum' && (
               <div className="space-y-6">
                 <div className="flex items-center justify-between">
@@ -457,11 +306,11 @@ export const CourseDetailPage: React.FC = () => {
                     Course Content
                   </h3>
                   <div className="text-sm text-gray-600 dark:text-gray-400">
-                    {courseDetails.curriculum.length} weeks • {courseDetails.curriculum.reduce((acc, week) => acc + week.lessons.length, 0)} lessons
+                    {(course as any).curriculum?.length ?? 0} weeks • {(course as any).curriculum?.reduce((acc: number, week: any) => acc + (week.lessons?.length ?? 0), 0)} lessons
                   </div>
                 </div>
                 
-                {courseDetails.curriculum.map((week) => (
+                {(course as any)?.curriculum?.map((week: any) => (
                   <div key={week.week} className="border border-gray-200 dark:border-gray-600 rounded-lg">
                     <button
                       onClick={() => toggleWeekExpansion(week.week)}
@@ -479,7 +328,7 @@ export const CourseDetailPage: React.FC = () => {
                               {week.title}
                             </h4>
                             <p className="text-sm text-gray-600 dark:text-gray-400">
-                              {week.lessons.length} lessons
+                              {week.lessons?.length ?? 0} lessons
                             </p>
                           </div>
                         </div>
@@ -490,10 +339,9 @@ export const CourseDetailPage: React.FC = () => {
                         />
                       </div>
                     </button>
-                    
                     {expandedWeeks.includes(week.week) && (
                       <div className="p-4 space-y-3">
-                        {week.lessons.map((lesson, index) => (
+                        {week.lessons?.map((lesson: any, index: number) => (
                           <div key={index} className="flex items-center justify-between py-2">
                             <div className="flex items-center space-x-3">
                               {lesson.type === 'video' ? (
@@ -518,149 +366,35 @@ export const CourseDetailPage: React.FC = () => {
               </div>
             )}
 
-            {activeTab === 'analytics' && isOwnCourse && (
-              <div className="space-y-6">
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
-                  Course Analytics
-                </h3>
-                
-                {enrollmentStats && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="bg-white dark:bg-gray-700 rounded-lg p-6 border border-gray-200 dark:border-gray-600">
-                      <h4 className="font-medium text-gray-900 dark:text-white mb-4">Student Progress</h4>
-                      <div className="space-y-4">
-                        <div>
-                          <div className="flex justify-between text-sm mb-1">
-                            <span>Completion Rate</span>
-                            <span>{enrollmentStats.completionRate}%</span>
-                          </div>
-                          <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
-                            <div 
-                              className="bg-blue-600 h-2 rounded-full" 
-                              style={{ width: `${enrollmentStats.completionRate}%` }}
-                            ></div>
-                          </div>
-                        </div>
-                        <div>
-                          <div className="flex justify-between text-sm mb-1">
-                            <span>Average Score</span>
-                            <span>{enrollmentStats.averageScore}%</span>
-                          </div>
-                          <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
-                            <div 
-                              className="bg-green-600 h-2 rounded-full" 
-                              style={{ width: `${enrollmentStats.averageScore}%` }}
-                            ></div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="bg-white dark:bg-gray-700 rounded-lg p-6 border border-gray-200 dark:border-gray-600">
-                      <h4 className="font-medium text-gray-900 dark:text-white mb-4">Engagement Metrics</h4>
-                      <div className="space-y-3">
-                        <div className="flex justify-between">
-                          <span className="text-sm text-gray-600 dark:text-gray-400">Active Students</span>
-                          <span className="font-medium">{enrollmentStats.activeStudents}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-sm text-gray-600 dark:text-gray-400">Total Students</span>
-                          <span className="font-medium">{enrollmentStats.totalStudents}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-sm text-gray-600 dark:text-gray-400">Inactive Students</span>
-                          <span className="font-medium">{enrollmentStats.totalStudents - enrollmentStats.activeStudents}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-            
-            {activeTab === 'instructor' && !isOwnCourse && (
+            {activeTab === 'instructor' && !isOwnCourse && course?.teacher && (
               <div className="space-y-6">
                 <div className="flex items-start space-x-6">
                   <img 
-                    src={courseDetails.instructor.imageUrl} 
-                    alt={courseDetails.instructor.name}
+                    src={course.teacher.avatarUrl || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80'} 
+                    alt={course.teacher.name}
                     className="w-24 h-24 rounded-full object-cover"
                   />
                   <div className="flex-1">
                     <h3 className="text-2xl font-semibold text-gray-900 dark:text-white mb-2">
-                      {courseDetails.instructor.name}
+                      {course.teacher.name}
                     </h3>
                     <p className="text-lg text-gray-600 dark:text-gray-400 mb-3">
-                      {courseDetails.instructor.title}
+                      Instructor
                     </p>
                     <div className="flex items-center space-x-6 text-sm text-gray-600 dark:text-gray-400 mb-4">
                       <div className="flex items-center">
                         <Star className="h-4 w-4 text-yellow-400 fill-current mr-1" />
-                        <span>{courseDetails.instructor.rating} Instructor Rating</span>
+                        <span>{course.rating || 0} Instructor Rating</span>
                       </div>
                       <div className="flex items-center">
                         <Users className="h-4 w-4 mr-1" />
-                        <span>{courseDetails.instructor.students.toLocaleString()} Students</span>
-                      </div>
-                      <div className="flex items-center">
-                        <Play className="h-4 w-4 mr-1" />
-                        <span>{courseDetails.instructor.courses} Courses</span>
+                        <span>{course.enrolledStudents?.toLocaleString() || 0} Students</span>
                       </div>
                     </div>
                     <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-                      {courseDetails.instructor.bio}
+                      {course.description}
                     </p>
                   </div>
-                </div>
-              </div>
-            )}
-            
-            {activeTab === 'reviews' && !isOwnCourse && (
-              <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
-                      Student Reviews
-                    </h3>
-                    <div className="flex items-center space-x-2 mt-1">
-                      <div className="flex items-center">
-                        {[...Array(5)].map((_, i) => (
-                          <Star key={i} className="h-4 w-4 text-yellow-400 fill-current" />
-                        ))}
-                      </div>
-                      <span className="text-sm text-gray-600 dark:text-gray-400">
-                        {course.rating} out of 5
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Mock reviews */}
-                <div className="space-y-4">
-                  {[...Array(3)].map((_, index) => (
-                    <div key={index} className="border border-gray-200 dark:border-gray-600 rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center space-x-2">
-                          <div className="w-8 h-8 bg-gray-300 dark:bg-gray-600 rounded-full flex items-center justify-center">
-                            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                              {String.fromCharCode(65 + index)}
-                            </span>
-                          </div>
-                          <span className="font-medium text-gray-900 dark:text-white">
-                            Student {index + 1}
-                          </span>
-                        </div>
-                        <div className="flex items-center">
-                          {[...Array(5)].map((_, i) => (
-                            <Star key={i} className="h-4 w-4 text-yellow-400 fill-current" />
-                          ))}
-                        </div>
-                      </div>
-                      <p className="text-gray-700 dark:text-gray-300">
-                        This is a great course! The instructor explains everything clearly and the content is very practical.
-                      </p>
-                    </div>
-                  ))}
                 </div>
               </div>
             )}
@@ -849,4 +583,4 @@ export const CourseDetailPage: React.FC = () => {
       )}
     </div>
   );
-}; 
+};

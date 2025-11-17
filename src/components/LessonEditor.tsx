@@ -174,7 +174,7 @@ export const LessonEditor: React.FC<LessonEditorProps> = ({
       let savedLesson: Lesson;
       
       if (lessonId) {
-        savedLesson = await apiService.updateLesson(lessonId, lesson);
+        savedLesson = await apiService.updateLesson(Number(lessonId), lesson);
       } else {
         savedLesson = await apiService.createLesson(lesson as any);
       }

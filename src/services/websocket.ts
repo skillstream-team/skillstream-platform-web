@@ -30,7 +30,7 @@ class WebSocketService {
       const { token } = await getWebSocketToken();
       
       // Connect to WebSocket server
-      const wsUrl = import.meta.env.VITE_WS_URL || 'ws://localhost:3000/ws';
+      const wsUrl = (process.env.REACT_APP_WS_URL as string) || 'wss://skillstream-platform-api.onrender.com/ws';
       this.ws = new WebSocket(`${wsUrl}?token=${token}`);
 
       this.ws.onopen = () => {

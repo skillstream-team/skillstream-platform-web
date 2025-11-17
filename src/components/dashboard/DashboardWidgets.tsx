@@ -14,11 +14,13 @@ import {
   Trophy,
   FileText,
   Eye,
-  BarChart3
+  BarChart3,
+  Play,
+  Flame
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/auth';
-import { getStreaks, getChallenges, getNotifications, getCourses, getMyCourses, getUpcomingEvents, getTeacherStats, getMyCalendarEvents } from '../../services/api';
+import { getNotifications, getCourses, getMyCourses, getTeacherStats, getPersonalCalendar } from '../../services/api';
 import { CalendarEvent, Course } from '../../types';
 import { MessagingWidget } from './MessagingWidget';
 import { NotificationPopup } from '../notifications/NotificationPopup';
@@ -33,7 +35,7 @@ export const DashboardWidgets: React.FC<DashboardWidgetsProps> = ({ className = 
   const navigate = useNavigate();
   const [upcomingEvents, setUpcomingEvents] = useState<CalendarEvent[]>([]);
   const [recentCourses, setRecentCourses] = useState<Course[]>([]);
-  const [recentNotifications, setRecentNotifications] = useState<any[]>([]); // Changed to any[] as MockNotification is removed
+  const [recentNotifications, setRecentNotifications] = useState<any[]>([]);
   const [isNotificationPopupOpen, setIsNotificationPopupOpen] = useState(false);
   const [teacherStats, setTeacherStats] = useState({
     totalCourses: 0,
@@ -52,9 +54,9 @@ export const DashboardWidgets: React.FC<DashboardWidgetsProps> = ({ className = 
   const loadDashboardData = async () => {
     try {
       setLoading(true);
-      // Load upcoming events
-      const events = await getMyCalendarEvents();
-      setUpcomingEvents(events);
+      // Load upcoming personal events from calendar REST
+      const personal = await getPersonalCalendar();
+      setUpcomingEvents(personal.events || []);
       // Load recent courses
       const courses = user?.role === 'TEACHER' ? await getCourses({ page: 1, limit: 5 }) : await getMyCourses();
       setRecentCourses(courses);
@@ -114,10 +116,7 @@ export const DashboardWidgets: React.FC<DashboardWidgetsProps> = ({ className = 
     navigate(`/assignments/${assignmentId}`);
   };
 
-  const handleNotificationClick = (notification: any) => { // Changed to any as MockNotification is removed
-    // Mark as read first
-    // No mock service to call, so this will be a no-op for now
-    
+  const handleNotificationClick = (notification: any) => {
     // Navigate based on notification action
     if (notification.action?.route) {
       const params = notification.action.params ? new URLSearchParams(notification.action.params).toString() : '';
@@ -241,17 +240,91 @@ export const DashboardWidgets: React.FC<DashboardWidgetsProps> = ({ className = 
   }
 
   return (
-    <div className={`grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 ${className}`}>
+    <div className={`space-y-6 ${className}`}>
+      {/* Continue Learning Section for Students */}
+      {user?.role === 'STUDENT' && recentCourses.length > 0 && (
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div className="bg-gradient-to-r from-blue-500 to-purple-500 px-6 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center">
+                  <Play className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-white">Continue Learning</h2>
+                  <p className="text-blue-100 text-sm">Pick up where you left off</p>
+                </div>
+              </div>
+              <Link
+                to="/courses"
+                className="text-white hover:text-blue-100 text-sm font-medium flex items-center"
+              >
+                View All
+                <ArrowRight className="h-4 w-4 ml-1" />
+              </Link>
+            </div>
+          </div>
+          <div className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {recentCourses.slice(0, 3).map(course => {
+                const progress = (course as any).progress || 0;
+                return (
+                  <Link
+                    key={course.id}
+                    to={`/courses/${course.id}/learn`}
+                    className="group relative bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 rounded-xl p-5 hover:shadow-lg transition-all border border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-600"
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-2">
+                          {course.title}
+                        </h3>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-1">
+                          {course.teacher.name}
+                        </p>
+                      </div>
+                      <div className="ml-2 flex items-center space-x-1">
+                        <Star className="h-3 w-3 text-yellow-500 fill-current" />
+                        <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                          {(course as any).rating || 4.5}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-gray-600 dark:text-gray-400">Progress</span>
+                        <span className="font-semibold text-gray-900 dark:text-white">{progress}%</span>
+                      </div>
+                      <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2 overflow-hidden">
+                        <div
+                          className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full transition-all duration-300"
+                          style={{ width: `${progress}%` }}
+                        />
+                      </div>
+                    </div>
+                    <div className="mt-4 flex items-center text-xs text-blue-600 dark:text-blue-400 font-medium">
+                      Continue Learning
+                      <ArrowRight className="h-3 w-3 ml-1 group-hover:translate-x-1 transition-transform" />
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Revenue Summary for Teachers */}
       {user?.role === 'TEACHER' && (
-        <div className="lg:col-span-2 xl:col-span-3">
+        <div>
           <RevenueSummary />
         </div>
       )}
 
+      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
       {/* Teacher Course Analytics or Quick Stats */}
       {user?.role === 'TEACHER' ? (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Course Analytics</h3>
             <BarChart3 className="h-5 w-5 text-blue-600 dark:text-blue-400" />
@@ -323,57 +396,93 @@ export const DashboardWidgets: React.FC<DashboardWidgetsProps> = ({ className = 
           </div>
         </div>
       ) : (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Quick Stats</h3>
-            <TrendingUp className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-          </div>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <BookOpen className="h-5 w-5 text-blue-600 dark:text-blue-400 mr-3" />
-                <span className="text-gray-700 dark:text-gray-300">Total Courses</span>
-              </div>
-              <span className="text-lg font-semibold text-gray-900 dark:text-white">
-                {recentCourses.length}
-              </span>
+        <>
+          {/* Learning Stats Card */}
+          <div className="bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl shadow-lg p-6 text-white">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold">Learning Progress</h3>
+              <TrendingUp className="h-6 w-6 text-white/80" />
             </div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400 mr-3" />
-                <span className="text-gray-700 dark:text-gray-300">Completed Lessons</span>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
+                <div className="flex items-center space-x-2 mb-2">
+                  <BookOpen className="h-5 w-5" />
+                  <span className="text-sm text-white/90">Courses</span>
+                </div>
+                <div className="text-3xl font-bold">{recentCourses.length}</div>
               </div>
-              <span className="text-lg font-semibold text-gray-900 dark:text-white">
-                24
-              </span>
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <Trophy className="h-5 w-5 text-yellow-600 dark:text-yellow-400 mr-3" />
-                <span className="text-gray-700 dark:text-gray-300">Current Streak</span>
+              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
+                <div className="flex items-center space-x-2 mb-2">
+                  <CheckCircle className="h-5 w-5" />
+                  <span className="text-sm text-white/90">Completed</span>
+                </div>
+                <div className="text-3xl font-bold">24</div>
               </div>
-              <span className="text-lg font-semibold text-gray-900 dark:text-white">
-                7 days
-              </span>
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400 mr-3" />
-                <span className="text-gray-700 dark:text-gray-300">Upcoming Deadlines</span>
-              </div>
-              <span className="text-lg font-semibold text-gray-900 dark:text-white">
-                3
-              </span>
             </div>
           </div>
-        </div>
+
+          {/* Streak Card */}
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Learning Streak</h3>
+              <Flame className="h-6 w-6 text-orange-500" />
+            </div>
+            <div className="text-center py-4">
+              <div className="text-5xl font-bold text-gray-900 dark:text-white mb-2">7</div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">days in a row! 🔥</div>
+            </div>
+            <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-600 dark:text-gray-400">Best streak</span>
+                <span className="font-semibold text-gray-900 dark:text-white">12 days</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Quick Stats Card */}
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Quick Stats</h3>
+              <Target className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+            </div>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                <div className="flex items-center">
+                  <BookOpen className="h-5 w-5 text-blue-600 dark:text-blue-400 mr-3" />
+                  <span className="text-gray-700 dark:text-gray-300 font-medium">Total Courses</span>
+                </div>
+                <span className="text-xl font-bold text-blue-600 dark:text-blue-400">
+                  {recentCourses.length}
+                </span>
+              </div>
+              <div className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                <div className="flex items-center">
+                  <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400 mr-3" />
+                  <span className="text-gray-700 dark:text-gray-300 font-medium">Completed</span>
+                </div>
+                <span className="text-xl font-bold text-green-600 dark:text-green-400">
+                  24
+                </span>
+              </div>
+              <div className="flex items-center justify-between p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
+                <div className="flex items-center">
+                  <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400 mr-3" />
+                  <span className="text-gray-700 dark:text-gray-300 font-medium">Deadlines</span>
+                </div>
+                <span className="text-xl font-bold text-red-600 dark:text-red-400">
+                  3
+                </span>
+              </div>
+            </div>
+          </div>
+        </>
       )}
 
       {/* Messaging Widget */}
       <MessagingWidget />
 
       {/* Upcoming Events */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Upcoming Events</h3>
           <Link
@@ -422,7 +531,7 @@ export const DashboardWidgets: React.FC<DashboardWidgetsProps> = ({ className = 
 
       {/* Pending Assignments for Teachers or Recent Courses for Students */}
       {user?.role === 'TEACHER' ? (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Pending Assignments</h3>
             <Link
@@ -450,56 +559,10 @@ export const DashboardWidgets: React.FC<DashboardWidgetsProps> = ({ className = 
             </div>
           </div>
         </div>
-      ) : (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Recent Courses</h3>
-            <Link
-              to="/courses"
-              className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 text-sm flex items-center"
-            >
-              View All
-              <ArrowRight className="h-4 w-4 ml-1" />
-            </Link>
-          </div>
-          <div className="space-y-3">
-            {recentCourses.length > 0 ? (
-              recentCourses.map(course => (
-                <Link
-                  key={course.id}
-                  to={`/courses/${course.id}`}
-                  className="block p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1 min-w-0">
-                      <h4 className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                        {course.title}
-                      </h4>
-                      <p className="text-xs text-gray-600 dark:text-gray-300 truncate">
-                        {course.description}
-                      </p>
-                    </div>
-                    <div className="flex items-center space-x-1">
-                      <Star className="h-3 w-3 text-yellow-500 fill-current" />
-                      <span className="text-xs text-gray-500 dark:text-gray-400">
-                        {(course as any).rating || 4.5}
-                      </span>
-                    </div>
-                  </div>
-                </Link>
-              ))
-            ) : (
-              <div className="text-center py-4">
-                <BookOpen className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                <p className="text-sm text-gray-500 dark:text-gray-400">No courses enrolled</p>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+      ) : null}
 
       {/* Quick Actions */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Quick Actions</h3>
         <div className="space-y-3">
           {user?.role === 'TEACHER' ? (
@@ -583,7 +646,7 @@ export const DashboardWidgets: React.FC<DashboardWidgetsProps> = ({ className = 
       </div>
 
       {/* Notifications */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Recent Notifications</h3>
           <div className="flex items-center space-x-2">
@@ -633,6 +696,7 @@ export const DashboardWidgets: React.FC<DashboardWidgetsProps> = ({ className = 
         onClose={() => setIsNotificationPopupOpen(false)}
         openToExpanded={true}
       />
+      </div>
     </div>
   );
 }; 

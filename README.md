@@ -1,6 +1,8 @@
-# SkillStream LMS Frontend
+# SkillStream LMS - React Frontend
 
-A comprehensive Learning Management System (LMS) frontend built with React, TypeScript, and Tailwind CSS. This application provides a modern, responsive interface for managing courses, lessons, assessments, and real-time communication features.
+A **pure React frontend application** for the SkillStream Learning Management System. This is a client-side only application that connects to the SkillStream backend API at `https://skillstream-platform-api.onrender.com/api`.
+
+Built with React, TypeScript, Vite, and Tailwind CSS. This frontend provides a modern, responsive interface for managing courses, lessons, assessments, and real-time communication features.
 
 ## 🚀 Features
 
@@ -61,11 +63,12 @@ A comprehensive Learning Management System (LMS) frontend built with React, Type
    npm install
    ```
 
-3. **Set up environment variables**
-   Create a `.env` file in the root directory:
+3. **Set up environment variables (optional)**
+   The app defaults to `https://skillstream-platform-api.onrender.com/api`. 
+   To use a different backend, create a `.env` file:
    ```env
-   VITE_API_URL=http://localhost:3000/api
-   VITE_WS_URL=ws://localhost:3000/ws
+   VITE_API_URL=https://your-backend-url.com/api
+   VITE_WS_URL=wss://your-backend-url.com/ws
    ```
 
 4. **Start the development server**
@@ -100,16 +103,36 @@ src/
 
 ## 🔧 Configuration
 
-### API Configuration
-The frontend connects to a Node.js/Express backend with the following endpoints:
+### Backend API
+This is a **pure frontend application** - it requires a separate backend API server to function.
 
-- **Authentication**: `/api/auth/*`
+**Default Backend**: `https://skillstream-platform-api.onrender.com/api`
+
+All API calls are made to this backend. You can override this by setting the `VITE_API_URL` environment variable.
+
+### API Endpoints
+The frontend connects to the SkillStream backend API with the following endpoints:
+
+- **Authentication**: `/api/users/auth/*` (login, register, profile, logout)
 - **Courses**: `/api/courses/*`
 - **Lessons**: `/api/lessons/*`
 - **Assessments**: `/api/assessments/*`
 - **Communication**: `/api/messages`, `/api/announcements`
-- **Video Calls**: `/api/video/*`
-- **WebSocket**: `ws://localhost:3000/ws`
+- **WebSocket Token**: `/api/websocket/token`
+- **Forum**: `/api/forum/*`
+- **Calendar**: `/api/calendar/*`
+- **Analytics**: `/api/analytics/*`
+
+### Environment Variables
+Create a `.env` file in the root directory to override the default backend:
+
+```env
+# Optional: Override the default SkillStream API URL
+VITE_API_URL=https://skillstream-platform-api.onrender.com/api
+
+# Optional: WebSocket URL (if different from API base)
+VITE_WS_URL=wss://skillstream-platform-api.onrender.com/ws
+```
 
 ### WebSocket Events
 The application handles real-time events through WebSocket:
@@ -163,22 +186,23 @@ The application is fully responsive and optimized for:
 
 ## 🚀 Deployment
 
+This is a **static frontend application** - it can be deployed to any static hosting service.
+
 ### Production Build
 ```bash
 npm run build
 ```
 
-### Environment Variables for Production
-```env
-VITE_API_URL=https://your-api-domain.com/api
-VITE_WS_URL=wss://your-api-domain.com/ws
-```
+This creates a `dist/` folder with static HTML, CSS, and JavaScript files that can be served by any web server.
 
 ### Deployment Options
-- **Vercel**: Zero-config deployment
-- **Netlify**: Static site hosting
-- **AWS S3**: Static website hosting
-- **Docker**: Containerized deployment
+- **Vercel**: Zero-config deployment for static sites
+- **Netlify**: Static site hosting with continuous deployment
+- **AWS S3 + CloudFront**: Static website hosting with CDN
+- **GitHub Pages**: Free static hosting
+- **Any static file server**: Nginx, Apache, etc.
+
+**Note**: This is a pure frontend - no server-side code is required. The built files are static assets that can be served from any web server or CDN.
 
 ## 🔧 Development
 

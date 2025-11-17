@@ -72,7 +72,7 @@ export const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
         userId: 'ai',
         courseId: courseId || undefined,
         message: '',
-        response: response.response || response.message || 'I apologize, but I couldn\'t generate a response at the moment.',
+        response: response.response || 'I apologize, but I couldn\'t generate a response at the moment.',
         createdAt: new Date().toISOString()
       };
 

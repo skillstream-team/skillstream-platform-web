@@ -59,17 +59,11 @@ export const CoursesPage: React.FC = () => {
       let coursesData;
       
       if (isTeacher) {
-        // For teachers, get their own courses with pagination
-        coursesData = await getTeacherCourses(user?.id || '', {
-          page: 1,
-          limit: 50
-        });
+        // For teachers, get their own courses (filtered client-side)
+        coursesData = await getTeacherCourses(user?.id || '');
       } else {
-        // For students, get all available courses with filtering
-        coursesData = await getCourses({
-          page: 1,
-          limit: 50
-        });
+        // For students, get all available courses
+        coursesData = await getCourses();
       }
       
       setCourses(coursesData);
@@ -137,10 +131,9 @@ export const CoursesPage: React.FC = () => {
   };
 
   const getEnrollmentStats = (course: Course) => {
-    const totalStudents = course.enrolledStudents || course.enrollments.length;
-    const activeStudents = Math.floor(totalStudents * 0.85); // Mock active students
-    const completionRate = Math.floor(Math.random() * 30) + 70; // Mock completion rate
-    
+    const totalStudents = course.enrolledStudents || course.enrollments?.length || 0;
+    const activeStudents = (course as any).activeStudents ?? totalStudents;
+    const completionRate = course.completionRate ?? 0;
     return { totalStudents, activeStudents, completionRate };
   };
 
@@ -209,31 +202,36 @@ export const CoursesPage: React.FC = () => {
       {/* Header */}
       <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between py-6">
-            <div className="flex items-center space-x-4">
-              <BackButton showHome />
-              <BookOpen className="h-8 w-8 text-blue-600" />
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                  {isTeacher ? 'My Courses' : 'Courses'}
-                </h1>
-                <p className="text-gray-600 dark:text-gray-300 mt-1">
-                  {isTeacher 
-                    ? 'Manage your courses and track student progress'
-                    : 'Explore our comprehensive course catalog'
-                  }
-                </p>
-              </div>
+          <div className="flex items-center justify-between py-8">
+            <div>
+              <h1 className="text-2xl font-semibold text-gray-900 dark:text-white mb-2">
+                {isTeacher ? 'My Courses' : 'My Lessons'}
+              </h1>
+              <p className="text-gray-600 dark:text-gray-400">
+                {isTeacher 
+                  ? 'Manage your courses and track student progress'
+                  : 'Access your enrolled lessons and materials'
+                }
+              </p>
             </div>
-            <div className="mt-4 sm:mt-0 flex flex-col sm:flex-row gap-3">
+            <div className="flex items-center space-x-3">
               {isTeacher && (
                 <button
                   onClick={() => setShowCreateModal(true)}
-                  className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  className="flex items-center px-5 py-2.5 bg-blue-600 text-white hover:bg-blue-700 transition-colors font-medium"
                 >
-                  <Plus className="h-4 w-4 mr-2" />
+                  <Plus className="h-5 w-5 mr-2" />
                   Create Course
                 </button>
+              )}
+              {!isTeacher && (
+                <Link
+                  to="/lessons/book"
+                  className="flex items-center px-5 py-2.5 bg-blue-600 text-white hover:bg-blue-700 transition-colors font-medium"
+                >
+                  <BookOpen className="h-5 w-5 mr-2" />
+                  Find Lessons
+                </Link>
               )}
             </div>
           </div>
@@ -267,10 +265,10 @@ export const CoursesPage: React.FC = () => {
                     </h3>
                     <button
                       onClick={() => handleBoostCourse(course.id)}
-                      className="flex items-center px-3 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all duration-200 transform hover:scale-105"
+                      className="flex items-center px-3 py-2 bg-purple-600 text-white hover:bg-purple-700 transition-colors font-medium"
                     >
                       <Zap className="h-4 w-4 mr-2" />
-                      Boost!
+                      Boost
                     </button>
                   </div>
                   
@@ -409,35 +407,38 @@ export const CoursesPage: React.FC = () => {
               return (
                 <div
                   key={course.id}
-                  className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-md transition-shadow"
+                  className="group bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 overflow-hidden hover:border-blue-300 dark:hover:border-blue-600 transition-colors"
                 >
                   {viewMode === 'grid' ? (
                     // Grid View
                     <>
                       {/* Course Image */}
-                      <div className="h-48 bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center relative overflow-hidden">
-                        <img 
-                          src={getCourseImage(course)} 
-                          alt={course.title}
-                          className="w-full h-full object-cover"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
+                      <div className="h-40 bg-gray-200 dark:bg-gray-700 flex items-center justify-center relative overflow-hidden">
+                        {getCourseImage(course) ? (
+                          <img 
+                            src={getCourseImage(course)} 
+                            alt={course.title}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <BookOpen className="h-12 w-12 text-gray-400" />
+                        )}
                         
                         {/* Badges */}
-                        <div className="absolute top-3 left-3 flex flex-col space-y-1">
+                        <div className="absolute top-2 left-2 flex flex-col space-y-1">
                           {!course.isPaid && (
-                            <span className="bg-green-500 text-white text-xs px-2 py-1 rounded-full font-medium">
+                            <span className="bg-green-600 text-white text-xs px-2 py-0.5 font-medium">
                               Free
                             </span>
                           )}
                           {course.level && (
-                            <span className="bg-blue-500 text-white text-xs px-2 py-1 rounded-full font-medium">
+                            <span className="bg-blue-600 text-white text-xs px-2 py-0.5 font-medium">
                               {course.level}
                             </span>
                           )}
                           {isTeacher && (
-                            <span className={`text-white text-xs px-2 py-1 rounded-full font-medium ${
-                              course.isActive ? 'bg-green-500' : 'bg-yellow-500'
+                            <span className={`text-white text-xs px-2 py-0.5 font-medium ${
+                              course.isActive ? 'bg-green-600' : 'bg-yellow-600'
                             }`}>
                               {course.isActive ? 'Active' : 'Draft'}
                             </span>
@@ -445,45 +446,45 @@ export const CoursesPage: React.FC = () => {
                         </div>
                         
                         {course.enrolledStudents && course.enrolledStudents > 1000 && (
-                          <span className="absolute top-3 right-3 bg-orange-500 text-white text-xs px-2 py-1 rounded-full font-medium">
+                          <span className="absolute top-2 right-2 bg-orange-600 text-white text-xs px-2 py-0.5 font-medium">
                             Popular
                           </span>
                         )}
                       </div>
 
                       {/* Course Content */}
-                      <div className="p-6">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm text-blue-600 dark:text-blue-400 font-medium">
-                            {course.category}
+                      <div className="p-4">
+                        <div className="mb-2">
+                          <span className="text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide">
+                            {course.category || 'Course'}
                           </span>
-                          <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
-                            <Star className="h-4 w-4 text-yellow-400 fill-current mr-1" />
-                            {course.rating || 4.5}
-                          </div>
                         </div>
                         
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2 line-clamp-2">
+                        <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-2 line-clamp-2 min-h-[2.5rem]">
                           {course.title}
                         </h3>
 
-                        <p className="text-gray-600 dark:text-gray-300 text-sm mb-4 line-clamp-3">
-                          {course.description}
-                        </p>
+                        <div className="flex items-center space-x-2 mb-3">
+                          <div className="flex items-center space-x-1">
+                            <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                              {course.rating?.toFixed(1) || '4.5'}
+                            </span>
+                            <Star className="h-3.5 w-3.5 text-yellow-500 fill-yellow-500" />
+                          </div>
+                          <span className="text-xs text-gray-500 dark:text-gray-400">
+                            ({course.enrolledStudents || 0})
+                          </span>
+                        </div>
                         
                         {/* Course Stats */}
-                        <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400 mb-4">
-                          <div className="flex items-center">
-                            <Clock className="h-4 w-4 mr-1" />
-                            {course.duration || '8 weeks'}
+                        <div className="flex items-center space-x-4 text-xs text-gray-600 dark:text-gray-400 mb-3">
+                          <div className="flex items-center space-x-1">
+                            <Clock className="h-3.5 w-3.5" />
+                            <span>{course.duration || '8 weeks'}</span>
                           </div>
-                          <div className="flex items-center">
-                            <Users className="h-4 w-4 mr-1" />
-                            {enrollmentStats.totalStudents.toLocaleString()} students
-                          </div>
-                          <div className="flex items-center">
-                            <BookOpen className="h-4 w-4 mr-1" />
-                            {course.materials.length} materials
+                          <div className="flex items-center space-x-1">
+                            <Users className="h-3.5 w-3.5" />
+                            <span>{enrollmentStats.totalStudents.toLocaleString()}</span>
                           </div>
                         </div>
 
@@ -537,21 +538,29 @@ export const CoursesPage: React.FC = () => {
                         )}
                         
                         {/* Price and Action */}
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-center justify-between pt-3 border-t border-gray-200 dark:border-gray-700">
                           <div>
-                            {course.price === 0 ? (
-                              <span className="text-lg font-bold text-green-600 dark:text-green-400">Free</span>
+                            {course.price === 0 || !course.isPaid ? (
+                              <span className="text-lg font-bold text-gray-900 dark:text-white">Free</span>
                             ) : (
-                              <span className="text-lg font-bold text-gray-900 dark:text-white">
-                                ${course.price}
-                              </span>
+                              <div>
+                                <span className="text-lg font-bold text-gray-900 dark:text-white">
+                                  ${course.price}
+                                </span>
+                                {course.price && course.price > 50 && (
+                                  <span className="text-xs text-gray-500 dark:text-gray-400 line-through ml-2">
+                                    ${Math.round(course.price * 1.5)}
+                                  </span>
+                                )}
+                              </div>
                             )}
                           </div>
                           <div className="flex space-x-2">
                             {isTeacher && course.status === 'published' && (
                               <button
                                 onClick={() => handleBoostCourse(course.id)}
-                                className="px-3 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition-colors font-medium text-sm"
+                                className="p-2 bg-purple-600 text-white hover:bg-purple-700 transition-colors"
+                                title="Boost course"
                               >
                                 <Zap className="h-4 w-4" />
                               </button>
@@ -559,16 +568,17 @@ export const CoursesPage: React.FC = () => {
                             {isTeacher && (
                               <Link
                                 to={`/courses/${course.id}`}
-                                className="px-3 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium text-sm"
+                                className="p-2 bg-gray-600 text-white hover:bg-gray-700 transition-colors"
+                                title="Edit course"
                               >
                                 <Edit3 className="h-4 w-4" />
                               </Link>
                             )}
                             <Link
                               to={`/courses/${course.id}`}
-                              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm"
+                              className="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 transition-colors font-medium text-sm"
                             >
-                              {isTeacher ? 'Manage' : 'View Course'}
+                              {isTeacher ? 'Manage' : 'View'}
                             </Link>
                           </div>
                         </div>
@@ -664,7 +674,7 @@ export const CoursesPage: React.FC = () => {
                             {isTeacher && course.status === 'published' && (
                               <button
                                 onClick={() => handleBoostCourse(course.id)}
-                                className="px-3 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition-colors"
+                                className="px-3 py-2 bg-purple-600 text-white hover:bg-purple-700 transition-colors font-medium"
                               >
                                 <Zap className="h-4 w-4" />
                               </button>

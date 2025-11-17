@@ -59,8 +59,8 @@ export const FileSharingModal: React.FC<FileSharingModalProps> = ({
 
   const generateShareLink = async () => {
     try {
-      const link = await apiService.generateShareLink(file.id);
-      setShareLink(link);
+      const result = await apiService.generateShareLink(file.id);
+      setShareLink(result.link);
     } catch (error) {
       console.error('Error generating share link:', error);
     }
