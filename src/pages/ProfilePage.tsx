@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAuthStore } from '../store/auth';
 import { useThemeStore } from '../store/theme';
 import { BackButton } from '../components/common/BackButton';
+import { SwipeableTabs } from '../components/mobile/SwipeableTabs';
+import { BottomSheet } from '../components/mobile/BottomSheet';
 import { 
   UserIcon,
   EnvelopeIcon,
@@ -340,56 +342,91 @@ const handleInputChange = (field: string, value: string | boolean) => {
   ];
 
   const renderProfileTab = () => (
-    <div className="space-y-6">
+    <div className="space-y-4 lg:space-y-6">
       {/* Profile Header */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-        <div className="flex items-center space-x-6">
+      <div 
+        className="rounded-2xl border-2 p-4 lg:p-6"
+        style={{
+          backgroundColor: 'white',
+          borderColor: '#E5E7EB'
+        }}
+      >
+        <div className="flex flex-col lg:flex-row items-center lg:items-start space-y-4 lg:space-y-0 lg:space-x-6">
           <div className="relative">
-            <img
-              src={user?.avatar || 'https://images.unsplash.com/photo-1494790108755-2616b612b786?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80'}
-              alt="Profile"
-              className="w-24 h-24 rounded-full object-cover border-4 border-white dark:border-gray-700 shadow-lg"
-            />
+            <div 
+              className="w-20 h-20 lg:w-24 lg:h-24 rounded-2xl overflow-hidden flex items-center justify-center text-white font-bold text-2xl"
+              style={{ 
+                background: 'linear-gradient(135deg, #00B5AD 0%, #6F73D2 100%)',
+                boxShadow: '0 10px 30px rgba(0, 181, 173, 0.3)'
+              }}
+            >
+              {user?.avatar ? (
+                <img
+                  src={user.avatar}
+                  alt="Profile"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <span>{user?.name?.charAt(0).toUpperCase()}</span>
+              )}
+            </div>
             <button 
               onClick={() => setShowPhotoModal(true)}
-              className="absolute bottom-0 right-0 bg-blue-600 text-white p-2 rounded-full hover:bg-blue-700 transition-colors"
+              className="absolute -bottom-1 -right-1 p-2 rounded-xl text-white transition-all duration-200 active:scale-95"
+              style={{ 
+                backgroundColor: '#00B5AD',
+                boxShadow: '0 4px 12px rgba(0, 181, 173, 0.4)'
+              }}
             >
               <CameraIcon className="w-4 h-4" />
             </button>
           </div>
-          <div className="flex-1">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{user?.name}</h2>
-            <p className="text-gray-600 dark:text-gray-300 flex items-center">
-              <AcademicCapIcon className="w-4 h-4 mr-2" />
-              {user?.role === 'TEACHER' ? 'Instructor' : user?.role}
-            </p>
-            <p className="text-gray-500 dark:text-gray-400 flex items-center">
-              <EnvelopeIcon className="w-4 h-4 mr-2" />
-              {user?.email}
-            </p>
-            <p className="text-gray-500 dark:text-gray-400 flex items-center">
-              <CalendarIcon className="w-4 h-4 mr-2" />
-              Member since {new Date(user?.createdAt || '').toLocaleDateString()}
-            </p>
+          <div className="flex-1 text-center lg:text-left w-full lg:w-auto">
+            <h2 className="text-xl lg:text-2xl font-bold mb-2" style={{ color: '#0B1E3F' }}>{user?.name}</h2>
+            <div className="space-y-2">
+              <p className="flex items-center justify-center lg:justify-start text-sm" style={{ color: '#6F73D2' }}>
+                <AcademicCapIcon className="w-4 h-4 mr-2" />
+                {user?.role === 'TEACHER' ? 'Instructor' : user?.role}
+              </p>
+              <p className="flex items-center justify-center lg:justify-start text-sm" style={{ color: '#6F73D2' }}>
+                <EnvelopeIcon className="w-4 h-4 mr-2" />
+                {user?.email}
+              </p>
+              <p className="flex items-center justify-center lg:justify-start text-sm" style={{ color: '#6F73D2' }}>
+                <CalendarIcon className="w-4 h-4 mr-2" />
+                Member since {new Date(user?.createdAt || '').toLocaleDateString()}
+              </p>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Profile Form */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Personal Information</h3>
+      <div 
+        className="rounded-2xl border-2 p-4 lg:p-6"
+        style={{
+          backgroundColor: 'white',
+          borderColor: '#E5E7EB'
+        }}
+      >
+        <div className="flex items-center justify-between mb-4 lg:mb-6">
+          <h3 className="text-lg lg:text-xl font-bold" style={{ color: '#0B1E3F' }}>Personal Information</h3>
           <button
             onClick={() => setIsEditing(!isEditing)}
-            className="flex items-center px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+            className="flex items-center px-4 py-2 rounded-xl font-semibold text-sm transition-all duration-200 active:scale-95"
+            style={{ 
+              backgroundColor: isEditing ? '#6F73D2' : '#00B5AD',
+              color: 'white',
+              boxShadow: '0 4px 14px rgba(0, 181, 173, 0.3)'
+            }}
           >
-            <PencilIcon className="w-3.5 h-3.5 mr-1.5" />
+            <PencilIcon className="w-4 h-4 mr-1.5" />
             {isEditing ? 'Cancel' : 'Edit'}
           </button>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label className="block text-sm font-semibold mb-2" style={{ color: '#0B1E3F' }}>
               Full Name
             </label>
             <input
@@ -397,7 +434,23 @@ const handleInputChange = (field: string, value: string | boolean) => {
               value={formData.name}
               onChange={(e) => handleInputChange('name', e.target.value)}
               disabled={!isEditing}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white disabled:bg-gray-100 dark:disabled:bg-gray-600"
+              className="w-full px-4 py-3 border-2 rounded-xl focus:outline-none transition-all duration-200"
+              style={{
+                borderColor: '#E5E7EB',
+                backgroundColor: isEditing ? 'white' : '#F4F7FA',
+                color: '#0B1E3F',
+                fontSize: '16px'
+              }}
+              onFocus={(e) => {
+                if (isEditing) {
+                  e.currentTarget.style.borderColor = '#00B5AD';
+                  e.currentTarget.style.boxShadow = '0 0 0 4px rgba(0, 181, 173, 0.1)';
+                }
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.borderColor = '#E5E7EB';
+                e.currentTarget.style.boxShadow = 'none';
+              }}
             />
           </div>
           
@@ -509,19 +562,28 @@ const handleInputChange = (field: string, value: string | boolean) => {
         </div>
 
         {isEditing && (
-          <div className="mt-6 flex space-x-3">
+          <div className="mt-6 flex flex-col sm:flex-row gap-3">
             <button
               onClick={handleSave}
-              className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+              className="flex-1 flex items-center justify-center px-6 py-3 rounded-xl font-semibold text-white transition-all duration-300 active:scale-95"
+              style={{ 
+                backgroundColor: '#00B5AD',
+                boxShadow: '0 4px 14px rgba(0, 181, 173, 0.3)'
+              }}
             >
-              <CheckIcon className="w-4 h-4 mr-2" />
+              <CheckIcon className="w-5 h-5 mr-2" />
               Save Changes
             </button>
             <button
               onClick={() => setIsEditing(false)}
-              className="flex items-center px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500 transition-colors"
+              className="flex-1 flex items-center justify-center px-6 py-3 rounded-xl font-semibold border-2 transition-all duration-200 active:scale-95"
+              style={{ 
+                borderColor: '#E5E7EB',
+                color: '#0B1E3F',
+                backgroundColor: 'white'
+              }}
             >
-              <XMarkIcon className="w-4 h-4 mr-2" />
+              <XMarkIcon className="w-5 h-5 mr-2" />
               Cancel
             </button>
           </div>
@@ -671,16 +733,16 @@ const handleInputChange = (field: string, value: string | boolean) => {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/20 to-purple-50/20 dark:from-gray-900 dark:via-gray-900 dark:to-gray-900">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="min-h-screen" style={{ backgroundColor: '#F4F7FA' }}>
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4 lg:py-8">
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-6 lg:mb-8">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-3 lg:space-x-4">
               <BackButton showHome />
               <div>
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Profile</h1>
-                <p className="mt-2 text-gray-600 dark:text-gray-400">
+                <h1 className="text-2xl lg:text-3xl font-bold" style={{ color: '#0B1E3F' }}>Profile</h1>
+                <p className="mt-1 lg:mt-2 text-sm lg:text-base" style={{ color: '#6F73D2' }}>
                   Manage your account settings and preferences
                 </p>
               </div>
@@ -688,18 +750,40 @@ const handleInputChange = (field: string, value: string | boolean) => {
           </div>
         </div>
 
-        {/* Tabs */}
-        <div className="mb-6">
+        {/* Mobile: Swipeable Tabs */}
+        <div className="lg:hidden mb-6">
+          <SwipeableTabs
+            tabs={tabs.map(tab => ({
+              id: tab.id,
+              label: tab.name,
+              content: (
+                <div className="py-4">
+                  {tab.id === 'profile' && renderProfileTab()}
+                  {tab.id === 'settings' && renderSettingsTab()}
+                  {tab.id === 'notifications' && renderNotificationsTab()}
+                  {tab.id === 'security' && renderSecurityTab()}
+                </div>
+              )
+            }))}
+            defaultTab={activeTab}
+            onTabChange={setActiveTab}
+          />
+        </div>
+
+        {/* Desktop: Tabs */}
+        <div className="hidden lg:block mb-6">
           <nav className="flex space-x-8">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                  activeTab === tab.id
-                    ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
-                    : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+                className={`flex items-center px-3 py-2 text-sm font-medium rounded-xl transition-all duration-200 ${
+                  activeTab === tab.id ? 'scale-105' : ''
                 }`}
+                style={{
+                  backgroundColor: activeTab === tab.id ? '#00B5AD' : 'rgba(0, 181, 173, 0.1)',
+                  color: activeTab === tab.id ? 'white' : '#0B1E3F'
+                }}
               >
                 <tab.icon className="w-4 h-4 mr-2" />
                 {tab.name}
@@ -708,146 +792,169 @@ const handleInputChange = (field: string, value: string | boolean) => {
           </nav>
         </div>
 
-        {/* Tab Content */}
-        {activeTab === 'profile' && renderProfileTab()}
-        {activeTab === 'settings' && renderSettingsTab()}
-        {activeTab === 'notifications' && renderNotificationsTab()}
-        {activeTab === 'security' && renderSecurityTab()}
+        {/* Desktop Tab Content */}
+        <div className="hidden lg:block">
+          {activeTab === 'profile' && renderProfileTab()}
+          {activeTab === 'settings' && renderSettingsTab()}
+          {activeTab === 'notifications' && renderNotificationsTab()}
+          {activeTab === 'security' && renderSecurityTab()}
+        </div>
 
-        {/* Photo Selection Modal */}
-        {showPhotoModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                  Update Profile Photo
-                </h3>
+        {/* Photo Selection Modal - Mobile Bottom Sheet */}
+        <BottomSheet
+          isOpen={showPhotoModal}
+          onClose={() => {
+            setShowPhotoModal(false);
+            stopCamera();
+          }}
+          title="Update Profile Photo"
+          maxHeight="70vh"
+        >
+          <div className="p-6">
+            {cameraPermission === 'granted' && videoRef.current ? (
+              <div className="space-y-4">
+                <video
+                  ref={videoRef.current}
+                  autoPlay
+                  playsInline
+                  className="w-full rounded-xl"
+                  style={{ maxHeight: '300px', objectFit: 'cover' }}
+                />
+                <canvas ref={canvasRef} className="hidden" />
+                <div className="flex space-x-3">
+                  <button
+                    onClick={takePhoto}
+                    className="flex-1 px-6 py-3 rounded-xl font-semibold text-white transition-all duration-300 active:scale-95"
+                    style={{ 
+                      backgroundColor: '#00B5AD',
+                      boxShadow: '0 4px 14px rgba(0, 181, 173, 0.3)'
+                    }}
+                  >
+                    Capture Photo
+                  </button>
+                  <button
+                    onClick={stopCamera}
+                    className="px-6 py-3 rounded-xl font-semibold border-2 transition-all duration-200 active:scale-95"
+                    style={{ 
+                      borderColor: '#E5E7EB',
+                      color: '#0B1E3F',
+                      backgroundColor: 'white'
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-3">
                 <button
-                  onClick={() => {
-                    setShowPhotoModal(false);
-                    setSelectedPhoto(null);
-                    setPhotoPreview(null);
-                    stopCamera();
+                  onClick={() => handlePhotoSelection('camera')}
+                  className="w-full flex items-center justify-center px-6 py-4 rounded-xl font-semibold text-white transition-all duration-300 active:scale-95"
+                  style={{ 
+                    backgroundColor: '#00B5AD',
+                    boxShadow: '0 4px 14px rgba(0, 181, 173, 0.3)'
                   }}
-                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
                 >
-                  <XMarkIconSolid className="w-5 h-5" />
+                  <CameraIcon className="w-5 h-5 mr-3" />
+                  Take a Picture
+                </button>
+                <button
+                  onClick={() => handlePhotoSelection('gallery')}
+                  className="w-full flex items-center justify-center px-6 py-4 rounded-xl font-semibold text-white transition-all duration-300 active:scale-95"
+                  style={{ 
+                    backgroundColor: '#6F73D2',
+                    boxShadow: '0 4px 14px rgba(111, 115, 210, 0.3)'
+                  }}
+                >
+                  <PhotoIcon className="w-5 h-5 mr-3" />
+                  Choose from Gallery
+                </button>
+                <button
+                  onClick={() => handlePhotoSelection('files')}
+                  className="w-full flex items-center justify-center px-6 py-4 rounded-xl font-semibold border-2 transition-all duration-200 active:scale-95"
+                  style={{ 
+                    borderColor: '#E5E7EB',
+                    color: '#0B1E3F',
+                    backgroundColor: 'white'
+                  }}
+                >
+                  <FolderIcon className="w-5 h-5 mr-3" />
+                  Choose from Files
                 </button>
               </div>
-              
-              {photoPreview ? (
-                <div className="space-y-4">
-                  <div className="flex justify-center">
-                    <img
-                      src={photoPreview}
-                      alt="Preview"
-                      className="w-32 h-32 rounded-full object-cover border-4 border-gray-200 dark:border-gray-700"
-                    />
-                  </div>
-                  <div className="flex space-x-3">
-                    <button
-                      onClick={handleSavePhoto}
-                      className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                    >
-                      Save Photo
-                    </button>
-                    <button
-                      onClick={() => {
-                        setSelectedPhoto(null);
-                        setPhotoPreview(null);
-                      }}
-                      className="flex-1 px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500 transition-colors"
-                    >
-                      Choose Different
-                    </button>
-                  </div>
+            )}
+          </div>
+        </BottomSheet>
+
+        {/* Desktop Photo Selection Modal */}
+        {showPhotoModal && (
+          <div className="hidden lg:flex fixed inset-0 bg-black bg-opacity-50 items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                    Update Profile Photo
+                  </h2>
+                  <button
+                    onClick={() => {
+                      setShowPhotoModal(false);
+                      stopCamera();
+                    }}
+                    className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                  >
+                    <XMarkIcon className="w-6 h-6" />
+                  </button>
                 </div>
-              ) : cameraPermission === 'requesting' ? (
-                <div className="text-center">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                    Requesting Camera Permission
-                  </h3>
-                  <p className="text-gray-600 dark:text-gray-300">
-                    Please allow camera access when prompted
-                  </p>
-                </div>
-              ) : cameraPermission === 'granted' ? (
-                <div className="space-y-4">
-                  <div className="relative">
+                {cameraPermission === 'granted' && videoRef.current ? (
+                  <div className="space-y-4">
                     <video
-                      ref={videoRef}
+                      ref={videoRef.current}
                       autoPlay
                       playsInline
-                      muted
-                      className="w-full h-64 bg-gray-900 rounded-lg"
+                      className="w-full rounded-lg"
                     />
                     <canvas ref={canvasRef} className="hidden" />
+                    <div className="flex space-x-3">
+                      <button
+                        onClick={takePhoto}
+                        className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                      >
+                        Capture Photo
+                      </button>
+                      <button
+                        onClick={stopCamera}
+                        className="px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex space-x-3">
-                    <button
-                      onClick={takePhoto}
-                      className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                    >
-                      Take Photo
-                    </button>
-                    <button
-                      onClick={stopCamera}
-                      className="flex-1 px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500 transition-colors"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              ) : cameraPermission === 'denied' ? (
-                <div className="text-center">
-                  <ExclamationTriangleIcon className="h-8 w-8 text-red-600 mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                    Camera Permission Denied
-                  </h3>
-                  <p className="text-gray-600 dark:text-gray-300 mb-4">
-                    {cameraError}
-                  </p>
-                  <div className="flex space-x-3">
-                    <button
-                      onClick={() => setCameraPermission(null)}
-                      className="flex-1 px-4 py-2 text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white transition-colors"
-                    >
-                      OK
-                    </button>
+                ) : (
+                  <div className="space-y-3">
                     <button
                       onClick={() => handlePhotoSelection('camera')}
-                      className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                      className="w-full flex items-center px-4 py-3 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
                     >
-                      Try Again
+                      <CameraIcon className="w-5 h-5 mr-3" />
+                      Take a Picture
+                    </button>
+                    <button
+                      onClick={() => handlePhotoSelection('gallery')}
+                      className="w-full flex items-center px-4 py-3 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors"
+                    >
+                      <PhotoIcon className="w-5 h-5 mr-3" />
+                      Choose from Gallery
+                    </button>
+                    <button
+                      onClick={() => handlePhotoSelection('files')}
+                      className="w-full flex items-center px-4 py-3 bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 rounded-lg hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors"
+                    >
+                      <FolderIcon className="w-5 h-5 mr-3" />
+                      Choose from Files
                     </button>
                   </div>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  <button
-                    onClick={() => handlePhotoSelection('camera')}
-                    className="w-full flex items-center px-4 py-3 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
-                  >
-                    <CameraIcon className="w-5 h-5 mr-3" />
-                    Take a Picture
-                  </button>
-                  <button
-                    onClick={() => handlePhotoSelection('gallery')}
-                    className="w-full flex items-center px-4 py-3 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors"
-                  >
-                    <PhotoIcon className="w-5 h-5 mr-3" />
-                    Choose from Gallery
-                  </button>
-                  <button
-                    onClick={() => handlePhotoSelection('files')}
-                    className="w-full flex items-center px-4 py-3 bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 rounded-lg hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors"
-                  >
-                    <FolderIcon className="w-5 h-5 mr-3" />
-                    Choose from Files
-                  </button>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           </div>
         )}

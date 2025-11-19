@@ -365,3 +365,56 @@
     page-break-before: always;
   }
 }
+
+/* Mobile-specific styles */
+@media (max-width: 1024px) {
+  /* Safe area support for mobile devices */
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top);
+  }
+  
+  /* Touch-friendly tap targets */
+  button, a, input, select, textarea {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Improved scrolling on mobile */
+  * {
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Swipe gesture styles */
+.swipeable {
+  touch-action: pan-y;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Mobile card animations */
+@media (max-width: 1024px) {
+  .mobile-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  
+  .mobile-card:active {
+    transform: scale(0.98);
+  }
+}
+
+/* Hide scrollbars on mobile while maintaining scroll */
+@media (max-width: 1024px) {
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}

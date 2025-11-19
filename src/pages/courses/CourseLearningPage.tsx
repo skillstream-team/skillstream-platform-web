@@ -3,7 +3,8 @@ import { useParams } from 'react-router-dom';
 import { Course, Lesson, Material } from '../../types';
 import { BackButton } from '../../components/common/BackButton';
 import { getCourseByIdWithLanguage, getLessonByIdWithLanguage, getMaterialByIdWithLanguage } from '../../services/api';
-import { Bookmark, Share2, Settings, VolumeX, Volume2, Maximize2, Video, Check, FileText, Download, ArrowLeft, ArrowRight } from 'lucide-react';
+import { Bookmark, Share2, Settings, VolumeX, Volume2, Maximize2, Video, Check, FileText, Download, ArrowLeft, ArrowRight, List, X } from 'lucide-react';
+import { BottomSheet } from '../../components/mobile/BottomSheet';
 
 export const CourseLearningPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -15,6 +16,7 @@ export const CourseLearningPage: React.FC = () => {
   const [isMuted, setIsMuted] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showSidebar, setShowSidebar] = useState(true);
+  const [showLessonList, setShowLessonList] = useState(false);
   const [completedLessons, setCompletedLessons] = useState<string[]>([]);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -81,17 +83,20 @@ export const CourseLearningPage: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="flex items-center justify-center h-64" style={{ backgroundColor: '#F4F7FA' }}>
+        <div 
+          className="animate-spin rounded-full h-12 w-12 border-4 border-t-transparent"
+          style={{ borderColor: '#00B5AD' }}
+        ></div>
       </div>
     );
   }
 
   if (!course) {
     return (
-      <div className="text-center py-12">
-        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Course not found</h3>
-        <p className="text-gray-500 dark:text-gray-400">The course you're looking for doesn't exist.</p>
+      <div className="text-center py-12" style={{ backgroundColor: '#F4F7FA' }}>
+        <h3 className="text-lg font-bold mb-2" style={{ color: '#0B1E3F' }}>Course not found</h3>
+        <p style={{ color: '#6F73D2' }}>The course you're looking for doesn't exist.</p>
       </div>
     );
   }
@@ -106,18 +111,51 @@ export const CourseLearningPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/20 to-purple-50/20 dark:from-gray-900 dark:via-gray-900 dark:to-gray-900">
-      {/* Header */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+    <div className="min-h-screen" style={{ backgroundColor: '#F4F7FA' }}>
+      {/* Mobile Header */}
+      <div className="lg:hidden sticky top-0 z-40 backdrop-blur-xl border-b" style={{ 
+        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+        borderColor: 'rgba(11, 30, 63, 0.1)'
+      }}>
+        <div className="px-4 py-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3 flex-1 min-w-0">
+              <BackButton to={`/courses/${id}`} showHome />
+              <div className="flex-1 min-w-0">
+                <h1 className="text-sm font-bold truncate" style={{ color: '#0B1E3F' }}>
+                  {course.title}
+                </h1>
+                <div className="flex items-center space-x-2 text-xs" style={{ color: '#6F73D2' }}>
+                  <span>Lesson {lessons.findIndex(l => l.id === currentLesson?.id) + 1}/{lessons.length}</span>
+                  <span>•</span>
+                  <span>{getProgressPercentage()}%</span>
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center space-x-2">
+              <button 
+                onClick={() => setShowLessonList(true)}
+                className="p-2 rounded-xl transition-all duration-200 active:scale-95"
+                style={{ backgroundColor: 'rgba(0, 181, 173, 0.1)' }}
+              >
+                <List className="h-5 w-5" style={{ color: '#00B5AD' }} />
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Desktop Header */}
+      <div className="hidden lg:block bg-white border-b" style={{ borderColor: '#E5E7EB' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between py-4">
             <div className="flex items-center space-x-4">
               <BackButton to={`/courses/${id}`} showHome />
               <div>
-                <h1 className="text-lg font-semibold text-gray-900 dark:text-white">
+                <h1 className="text-lg font-semibold" style={{ color: '#0B1E3F' }}>
                   {course.title}
                 </h1>
-                <div className="flex items-center space-x-4 text-sm text-gray-600 dark:text-gray-400">
+                <div className="flex items-center space-x-4 text-sm" style={{ color: '#6F73D2' }}>
                   <span>Lesson {lessons.findIndex(l => l.id === currentLesson?.id) + 1} of {lessons.length}</span>
                   <span>•</span>
                   <span>{getProgressPercentage()}% Complete</span>
@@ -125,15 +163,16 @@ export const CourseLearningPage: React.FC = () => {
               </div>
             </div>
             <div className="flex items-center space-x-3">
-              <button className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+              <button className="p-2 rounded-xl transition-all duration-200" style={{ color: '#6F73D2' }}>
                 <Bookmark className="h-5 w-5" />
               </button>
-              <button className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+              <button className="p-2 rounded-xl transition-all duration-200" style={{ color: '#6F73D2' }}>
                 <Share2 className="h-5 w-5" />
               </button>
               <button 
                 onClick={() => setShowSidebar(!showSidebar)}
-                className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                className="p-2 rounded-xl transition-all duration-200"
+                style={{ color: '#6F73D2' }}
               >
                 <Settings className="h-5 w-5" />
               </button>
@@ -142,12 +181,12 @@ export const CourseLearningPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="flex h-[calc(100vh-80px)]">
+      <div className="flex h-[calc(100vh-80px)] lg:h-[calc(100vh-80px)]">
         {/* Main Content */}
         <div className="flex-1 flex flex-col">
-          {/* Video Player */}
-          <div className="bg-black relative">
-            <div className="aspect-video bg-gray-900 flex items-center justify-center">
+          {/* Video Player - Mobile Full Width */}
+          <div className="bg-black relative w-full">
+            <div className="aspect-video lg:aspect-video bg-gray-900 flex items-center justify-center w-full">
               {currentLesson?.videoUrl ? (
                 <div className="relative w-full h-full">
                   <video
@@ -196,34 +235,46 @@ export const CourseLearningPage: React.FC = () => {
           </div>
 
           {/* Lesson Content */}
-          <div className="flex-1 overflow-y-auto">
-            <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="flex-1 overflow-y-auto" style={{ backgroundColor: '#F4F7FA' }}>
+            <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4 lg:py-8">
               {currentLesson && (
                 <div className="space-y-6">
-                  <div className="flex items-center justify-between">
-                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                      {currentLesson.title}
-                    </h2>
-                    <div className="flex items-center space-x-2">
+                  <div 
+                    className="p-6 rounded-2xl border-2"
+                    style={{
+                      backgroundColor: 'white',
+                      borderColor: '#E5E7EB'
+                    }}
+                  >
+                    <div className="flex items-center justify-between mb-4">
+                      <h2 className="text-xl lg:text-2xl font-bold" style={{ color: '#0B1E3F' }}>
+                        {currentLesson.title}
+                      </h2>
                       {completedLessons.includes(currentLesson.id) && (
-                        <div className="flex items-center space-x-1 text-green-600 dark:text-green-400">
-                          <Check className="h-5 w-5" />
-                          <span className="text-sm font-medium">Completed</span>
+                        <div className="flex items-center space-x-1 px-3 py-1.5 rounded-full" style={{ backgroundColor: 'rgba(0, 181, 173, 0.1)' }}>
+                          <Check className="h-4 w-4" style={{ color: '#00B5AD' }} />
+                          <span className="text-xs font-semibold" style={{ color: '#00B5AD' }}>Completed</span>
                         </div>
                       )}
                     </div>
-                  </div>
 
-                  <div className="prose prose-lg dark:prose-invert max-w-none">
-                    <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-                      {currentLesson.content}
-                    </p>
+                    <div className="prose prose-lg max-w-none">
+                      <p className="leading-relaxed" style={{ color: '#0B1E3F' }}>
+                        {currentLesson.content}
+                      </p>
+                    </div>
                   </div>
 
                   {/* Lesson Materials */}
                   {materials.filter(m => m.courseId === id).length > 0 && (
-                    <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                    <div 
+                      className="p-6 rounded-2xl border-2"
+                      style={{
+                        backgroundColor: 'white',
+                        borderColor: '#E5E7EB'
+                      }}
+                    >
+                      <h3 className="text-lg font-bold mb-4" style={{ color: '#0B1E3F' }}>
                         Lesson Materials
                       </h3>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -232,19 +283,31 @@ export const CourseLearningPage: React.FC = () => {
                           .map((material) => (
                             <div
                               key={material.id}
-                              className="flex items-center space-x-3 p-4 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                              className="flex items-center space-x-3 p-4 rounded-xl border-2 transition-all duration-200 active:scale-95"
+                              style={{
+                                backgroundColor: 'white',
+                                borderColor: '#E5E7EB'
+                              }}
                             >
-                              <FileText className="h-5 w-5 text-blue-500" />
-                              <div className="flex-1">
-                                <h4 className="font-medium text-gray-900 dark:text-white">
+                              <div 
+                                className="w-10 h-10 rounded-xl flex items-center justify-center"
+                                style={{ backgroundColor: 'rgba(0, 181, 173, 0.1)' }}
+                              >
+                                <FileText className="h-5 w-5" style={{ color: '#00B5AD' }} />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <h4 className="font-semibold truncate" style={{ color: '#0B1E3F' }}>
                                   {material.title}
                                 </h4>
-                                <p className="text-sm text-gray-600 dark:text-gray-400">
+                                <p className="text-sm truncate" style={{ color: '#6F73D2' }}>
                                   {material.type}
                                 </p>
                               </div>
-                              <button className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
-                                <Download className="h-4 w-4" />
+                              <button 
+                                className="p-2 rounded-xl transition-all duration-200 active:scale-95"
+                                style={{ backgroundColor: 'rgba(0, 181, 173, 0.1)' }}
+                              >
+                                <Download className="h-5 w-5" style={{ color: '#00B5AD' }} />
                               </button>
                             </div>
                           ))}
@@ -253,24 +316,36 @@ export const CourseLearningPage: React.FC = () => {
                   )}
 
                   {/* Navigation */}
-                  <div className="flex items-center justify-between pt-6 border-t border-gray-200 dark:border-gray-700">
+                  <div 
+                    className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 pt-6 border-t"
+                    style={{ borderColor: '#E5E7EB' }}
+                  >
                     <button
                       onClick={() => {
                         const prev = getPreviousLesson();
                         if (prev) handleLessonClick(prev);
                       }}
                       disabled={!getPreviousLesson()}
-                      className="flex items-center space-x-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="flex items-center justify-center space-x-2 px-6 py-3 rounded-xl font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 border-2"
+                      style={{ 
+                        borderColor: '#E5E7EB',
+                        color: '#0B1E3F',
+                        backgroundColor: 'white'
+                      }}
                     >
-                      <ArrowLeft className="h-4 w-4" />
+                      <ArrowLeft className="h-5 w-5" />
                       <span>Previous</span>
                     </button>
 
                     <button
                       onClick={handleCompleteLesson}
-                      className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+                      className="px-6 py-3 rounded-xl font-semibold text-white transition-all duration-300 active:scale-95"
+                      style={{ 
+                        backgroundColor: completedLessons.includes(currentLesson.id) ? '#6F73D2' : '#00B5AD',
+                        boxShadow: '0 4px 14px rgba(0, 181, 173, 0.3)'
+                      }}
                     >
-                      {completedLessons.includes(currentLesson.id) ? 'Completed' : 'Mark as Complete'}
+                      {completedLessons.includes(currentLesson.id) ? 'Completed ✓' : 'Mark as Complete'}
                     </button>
 
                     <button
@@ -279,10 +354,14 @@ export const CourseLearningPage: React.FC = () => {
                         if (next) handleLessonClick(next);
                       }}
                       disabled={!getNextLesson()}
-                      className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="flex items-center justify-center space-x-2 px-6 py-3 rounded-xl font-semibold text-white transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
+                      style={{ 
+                        backgroundColor: '#00B5AD',
+                        boxShadow: '0 4px 14px rgba(0, 181, 173, 0.3)'
+                      }}
                     >
                       <span>Next</span>
-                      <ArrowRight className="h-4 w-4" />
+                      <ArrowRight className="h-5 w-5" />
                     </button>
                   </div>
                 </div>
@@ -291,29 +370,35 @@ export const CourseLearningPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Sidebar */}
+        {/* Desktop Sidebar */}
         {showSidebar && (
-          <div className="w-80 bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 overflow-y-auto">
+          <div className="hidden lg:block w-80 bg-white border-l overflow-y-auto" style={{ borderColor: '#E5E7EB' }}>
             <div className="p-4">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              <h3 className="text-lg font-bold mb-4" style={{ color: '#0B1E3F' }}>
                 Course Content
               </h3>
               
               {/* Progress Overview */}
-              <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+              <div 
+                className="mb-6 p-4 rounded-xl"
+                style={{ backgroundColor: 'rgba(0, 181, 173, 0.1)' }}
+              >
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Progress</span>
-                  <span className="text-sm font-bold text-blue-600 dark:text-blue-400">
+                  <span className="text-sm font-semibold" style={{ color: '#0B1E3F' }}>Progress</span>
+                  <span className="text-sm font-bold" style={{ color: '#00B5AD' }}>
                     {getProgressPercentage()}%
                   </span>
                 </div>
-                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                <div className="w-full rounded-full h-2" style={{ backgroundColor: '#E5E7EB' }}>
                   <div 
-                    className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${getProgressPercentage()}%` }}
+                    className="h-2 rounded-full transition-all duration-300"
+                    style={{ 
+                      width: `${getProgressPercentage()}%`,
+                      backgroundColor: '#00B5AD'
+                    }}
                   ></div>
                 </div>
-                <div className="flex items-center justify-between mt-2 text-xs text-gray-600 dark:text-gray-400">
+                <div className="flex items-center justify-between mt-2 text-xs" style={{ color: '#6F73D2' }}>
                   <span>{completedLessons.length} of {lessons.length} lessons</span>
                   <span>{Math.round((completedLessons.length / lessons.length) * courseDetails.curriculum.length)} weeks</span>
                 </div>
@@ -325,33 +410,46 @@ export const CourseLearningPage: React.FC = () => {
                   <button
                     key={lesson.id}
                     onClick={() => handleLessonClick(lesson)}
-                    className={`w-full text-left p-3 rounded-lg transition-colors ${
-                      currentLesson?.id === lesson.id
-                        ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
-                        : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
+                    className={`w-full text-left p-3 rounded-xl transition-all duration-200 ${
+                      currentLesson?.id === lesson.id ? 'scale-105' : ''
                     }`}
+                    style={{
+                      backgroundColor: currentLesson?.id === lesson.id 
+                        ? 'rgba(0, 181, 173, 0.1)' 
+                        : 'transparent',
+                      border: currentLesson?.id === lesson.id ? '2px solid #00B5AD' : '2px solid transparent'
+                    }}
                   >
                     <div className="flex items-center space-x-3">
                       <div className="flex-shrink-0">
                         {completedLessons.includes(lesson.id) ? (
-                          <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
-                            <Check className="h-3 w-3 text-white" />
+                          <div 
+                            className="w-8 h-8 rounded-full flex items-center justify-center"
+                            style={{ backgroundColor: '#00B5AD' }}
+                          >
+                            <Check className="h-4 w-4 text-white" />
                           </div>
                         ) : (
-                          <div className="w-6 h-6 border-2 border-gray-300 dark:border-gray-600 rounded-full flex items-center justify-center">
-                            <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                          <div 
+                            className="w-8 h-8 border-2 rounded-full flex items-center justify-center"
+                            style={{ 
+                              borderColor: '#E5E7EB',
+                              color: '#6F73D2'
+                            }}
+                          >
+                            <span className="text-xs font-semibold">
                               {index + 1}
                             </span>
                           </div>
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h4 className="font-medium truncate">{lesson.title}</h4>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                        <h4 className="font-semibold truncate" style={{ color: '#0B1E3F' }}>{lesson.title}</h4>
+                        <p className="text-xs truncate" style={{ color: '#6F73D2' }}>
                           {lesson.content.substring(0, 50)}...
                         </p>
                       </div>
-                      <Video className="h-4 w-4 text-gray-400" />
+                      <Video className="h-4 w-4 flex-shrink-0" style={{ color: '#6F73D2' }} />
                     </div>
                   </button>
                 ))}
@@ -359,6 +457,98 @@ export const CourseLearningPage: React.FC = () => {
             </div>
           </div>
         )}
+
+        {/* Mobile Lesson List Bottom Sheet */}
+        <BottomSheet
+          isOpen={showLessonList}
+          onClose={() => setShowLessonList(false)}
+          title="Course Content"
+          maxHeight="85vh"
+        >
+          <div className="p-4">
+            {/* Progress Overview */}
+            <div 
+              className="mb-6 p-4 rounded-xl"
+              style={{ backgroundColor: 'rgba(0, 181, 173, 0.1)' }}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-semibold" style={{ color: '#0B1E3F' }}>Progress</span>
+                <span className="text-sm font-bold" style={{ color: '#00B5AD' }}>
+                  {getProgressPercentage()}%
+                </span>
+              </div>
+              <div className="w-full rounded-full h-2" style={{ backgroundColor: '#E5E7EB' }}>
+                <div 
+                  className="h-2 rounded-full transition-all duration-300"
+                  style={{ 
+                    width: `${getProgressPercentage()}%`,
+                    backgroundColor: '#00B5AD'
+                  }}
+                ></div>
+              </div>
+              <div className="flex items-center justify-between mt-2 text-xs" style={{ color: '#6F73D2' }}>
+                <span>{completedLessons.length} of {lessons.length} lessons</span>
+                <span>{Math.round((completedLessons.length / lessons.length) * courseDetails.curriculum.length)} weeks</span>
+              </div>
+            </div>
+
+            {/* Lessons List */}
+            <div className="space-y-3">
+              {lessons.map((lesson, index) => (
+                <button
+                  key={lesson.id}
+                  onClick={() => {
+                    handleLessonClick(lesson);
+                    setShowLessonList(false);
+                  }}
+                  className={`w-full text-left p-4 rounded-xl transition-all duration-200 active:scale-95 ${
+                    currentLesson?.id === lesson.id ? 'scale-105' : ''
+                  }`}
+                  style={{
+                    backgroundColor: currentLesson?.id === lesson.id 
+                      ? 'rgba(0, 181, 173, 0.1)' 
+                      : 'white',
+                    border: currentLesson?.id === lesson.id 
+                      ? '2px solid #00B5AD' 
+                      : '2px solid #E5E7EB'
+                  }}
+                >
+                  <div className="flex items-center space-x-3">
+                    <div className="flex-shrink-0">
+                      {completedLessons.includes(lesson.id) ? (
+                        <div 
+                          className="w-10 h-10 rounded-xl flex items-center justify-center"
+                          style={{ backgroundColor: '#00B5AD' }}
+                        >
+                          <Check className="h-5 w-5 text-white" />
+                        </div>
+                      ) : (
+                        <div 
+                          className="w-10 h-10 border-2 rounded-xl flex items-center justify-center"
+                          style={{ 
+                            borderColor: '#E5E7EB',
+                            color: '#6F73D2'
+                          }}
+                        >
+                          <span className="text-sm font-bold">
+                            {index + 1}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-bold truncate mb-1" style={{ color: '#0B1E3F' }}>{lesson.title}</h4>
+                      <p className="text-sm truncate" style={{ color: '#6F73D2' }}>
+                        {lesson.content.substring(0, 60)}...
+                      </p>
+                    </div>
+                    <Video className="h-5 w-5 flex-shrink-0" style={{ color: '#6F73D2' }} />
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        </BottomSheet>
       </div>
     </div>
   );
