@@ -6,6 +6,10 @@ import { Layout } from './components/layout/Layout';
 import { LoginPage } from './pages/auth/LoginPage';
 import { RegisterPage } from './pages/auth/RegisterPage';
 import { DashboardPage } from './pages/DashboardPage';
+import { HomePage } from './pages/HomePage';
+import { LearnPage } from './pages/LearnPage';
+import { DiscoverPage } from './pages/DiscoverPage';
+import { SchedulePage } from './pages/SchedulePage';
 import { CoursesPage } from './pages/courses/CoursesPage';
 import { CourseDetailPage } from './pages/courses/CourseDetailPage';
 import { CourseLearningPage } from './pages/courses/CourseLearningPage';
@@ -18,6 +22,7 @@ import { AIChatAssistant } from './components/ai/AIChatAssistant';
 import websocketService from './services/websocket';
 import { WebSocketMessage } from './types';
 import CalendarPage from './pages/CalendarPage';
+import { SchedulePage } from './pages/SchedulePage';
 import { ProgressTracker } from './components/progress/ProgressTracker';
 import { StudyGroups } from './components/collaboration/StudyGroups';
 import { ForumBoard } from './components/forum/ForumBoard';
@@ -208,13 +213,41 @@ function App() {
               }
             />
 
-            {/* Protected Routes */}
+            {/* Protected Routes - New Navigation Structure */}
+            <Route
+              path="/home"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <HomePage />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
             <Route
               path="/dashboard"
               element={
                 <ProtectedRoute>
+                  <Navigate to="/home" replace />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/learn"
+              element={
+                <ProtectedRoute>
                   <Layout>
-                    <DashboardPage />
+                    <LearnPage />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/discover"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <DiscoverPage />
                   </Layout>
                 </ProtectedRoute>
               }
@@ -303,9 +336,7 @@ function App() {
               path="/calendar"
               element={
                 <ProtectedRoute>
-                  <Layout>
-                    <CalendarPage />
-                  </Layout>
+                  <Navigate to="/schedule" replace />
                 </ProtectedRoute>
               }
             />
@@ -547,7 +578,7 @@ function App() {
             {/* Default redirect */}
             <Route
               path="/"
-              element={<Navigate to={user ? "/dashboard" : "/login"} replace />}
+              element={<Navigate to={user ? "/home" : "/login"} replace />}
             />
           </Routes>
 

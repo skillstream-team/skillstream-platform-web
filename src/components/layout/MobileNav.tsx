@@ -8,7 +8,9 @@ import {
   User,
   ChevronUp,
   Bell,
-  Search
+  Search,
+  Compass,
+  GraduationCap
 } from 'lucide-react';
 import { useAuthStore } from '../../store/auth';
 import { getUnreadNotificationCount, getConversations } from '../../services/api';
@@ -68,11 +70,11 @@ export const MobileNav: React.FC = () => {
   const isActive = (path: string) => location.pathname === path;
 
   const navItems = [
-    { path: '/dashboard', icon: Home, label: 'Home' },
-    { path: '/courses', icon: BookOpen, label: 'Courses' },
+    { path: '/home', icon: Home, label: 'Home' },
+    { path: '/learn', icon: BookOpen, label: 'Learn' },
+    { path: '/discover', icon: Compass, label: 'Discover' },
+    { path: '/schedule', icon: Calendar, label: 'Schedule' },
     { path: '/messages', icon: MessageCircle, label: 'Messages', badge: unreadMessageCount },
-    { path: '/calendar', icon: Calendar, label: 'Calendar' },
-    { path: '/profile', icon: User, label: 'Profile' },
   ];
 
   if (!user) return null;
@@ -136,19 +138,17 @@ export const MobileNav: React.FC = () => {
               })}
               
               {/* Quick Actions */}
-              <button
-                onClick={() => {
-                  navigate('/courses?create=true');
-                  setIsExpanded(false);
-                }}
+              <Link
+                to="/profile"
+                onClick={() => setIsExpanded(false)}
                 className="flex flex-col items-center justify-center p-4 rounded-2xl transition-all duration-200"
                 style={{ backgroundColor: 'rgba(0, 181, 173, 0.1)' }}
               >
-                <Search className="h-6 w-6 mb-2" style={{ color: '#00B5AD' }} />
+                <User className="h-6 w-6 mb-2" style={{ color: '#00B5AD' }} />
                 <span className="text-xs font-semibold" style={{ color: '#0B1E3F' }}>
-                  Search
+                  Profile
                 </span>
-              </button>
+              </Link>
               
               <Link
                 to="/notifications"
@@ -169,6 +169,20 @@ export const MobileNav: React.FC = () => {
                   Notifications
                 </span>
               </Link>
+              
+              {user?.role === 'TEACHER' && (
+                <Link
+                  to="/instructor"
+                  onClick={() => setIsExpanded(false)}
+                  className="flex flex-col items-center justify-center p-4 rounded-2xl transition-all duration-200"
+                  style={{ backgroundColor: 'rgba(154, 140, 255, 0.1)' }}
+                >
+                  <GraduationCap className="h-6 w-6 mb-2" style={{ color: '#9A8CFF' }} />
+                  <span className="text-xs font-semibold" style={{ color: '#0B1E3F' }}>
+                    Instructor
+                  </span>
+                </Link>
+              )}
             </div>
           </div>
         </div>
@@ -187,7 +201,7 @@ export const MobileNav: React.FC = () => {
         }}
       >
         <div className="flex items-center justify-around px-2 py-2 safe-area-bottom">
-          {navItems.slice(0, 4).map((item) => {
+          {navItems.map((item) => {
             const Icon = item.icon;
             const active = isActive(item.path);
             return (

@@ -13,7 +13,10 @@ import {
   LogOut,
   Search,
   Calendar,
-  ChevronDown
+  ChevronDown,
+  BarChart3,
+  DollarSign,
+  GraduationCap
 } from 'lucide-react';
 import { useAuthStore } from '../../store/auth';
 import { useThemeStore } from '../../store/theme';
@@ -118,7 +121,7 @@ export const Header: React.FC = () => {
           <div className="flex items-center justify-between h-20">
             {/* Logo and Brand */}
             <div className="flex items-center">
-              <Link to="/dashboard" className="flex items-center space-x-3 group">
+              <Link to="/home" className="flex items-center space-x-3 group">
                 <div 
                   className="w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-300 group-hover:scale-105"
                   style={{ 
@@ -143,110 +146,83 @@ export const Header: React.FC = () => {
             {/* Desktop Navigation */}
             <nav className="hidden lg:flex items-center space-x-1 mx-8 flex-1 justify-center">
               <Link
-                to="/dashboard"
+                to="/home"
                 className={`px-4 py-2 rounded-xl font-medium text-sm transition-all duration-200 ${
-                  isActive('/dashboard') 
+                  isActive('/home') || isActive('/dashboard')
                     ? 'text-white' 
                     : 'hover:opacity-80'
                 }`}
                 style={{
-                  backgroundColor: isActive('/dashboard') ? '#00B5AD' : 'transparent',
-                  color: isActive('/dashboard') ? 'white' : '#0B1E3F'
+                  backgroundColor: (isActive('/home') || isActive('/dashboard')) ? '#00B5AD' : 'transparent',
+                  color: (isActive('/home') || isActive('/dashboard')) ? 'white' : '#0B1E3F'
                 }}
               >
-                Dashboard
+                Home
               </Link>
-              {user?.role === 'TEACHER' ? (
-                <>
-                  <Link
-                    to="/lessons/create"
-                    className={`px-4 py-2 rounded-xl font-medium text-sm transition-all duration-200 ${
-                      isActive('/lessons/create') 
-                        ? 'text-white' 
-                        : 'hover:opacity-80'
-                    }`}
-                    style={{
-                      backgroundColor: isActive('/lessons/create') ? '#00B5AD' : 'transparent',
-                      color: isActive('/lessons/create') ? 'white' : '#0B1E3F'
-                    }}
+              <Link
+                to="/learn"
+                className={`px-4 py-2 rounded-xl font-medium text-sm transition-all duration-200 ${
+                  isActive('/learn') || isActive('/courses')
+                    ? 'text-white' 
+                    : 'hover:opacity-80'
+                }`}
+                style={{
+                  backgroundColor: (isActive('/learn') || isActive('/courses')) ? '#00B5AD' : 'transparent',
+                  color: (isActive('/learn') || isActive('/courses')) ? 'white' : '#0B1E3F'
+                }}
+              >
+                Learn
+              </Link>
+              <Link
+                to="/discover"
+                className={`px-4 py-2 rounded-xl font-medium text-sm transition-all duration-200 ${
+                  isActive('/discover')
+                    ? 'text-white' 
+                    : 'hover:opacity-80'
+                }`}
+                style={{
+                  backgroundColor: isActive('/discover') ? '#00B5AD' : 'transparent',
+                  color: isActive('/discover') ? 'white' : '#0B1E3F'
+                }}
+              >
+                Discover
+              </Link>
+              <Link
+                to="/schedule"
+                className={`px-4 py-2 rounded-xl font-medium text-sm transition-all duration-200 ${
+                  isActive('/schedule') || isActive('/calendar')
+                    ? 'text-white' 
+                    : 'hover:opacity-80'
+                }`}
+                style={{
+                  backgroundColor: (isActive('/schedule') || isActive('/calendar')) ? '#00B5AD' : 'transparent',
+                  color: (isActive('/schedule') || isActive('/calendar')) ? 'white' : '#0B1E3F'
+                }}
+              >
+                Schedule
+              </Link>
+              <Link
+                to="/messages"
+                className={`px-4 py-2 rounded-xl font-medium text-sm transition-all duration-200 relative ${
+                  isActive('/messages')
+                    ? 'text-white' 
+                    : 'hover:opacity-80'
+                }`}
+                style={{
+                  backgroundColor: isActive('/messages') ? '#00B5AD' : 'transparent',
+                  color: isActive('/messages') ? 'white' : '#0B1E3F'
+                }}
+              >
+                Messages
+                {unreadMessageCount > 0 && (
+                  <span 
+                    className="absolute -top-1 -right-1 h-5 w-5 rounded-full text-xs text-white flex items-center justify-center font-semibold"
+                    style={{ backgroundColor: '#6F73D2' }}
                   >
-                    Create Lesson
-                  </Link>
-                  <Link
-                    to="/lessons/availability"
-                    className={`px-4 py-2 rounded-xl font-medium text-sm transition-all duration-200 ${
-                      isActive('/lessons/availability') 
-                        ? 'text-white' 
-                        : 'hover:opacity-80'
-                    }`}
-                    style={{
-                      backgroundColor: isActive('/lessons/availability') ? '#00B5AD' : 'transparent',
-                      color: isActive('/lessons/availability') ? 'white' : '#0B1E3F'
-                    }}
-                  >
-                    Availability
-                  </Link>
-                  <Link
-                    to="/calendar"
-                    className={`px-4 py-2 rounded-xl font-medium text-sm transition-all duration-200 ${
-                      isActive('/calendar') 
-                        ? 'text-white' 
-                        : 'hover:opacity-80'
-                    }`}
-                    style={{
-                      backgroundColor: isActive('/calendar') ? '#00B5AD' : 'transparent',
-                      color: isActive('/calendar') ? 'white' : '#0B1E3F'
-                    }}
-                  >
-                    Schedule
-                  </Link>
-                </>
-              ) : (
-                <>
-                  <Link
-                    to="/lessons/book"
-                    className={`px-4 py-2 rounded-xl font-medium text-sm transition-all duration-200 ${
-                      isActive('/lessons/book') 
-                        ? 'text-white' 
-                        : 'hover:opacity-80'
-                    }`}
-                    style={{
-                      backgroundColor: isActive('/lessons/book') ? '#00B5AD' : 'transparent',
-                      color: isActive('/lessons/book') ? 'white' : '#0B1E3F'
-                    }}
-                  >
-                    Find Lessons
-                  </Link>
-                  <Link
-                    to="/courses"
-                    className={`px-4 py-2 rounded-xl font-medium text-sm transition-all duration-200 ${
-                      isActive('/courses') 
-                        ? 'text-white' 
-                        : 'hover:opacity-80'
-                    }`}
-                    style={{
-                      backgroundColor: isActive('/courses') ? '#00B5AD' : 'transparent',
-                      color: isActive('/courses') ? 'white' : '#0B1E3F'
-                    }}
-                  >
-                    My Lessons
-                  </Link>
-                  <Link
-                    to="/calendar"
-                    className={`px-4 py-2 rounded-xl font-medium text-sm transition-all duration-200 ${
-                      isActive('/calendar') 
-                        ? 'text-white' 
-                        : 'hover:opacity-80'
-                    }`}
-                    style={{
-                      backgroundColor: isActive('/calendar') ? '#00B5AD' : 'transparent',
-                      color: isActive('/calendar') ? 'white' : '#0B1E3F'
-                    }}
-                  >
-                    Schedule
-                  </Link>
-                </>
-              )}
+                    {unreadMessageCount > 9 ? '9+' : unreadMessageCount}
+                  </span>
+                )}
+              </Link>
               <Link
                 to="/messages"
                 className={`px-4 py-2 rounded-xl font-medium text-sm transition-all duration-200 ${
@@ -286,7 +262,7 @@ export const Header: React.FC = () => {
                 <Search className="h-4 w-4 absolute left-3" style={{ color: '#6F73D2' }} />
                 <input
                   type="text"
-                  placeholder={user?.role === 'TEACHER' ? "Search lessons..." : "Search teachers..."}
+                  placeholder="Search lessons, instructors, topics..."
                   className="pl-10 pr-4 py-2.5 border-2 rounded-xl text-sm w-56 focus:outline-none transition-all duration-200"
                   style={{
                     borderColor: '#E5E7EB',
@@ -300,6 +276,14 @@ export const Header: React.FC = () => {
                   onBlur={(e) => {
                     e.currentTarget.style.borderColor = '#E5E7EB';
                     e.currentTarget.style.boxShadow = 'none';
+                  }}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      const query = (e.currentTarget as HTMLInputElement).value;
+                      if (query.trim()) {
+                        navigate(`/discover?search=${encodeURIComponent(query)}`);
+                      }
+                    }
                   }}
                 />
               </div>
@@ -470,6 +454,39 @@ export const Header: React.FC = () => {
                         <Settings className="h-4 w-4 mr-3" />
                         Settings
                       </Link>
+                      {user.role === 'TEACHER' && (
+                        <>
+                          <div className="border-t my-2" style={{ borderColor: 'rgba(11, 30, 63, 0.1)' }} />
+                          <Link
+                            to="/lessons/create"
+                            className="flex items-center px-4 py-2.5 text-sm transition-colors hover:opacity-80"
+                            style={{ color: '#0B1E3F' }}
+                            onClick={() => setShowUserMenu(false)}
+                          >
+                            <Video className="h-4 w-4 mr-3" />
+                            Create Lesson
+                          </Link>
+                          <Link
+                            to="/analytics"
+                            className="flex items-center px-4 py-2.5 text-sm transition-colors hover:opacity-80"
+                            style={{ color: '#0B1E3F' }}
+                            onClick={() => setShowUserMenu(false)}
+                          >
+                            <BarChart3 className="h-4 w-4 mr-3" />
+                            Instructor Dashboard
+                          </Link>
+                          <Link
+                            to="/earnings-report"
+                            className="flex items-center px-4 py-2.5 text-sm transition-colors hover:opacity-80"
+                            style={{ color: '#0B1E3F' }}
+                            onClick={() => setShowUserMenu(false)}
+                          >
+                            <DollarSign className="h-4 w-4 mr-3" />
+                            Earnings
+                          </Link>
+                        </>
+                      )}
+                      <div className="border-t my-2" style={{ borderColor: 'rgba(11, 30, 63, 0.1)' }} />
                       <button
                         onClick={() => { setShowUserMenu(false); handleLogout(); }}
                         className="flex items-center w-full px-4 py-2.5 text-sm transition-colors hover:opacity-80"
@@ -502,18 +519,63 @@ export const Header: React.FC = () => {
             >
               <div className="space-y-1">
                 <Link
-                  to="/dashboard"
+                  to="/home"
                   className="block px-4 py-2.5 rounded-xl text-sm font-medium transition-colors"
                   style={{ 
-                    backgroundColor: isActive('/dashboard') ? 'rgba(0, 181, 173, 0.1)' : 'transparent',
+                    backgroundColor: (isActive('/home') || isActive('/dashboard')) ? 'rgba(0, 181, 173, 0.1)' : 'transparent',
                     color: '#0B1E3F'
                   }}
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
-                  Dashboard
+                  Home
                 </Link>
-                {user?.role === 'TEACHER' ? (
+                <Link
+                  to="/learn"
+                  className="block px-4 py-2.5 rounded-xl text-sm font-medium transition-colors"
+                  style={{ 
+                    backgroundColor: isActive('/learn') ? 'rgba(0, 181, 173, 0.1)' : 'transparent',
+                    color: '#0B1E3F'
+                  }}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  Learn
+                </Link>
+                <Link
+                  to="/discover"
+                  className="block px-4 py-2.5 rounded-xl text-sm font-medium transition-colors"
+                  style={{ 
+                    backgroundColor: isActive('/discover') ? 'rgba(0, 181, 173, 0.1)' : 'transparent',
+                    color: '#0B1E3F'
+                  }}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  Discover
+                </Link>
+                <Link
+                  to="/schedule"
+                  className="block px-4 py-2.5 rounded-xl text-sm font-medium transition-colors"
+                  style={{ 
+                    backgroundColor: (isActive('/schedule') || isActive('/calendar')) ? 'rgba(0, 181, 173, 0.1)' : 'transparent',
+                    color: '#0B1E3F'
+                  }}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  Schedule
+                </Link>
+                <Link
+                  to="/messages"
+                  className="block px-4 py-2.5 rounded-xl text-sm font-medium transition-colors"
+                  style={{ 
+                    backgroundColor: isActive('/messages') ? 'rgba(0, 181, 173, 0.1)' : 'transparent',
+                    color: '#0B1E3F'
+                  }}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  Messages
+                </Link>
+                {user?.role === 'TEACHER' && (
                   <>
+                    <div className="border-t my-2" style={{ borderColor: 'rgba(11, 30, 63, 0.1)' }} />
                     <Link
                       to="/lessons/create"
                       className="block px-4 py-2.5 rounded-xl text-sm font-medium transition-colors"
@@ -526,62 +588,15 @@ export const Header: React.FC = () => {
                       Create Lesson
                     </Link>
                     <Link
-                      to="/lessons/availability"
+                      to="/analytics"
                       className="block px-4 py-2.5 rounded-xl text-sm font-medium transition-colors"
                       style={{ 
-                        backgroundColor: isActive('/lessons/availability') ? 'rgba(0, 181, 173, 0.1)' : 'transparent',
+                        backgroundColor: isActive('/analytics') ? 'rgba(0, 181, 173, 0.1)' : 'transparent',
                         color: '#0B1E3F'
                       }}
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
-                      Availability
-                    </Link>
-                    <Link
-                      to="/calendar"
-                      className="block px-4 py-2.5 rounded-xl text-sm font-medium transition-colors"
-                      style={{ 
-                        backgroundColor: isActive('/calendar') ? 'rgba(0, 181, 173, 0.1)' : 'transparent',
-                        color: '#0B1E3F'
-                      }}
-                      onClick={() => setIsMobileMenuOpen(false)}
-                    >
-                      Schedule
-                    </Link>
-                  </>
-                ) : (
-                  <>
-                    <Link
-                      to="/lessons/book"
-                      className="block px-4 py-2.5 rounded-xl text-sm font-medium transition-colors"
-                      style={{ 
-                        backgroundColor: isActive('/lessons/book') ? 'rgba(0, 181, 173, 0.1)' : 'transparent',
-                        color: '#0B1E3F'
-                      }}
-                      onClick={() => setIsMobileMenuOpen(false)}
-                    >
-                      Find Lessons
-                    </Link>
-                    <Link
-                      to="/courses"
-                      className="block px-4 py-2.5 rounded-xl text-sm font-medium transition-colors"
-                      style={{ 
-                        backgroundColor: isActive('/courses') ? 'rgba(0, 181, 173, 0.1)' : 'transparent',
-                        color: '#0B1E3F'
-                      }}
-                      onClick={() => setIsMobileMenuOpen(false)}
-                    >
-                      My Lessons
-                    </Link>
-                    <Link
-                      to="/calendar"
-                      className="block px-4 py-2.5 rounded-xl text-sm font-medium transition-colors"
-                      style={{ 
-                        backgroundColor: isActive('/calendar') ? 'rgba(0, 181, 173, 0.1)' : 'transparent',
-                        color: '#0B1E3F'
-                      }}
-                      onClick={() => setIsMobileMenuOpen(false)}
-                    >
-                      Schedule
+                      Instructor Dashboard
                     </Link>
                   </>
                 )}
@@ -639,7 +654,7 @@ export const MobileHeader: React.FC = () => {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      navigate(`/courses?search=${encodeURIComponent(searchQuery)}`);
+      navigate(`/discover?search=${encodeURIComponent(searchQuery)}`);
       setShowSearch(false);
     }
   };
@@ -656,7 +671,7 @@ export const MobileHeader: React.FC = () => {
       <div className="px-4 py-3">
         <div className="flex items-center justify-between">
           {/* Logo */}
-          <Link to="/dashboard" className="flex items-center space-x-2">
+          <Link to="/home" className="flex items-center space-x-2">
             <div 
               className="w-10 h-10 rounded-xl flex items-center justify-center"
               style={{ 

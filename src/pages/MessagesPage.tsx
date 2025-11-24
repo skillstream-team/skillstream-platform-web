@@ -8,13 +8,11 @@ import {
   Phone, 
   Video, 
   Paperclip, 
-  Smile,
   CheckCheck,
   Plus,
   File,
   X,
-  Users,
-  Image as ImageIcon
+  ArrowLeft
 } from 'lucide-react';
 import { useAuthStore } from '../store/auth';
 import { BackButton } from '../components/common/BackButton';
@@ -365,7 +363,7 @@ export const MessagesPage: React.FC = () => {
     }
   };
 
-  const handleAttachmentsSelected = async (selectedAttachments: Attachment[]) => {
+  const handleAttachmentsSelected = (selectedAttachments: Attachment[]) => {
     setAttachments(prev => [...prev, ...selectedAttachments]);
   };
 
@@ -389,28 +387,51 @@ export const MessagesPage: React.FC = () => {
     return 'Group Chat';
   };
 
-  const getConversationAvatar = (conversation: Conversation) => {
+  const getConversationAvatar = (conversation: Conversation): string | undefined => {
     if (conversation.type === 'direct') {
       const other = getOtherParticipant(conversation);
-      return other?.avatarUrl;
+      return other?.avatarUrl || undefined;
     }
-    return null;
+    return undefined;
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Header */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor: '#F4F7FA' }}>
+      {/* Mobile Header */}
+      <div className="lg:hidden sticky top-0 z-40 backdrop-blur-xl border-b" style={{ 
+        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+        borderColor: 'rgba(11, 30, 63, 0.1)'
+      }}>
+        <div className="px-4 py-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <BackButton showHome />
+              <h1 className="text-lg font-bold" style={{ color: '#0B1E3F' }}>
+                Messages
+              </h1>
+            </div>
+            <button
+              onClick={() => setIsNewMessageMode(true)}
+              className="p-2 rounded-xl transition-all duration-200 active:scale-95"
+              style={{ backgroundColor: 'rgba(0, 181, 173, 0.1)' }}
+            >
+              <Plus className="h-5 w-5" style={{ color: '#00B5AD' }} />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Desktop Header */}
+      <div className="hidden lg:block bg-white border-b" style={{ borderColor: '#E5E7EB' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between py-6">
             <div className="flex items-center space-x-4">
               <BackButton showHome />
-              <MessageCircle className="h-8 w-8 text-blue-600" />
               <div>
-                <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">
+                <h1 className="text-2xl font-bold" style={{ color: '#0B1E3F' }}>
                   {isNewMessageMode ? 'New Message' : 'Messages'}
                 </h1>
-                <p className="text-gray-600 dark:text-gray-400 text-sm">
+                <p className="text-sm" style={{ color: '#6F73D2' }}>
                   {isNewMessageMode ? 'Start a new conversation' : 'Connect with students and teachers'}
                 </p>
               </div>
@@ -419,19 +440,26 @@ export const MessagesPage: React.FC = () => {
               {!isNewMessageMode && (
                 <button 
                   onClick={() => setIsNewMessageMode(true)}
-                  className="flex items-center px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 transition-colors font-medium"
+                  className="flex items-center px-6 py-3 rounded-xl font-semibold text-white transition-all duration-300"
+                  style={{ 
+                    backgroundColor: '#00B5AD',
+                    boxShadow: '0 4px 14px rgba(0, 181, 173, 0.3)'
+                  }}
                 >
-                  <Plus className="h-4 w-4 mr-2" />
+                  <Plus className="h-5 w-5 mr-2" />
                   New Message
                 </button>
               )}
-              <div className={`w-2 h-2 rounded-full ${isSocketConnected ? 'bg-green-500' : 'bg-red-500'}`} title={isSocketConnected ? 'Connected' : 'Disconnected'} />
+              <div 
+                className={`w-3 h-3 rounded-full ${isSocketConnected ? 'bg-green-500' : 'bg-red-500'}`} 
+                title={isSocketConnected ? 'Connected' : 'Disconnected'} 
+              />
             </div>
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="flex-1 flex overflow-hidden">
         {isNewMessageMode ? (
           // New Message Interface
           <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 h-[calc(100vh-250px)] flex">
@@ -625,124 +653,193 @@ export const MessagesPage: React.FC = () => {
             </div>
           </div>
         ) : (
-          // Regular Messages Interface
-          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 h-[calc(100vh-250px)] flex">
+          // Regular Messages Interface - WhatsApp Style
+          <div className="flex-1 flex overflow-hidden" style={{ backgroundColor: '#F4F7FA' }}>
             {/* Conversations List */}
-            <div className="w-80 border-r border-gray-200 dark:border-gray-700 flex flex-col">
-              <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+            <div className="hidden lg:flex w-80 lg:w-96 border-r flex flex-col" style={{ 
+              backgroundColor: 'white',
+              borderColor: '#E5E7EB'
+            }}>
+              <div className="p-4 border-b" style={{ borderColor: '#E5E7EB' }}>
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5" style={{ color: '#6F73D2' }} />
                   <input
                     type="text"
                     placeholder="Search conversations..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                    className="w-full pl-10 pr-4 py-3 border-2 rounded-xl focus:outline-none transition-all duration-200"
+                    style={{
+                      borderColor: '#E5E7EB',
+                      backgroundColor: 'white',
+                      color: '#0B1E3F',
+                      fontSize: '16px'
+                    }}
+                    onFocus={(e) => {
+                      e.currentTarget.style.borderColor = '#00B5AD';
+                      e.currentTarget.style.boxShadow = '0 0 0 4px rgba(0, 181, 173, 0.1)';
+                    }}
+                    onBlur={(e) => {
+                      e.currentTarget.style.borderColor = '#E5E7EB';
+                      e.currentTarget.style.boxShadow = 'none';
+                    }}
                   />
                 </div>
               </div>
 
               <div className="flex-1 overflow-y-auto">
-                {filteredConversations.map((conversation) => (
-                  <div
-                    key={conversation.id}
-                    onClick={() => setSelectedConversation(conversation)}
-                    className={`p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${
-                      selectedConversation?.id === conversation.id ? 'bg-blue-50 dark:bg-blue-900/20 border-r-2 border-blue-500' : ''
-                    }`}
-                  >
-                    <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center flex-shrink-0">
-                        {getConversationAvatar(conversation) ? (
-                          <img
-                            src={getConversationAvatar(conversation)}
-                            alt={getConversationName(conversation)}
-                            className="w-full h-full rounded-full object-cover"
-                          />
-                        ) : (
-                          <span className="text-sm font-medium text-blue-600 dark:text-blue-400">
-                            {getConversationName(conversation).charAt(0)}
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between mb-1">
-                          <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                            {getConversationName(conversation)}
-                          </p>
-                          {conversation.unreadCount > 0 && (
-                            <span className="ml-2 px-2 py-0.5 bg-blue-600 text-white text-xs font-medium rounded-full">
-                              {conversation.unreadCount > 99 ? '99+' : conversation.unreadCount}
-                            </span>
-                          )}
+                {filteredConversations.length > 0 ? (
+                  filteredConversations.map((conversation) => {
+                    const isSelected = selectedConversation?.id === conversation.id;
+                    return (
+                      <div
+                        key={conversation.id}
+                        onClick={() => {
+                          setSelectedConversation(conversation);
+                          markConversationAsRead(conversation.id);
+                        }}
+                        className={`p-4 cursor-pointer transition-all duration-200 active:scale-[0.98] ${
+                          isSelected ? '' : ''
+                        }`}
+                        style={{
+                          backgroundColor: isSelected ? 'rgba(0, 181, 173, 0.05)' : 'white',
+                          borderLeft: isSelected ? '3px solid #00B5AD' : 'none'
+                        }}
+                      >
+                        <div className="flex items-center space-x-3">
+                          <div 
+                            className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 text-white font-bold"
+                            style={{ 
+                              background: 'linear-gradient(135deg, #00B5AD 0%, #6F73D2 100%)'
+                            }}
+                          >
+                            {getConversationAvatar(conversation) ? (
+                              <img
+                                src={getConversationAvatar(conversation)}
+                                alt={getConversationName(conversation)}
+                                className="w-full h-full rounded-2xl object-cover"
+                              />
+                            ) : (
+                              <span>{getConversationName(conversation).charAt(0)}</span>
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between mb-1">
+                              <p className="text-sm font-bold truncate" style={{ color: '#0B1E3F' }}>
+                                {getConversationName(conversation)}
+                              </p>
+                              {conversation.unreadCount > 0 && (
+                                <span 
+                                  className="ml-2 px-2 py-1 rounded-full text-xs font-bold text-white"
+                                  style={{ backgroundColor: '#00B5AD' }}
+                                >
+                                  {conversation.unreadCount > 99 ? '99+' : conversation.unreadCount}
+                                </span>
+                              )}
+                            </div>
+                            {conversation.lastMessage && (
+                              <p className="text-xs truncate" style={{ color: '#6F73D2' }}>
+                                {conversation.lastMessage.content}
+                              </p>
+                            )}
+                          </div>
                         </div>
-                        {conversation.lastMessage && (
-                          <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                            {conversation.lastMessage.content}
-                          </p>
-                        )}
                       </div>
+                    );
+                  })
+                ) : (
+                  <div className="flex items-center justify-center h-full p-8">
+                    <div className="text-center">
+                      <MessageCircle className="h-12 w-12 mx-auto mb-3" style={{ color: '#6F73D2', opacity: 0.5 }} />
+                      <p className="text-sm font-semibold" style={{ color: '#0B1E3F' }}>No conversations yet</p>
+                      <p className="text-xs mt-1" style={{ color: '#6F73D2' }}>Start a new conversation to get started</p>
                     </div>
                   </div>
-                ))}
+                )}
               </div>
             </div>
 
             {/* Messages View */}
-            <div className="flex-1 flex flex-col">
+            <div className="flex-1 flex flex-col" style={{ backgroundColor: '#F4F7FA' }}>
               {selectedConversation ? (
                 <>
-                  {/* Conversation Header */}
-                  <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+                  {/* Conversation Header - Sticky */}
+                  <div 
+                    className="flex items-center justify-between p-4 border-b backdrop-blur-xl"
+                    style={{ 
+                      backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                      borderColor: '#E5E7EB'
+                    }}
+                  >
                     <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
+                      <div 
+                        className="w-10 h-10 rounded-2xl flex items-center justify-center text-white font-bold flex-shrink-0"
+                        style={{ 
+                          background: 'linear-gradient(135deg, #00B5AD 0%, #6F73D2 100%)'
+                        }}
+                      >
                         {getConversationAvatar(selectedConversation) ? (
                           <img
                             src={getConversationAvatar(selectedConversation)}
                             alt={getConversationName(selectedConversation)}
-                            className="w-full h-full rounded-full object-cover"
+                            className="w-full h-full rounded-2xl object-cover"
                           />
                         ) : (
-                          <span className="text-sm font-medium text-blue-600 dark:text-blue-400">
-                            {getConversationName(selectedConversation).charAt(0)}
-                          </span>
+                          <span>{getConversationName(selectedConversation).charAt(0)}</span>
                         )}
                       </div>
                       <div>
-                        <h3 className="text-sm font-medium text-gray-900 dark:text-white">
+                        <h3 className="text-sm font-bold" style={{ color: '#0B1E3F' }}>
                           {getConversationName(selectedConversation)}
                         </h3>
                         {selectedConversation.type === 'group' && (
-                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                          <p className="text-xs" style={{ color: '#6F73D2' }}>
                             {selectedConversation.participants.length} participants
                           </p>
                         )}
                       </div>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <button className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
-                        <Phone className="h-4 w-4" />
+                      <button 
+                        className="p-2 rounded-xl transition-all duration-200 active:scale-95"
+                        style={{ backgroundColor: 'rgba(0, 181, 173, 0.1)' }}
+                      >
+                        <Phone className="h-5 w-5" style={{ color: '#00B5AD' }} />
                       </button>
-                      <button className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
-                        <Video className="h-4 w-4" />
+                      <button 
+                        className="p-2 rounded-xl transition-all duration-200 active:scale-95"
+                        style={{ backgroundColor: 'rgba(0, 181, 173, 0.1)' }}
+                      >
+                        <Video className="h-5 w-5" style={{ color: '#00B5AD' }} />
                       </button>
-                      <button className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
-                        <MoreVertical className="h-4 w-4" />
+                      <button 
+                        className="p-2 rounded-xl transition-all duration-200 active:scale-95"
+                        style={{ backgroundColor: 'rgba(0, 181, 173, 0.1)' }}
+                      >
+                        <MoreVertical className="h-5 w-5" style={{ color: '#00B5AD' }} />
                       </button>
                     </div>
                   </div>
 
-                  {/* Messages */}
-                  <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                  {/* Messages - WhatsApp Style */}
+                  <div 
+                    className="flex-1 overflow-y-auto p-4 space-y-3"
+                    style={{ 
+                      backgroundImage: 'radial-gradient(circle at 20% 50%, rgba(0, 181, 173, 0.03) 0%, transparent 50%), radial-gradient(circle at 80% 80%, rgba(111, 115, 210, 0.03) 0%, transparent 50%)'
+                    }}
+                  >
                     {isLoading ? (
                       <div className="flex items-center justify-center h-full">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                        <div 
+                          className="animate-spin rounded-full h-8 w-8 border-4 border-t-transparent"
+                          style={{ borderColor: '#00B5AD' }}
+                        ></div>
                       </div>
                     ) : messages.length === 0 ? (
                       <div className="flex items-center justify-center h-full">
                         <div className="text-center">
-                          <MessageCircle className="h-12 w-12 text-gray-400 mx-auto mb-2" />
-                          <p className="text-gray-500 dark:text-gray-400">No messages yet</p>
+                          <MessageCircle className="h-12 w-12 mx-auto mb-2" style={{ color: '#6F73D2', opacity: 0.5 }} />
+                          <p style={{ color: '#6F73D2' }}>No messages yet</p>
                         </div>
                       </div>
                     ) : (
@@ -755,18 +852,21 @@ export const MessagesPage: React.FC = () => {
                           >
                             <div className={`max-w-xs lg:max-w-md ${isOwn ? 'order-2' : 'order-1'}`}>
                               {!isOwn && (
-                                <div className="flex items-center space-x-2 mb-1">
-                                  <span className="text-xs font-medium text-gray-900 dark:text-white">
+                                <div className="flex items-center space-x-2 mb-1 px-2">
+                                  <span className="text-xs font-semibold" style={{ color: '#0B1E3F' }}>
                                     {message.sender.username}
                                   </span>
                                 </div>
                               )}
                               <div
-                                className={`p-3 ${
-                                  isOwn
-                                    ? 'bg-blue-600 text-white'
-                                    : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
+                                className={`p-3 rounded-2xl ${
+                                  isOwn ? 'rounded-tr-sm' : 'rounded-tl-sm'
                                 }`}
+                                style={{
+                                  backgroundColor: isOwn ? '#00B5AD' : 'white',
+                                  color: isOwn ? 'white' : '#0B1E3F',
+                                  boxShadow: '0 2px 8px rgba(11, 30, 63, 0.1)'
+                                }}
                               >
                                 {message.attachments && message.attachments.length > 0 && (
                                   <div className="mb-2 space-y-2">
@@ -848,8 +948,14 @@ export const MessagesPage: React.FC = () => {
                     <div ref={messagesEndRef} />
                   </div>
 
-                  {/* Message Input */}
-                  <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+                  {/* Message Input - Sticky */}
+                  <div 
+                    className="p-4 border-t backdrop-blur-xl"
+                    style={{ 
+                      backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                      borderColor: '#E5E7EB'
+                    }}
+                  >
                     {attachments.length > 0 && (
                       <div className="mb-2 flex flex-wrap gap-2">
                         {attachments.map((attachment) => (
@@ -883,9 +989,10 @@ export const MessagesPage: React.FC = () => {
                       <button
                         ref={attachmentButtonRef}
                         onClick={() => setShowAttachmentMenu(!showAttachmentMenu)}
-                        className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                        className="p-3 rounded-xl transition-all duration-200 active:scale-95"
+                        style={{ backgroundColor: 'rgba(0, 181, 173, 0.1)' }}
                       >
-                        <Paperclip className="h-4 w-4" />
+                        <Paperclip className="h-5 w-5" style={{ color: '#00B5AD' }} />
                       </button>
                       <input
                         type="text"
@@ -893,17 +1000,35 @@ export const MessagesPage: React.FC = () => {
                         onChange={(e) => setNewMessage(e.target.value)}
                         onKeyPress={handleKeyPress}
                         placeholder="Type a message..."
-                        className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                        className="flex-1 px-4 py-3 border-2 rounded-xl focus:outline-none transition-all duration-200"
+                        style={{
+                          borderColor: '#E5E7EB',
+                          backgroundColor: 'white',
+                          color: '#0B1E3F',
+                          fontSize: '16px'
+                        }}
+                        onFocus={(e) => {
+                          e.currentTarget.style.borderColor = '#00B5AD';
+                          e.currentTarget.style.boxShadow = '0 0 0 4px rgba(0, 181, 173, 0.1)';
+                        }}
+                        onBlur={(e) => {
+                          e.currentTarget.style.borderColor = '#E5E7EB';
+                          e.currentTarget.style.boxShadow = 'none';
+                        }}
                       />
                       <button
                         onClick={() => handleSendMessage(newMessage)}
                         disabled={(!newMessage.trim() && attachments.length === 0) || isSending}
-                        className="p-2 bg-blue-600 text-white hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="p-3 rounded-xl text-white transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
+                        style={{ 
+                          backgroundColor: '#00B5AD',
+                          boxShadow: '0 4px 14px rgba(0, 181, 173, 0.3)'
+                        }}
                       >
                         {isSending ? (
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                          <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
                         ) : (
-                          <Send className="h-4 w-4" />
+                          <Send className="h-5 w-5" />
                         )}
                       </button>
                     </div>
@@ -912,11 +1037,11 @@ export const MessagesPage: React.FC = () => {
               ) : (
                 <div className="flex-1 flex items-center justify-center">
                   <div className="text-center">
-                    <MessageCircle className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                    <MessageCircle className="h-16 w-16 mx-auto mb-4" style={{ color: '#6F73D2', opacity: 0.5 }} />
+                    <h3 className="text-lg font-bold mb-2" style={{ color: '#0B1E3F' }}>
                       Select a conversation
                     </h3>
-                    <p className="text-gray-500 dark:text-gray-400">
+                    <p style={{ color: '#6F73D2' }}>
                       Choose a conversation from the list to view messages
                     </p>
                   </div>
@@ -927,11 +1052,253 @@ export const MessagesPage: React.FC = () => {
         )}
       </div>
 
+      {/* Mobile: Conversation List Overlay */}
+      {!selectedConversation && (
+        <div className="lg:hidden flex-1 overflow-y-auto" style={{ backgroundColor: 'white' }}>
+          <div className="p-4 border-b" style={{ borderColor: '#E5E7EB' }}>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5" style={{ color: '#6F73D2' }} />
+              <input
+                type="text"
+                placeholder="Search conversations..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-3 border-2 rounded-xl focus:outline-none transition-all duration-200"
+                style={{
+                  borderColor: '#E5E7EB',
+                  backgroundColor: 'white',
+                  color: '#0B1E3F',
+                  fontSize: '16px'
+                }}
+                onFocus={(e) => {
+                  e.currentTarget.style.borderColor = '#00B5AD';
+                  e.currentTarget.style.boxShadow = '0 0 0 4px rgba(0, 181, 173, 0.1)';
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.borderColor = '#E5E7EB';
+                  e.currentTarget.style.boxShadow = 'none';
+                }}
+              />
+            </div>
+          </div>
+          <div className="overflow-y-auto">
+            {filteredConversations.map((conversation) => (
+              <div
+                key={conversation.id}
+                onClick={() => {
+                  setSelectedConversation(conversation);
+                  markConversationAsRead(conversation.id);
+                }}
+                className="p-4 border-b transition-all duration-200 active:scale-[0.98]"
+                style={{ 
+                  backgroundColor: 'white',
+                  borderColor: '#E5E7EB'
+                }}
+              >
+                <div className="flex items-center space-x-3">
+                  <div 
+                    className="w-12 h-12 rounded-2xl flex items-center justify-center text-white font-bold flex-shrink-0"
+                    style={{ 
+                      background: 'linear-gradient(135deg, #00B5AD 0%, #6F73D2 100%)'
+                    }}
+                  >
+                    {getConversationAvatar(conversation) ? (
+                      <img
+                        src={getConversationAvatar(conversation)}
+                        alt={getConversationName(conversation)}
+                        className="w-full h-full rounded-2xl object-cover"
+                      />
+                    ) : (
+                      <span>{getConversationName(conversation).charAt(0)}</span>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="text-sm font-bold truncate" style={{ color: '#0B1E3F' }}>
+                        {getConversationName(conversation)}
+                      </p>
+                      {conversation.unreadCount > 0 && (
+                        <span 
+                          className="ml-2 px-2 py-1 rounded-full text-xs font-bold text-white"
+                          style={{ backgroundColor: '#00B5AD' }}
+                        >
+                          {conversation.unreadCount > 99 ? '99+' : conversation.unreadCount}
+                        </span>
+                      )}
+                    </div>
+                    {conversation.lastMessage && (
+                      <p className="text-xs truncate" style={{ color: '#6F73D2' }}>
+                        {conversation.lastMessage.content}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Mobile: Message View */}
+      {selectedConversation && (
+        <div className="lg:hidden flex-1 flex flex-col" style={{ backgroundColor: '#F4F7FA' }}>
+          {/* Mobile Chat Header */}
+          <div 
+            className="flex items-center justify-between p-4 border-b backdrop-blur-xl"
+            style={{ 
+              backgroundColor: 'rgba(255, 255, 255, 0.95)',
+              borderColor: '#E5E7EB'
+            }}
+          >
+            <div className="flex items-center space-x-3">
+              <button
+                onClick={() => setSelectedConversation(null)}
+                className="p-2 rounded-xl transition-all duration-200 active:scale-95"
+                style={{ backgroundColor: 'rgba(0, 181, 173, 0.1)' }}
+              >
+                <ArrowLeft className="h-5 w-5" style={{ color: '#00B5AD' }} />
+              </button>
+              <div 
+                className="w-10 h-10 rounded-2xl flex items-center justify-center text-white font-bold"
+                style={{ 
+                  background: 'linear-gradient(135deg, #00B5AD 0%, #6F73D2 100%)'
+                }}
+              >
+                {getConversationAvatar(selectedConversation) ? (
+                  <img
+                    src={getConversationAvatar(selectedConversation)}
+                    alt={getConversationName(selectedConversation)}
+                    className="w-full h-full rounded-2xl object-cover"
+                  />
+                ) : (
+                  <span>{getConversationName(selectedConversation).charAt(0)}</span>
+                )}
+              </div>
+              <div>
+                <h3 className="text-sm font-bold" style={{ color: '#0B1E3F' }}>
+                  {getConversationName(selectedConversation)}
+                </h3>
+              </div>
+            </div>
+          </div>
+
+          {/* Mobile Messages */}
+          <div 
+            className="flex-1 overflow-y-auto p-4 space-y-3"
+            style={{ 
+              backgroundImage: 'radial-gradient(circle at 20% 50%, rgba(0, 181, 173, 0.03) 0%, transparent 50%), radial-gradient(circle at 80% 80%, rgba(111, 115, 210, 0.03) 0%, transparent 50%)'
+            }}
+          >
+            {messages.map((message) => {
+              const isOwn = message.senderId === user?.id;
+              return (
+                <div
+                  key={message.id}
+                  className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}
+                >
+                  <div className={`max-w-[75%] ${isOwn ? 'order-2' : 'order-1'}`}>
+                    {!isOwn && (
+                      <div className="flex items-center space-x-2 mb-1 px-2">
+                        <span className="text-xs font-semibold" style={{ color: '#0B1E3F' }}>
+                          {message.sender.username}
+                        </span>
+                      </div>
+                    )}
+                    <div
+                      className={`p-3 rounded-2xl ${
+                        isOwn ? 'rounded-tr-sm' : 'rounded-tl-sm'
+                      }`}
+                      style={{
+                        backgroundColor: isOwn ? '#00B5AD' : 'white',
+                        color: isOwn ? 'white' : '#0B1E3F',
+                        boxShadow: '0 2px 8px rgba(11, 30, 63, 0.1)'
+                      }}
+                    >
+                      <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">
+                        {message.content}
+                      </p>
+                      <div className="flex items-center justify-end mt-2 space-x-2">
+                        <span className="text-xs opacity-70">
+                          {formatTime(message.createdAt)}
+                        </span>
+                        {isOwn && (
+                          <CheckCheck 
+                            className={`h-3 w-3 ${message.readBy && message.readBy.length > 0 ? 'text-blue-300' : 'opacity-50'}`} 
+                          />
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+            <div ref={messagesEndRef} />
+          </div>
+
+          {/* Mobile Message Input */}
+          <div 
+            className="p-4 border-t backdrop-blur-xl safe-area-bottom"
+            style={{ 
+              backgroundColor: 'rgba(255, 255, 255, 0.95)',
+              borderColor: '#E5E7EB'
+            }}
+          >
+            <div className="flex items-center space-x-2">
+              <button
+                ref={attachmentButtonRef}
+                onClick={() => setShowAttachmentMenu(!showAttachmentMenu)}
+                className="p-3 rounded-xl transition-all duration-200 active:scale-95"
+                style={{ backgroundColor: 'rgba(0, 181, 173, 0.1)' }}
+              >
+                <Paperclip className="h-5 w-5" style={{ color: '#00B5AD' }} />
+              </button>
+              <input
+                type="text"
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                onKeyPress={handleKeyPress}
+                placeholder="Type a message..."
+                className="flex-1 px-4 py-3 border-2 rounded-xl focus:outline-none transition-all duration-200"
+                style={{
+                  borderColor: '#E5E7EB',
+                  backgroundColor: 'white',
+                  color: '#0B1E3F',
+                  fontSize: '16px'
+                }}
+                onFocus={(e) => {
+                  e.currentTarget.style.borderColor = '#00B5AD';
+                  e.currentTarget.style.boxShadow = '0 0 0 4px rgba(0, 181, 173, 0.1)';
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.borderColor = '#E5E7EB';
+                  e.currentTarget.style.boxShadow = 'none';
+                }}
+              />
+              <button
+                onClick={() => handleSendMessage(newMessage)}
+                disabled={(!newMessage.trim() && attachments.length === 0) || isSending}
+                className="p-3 rounded-xl text-white transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
+                style={{ 
+                  backgroundColor: '#00B5AD',
+                  boxShadow: '0 4px 14px rgba(0, 181, 173, 0.3)'
+                }}
+              >
+                {isSending ? (
+                  <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
+                ) : (
+                  <Send className="h-5 w-5" />
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showAttachmentMenu && (
         <AttachmentMenu
           isOpen={showAttachmentMenu}
           onClose={() => setShowAttachmentMenu(false)}
-          onSelect={handleAttachmentsSelected}
+          onAttachmentsSelected={handleAttachmentsSelected}
           buttonRef={attachmentButtonRef}
         />
       )}
