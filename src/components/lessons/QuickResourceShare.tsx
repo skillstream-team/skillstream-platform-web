@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { FileText, Image as ImageIcon, Video, Link as LinkIcon, X, Send, Upload } from 'lucide-react';
+import { FileText, Image as ImageIcon, Video, Link as LinkIcon, X, Send, Upload, AlertCircle } from 'lucide-react';
+import { useAuthStore } from '../../store/auth';
+import { getRecentResources, shareResourceInLesson, uploadAndShareFile } from '../../services/api';
 
 interface Resource {
   id: string;
@@ -14,17 +16,22 @@ interface QuickResourceShareProps {
   onClose: () => void;
   onShare: (resource: Resource) => void;
   isTeacher: boolean;
+  lessonId: string;
 }
 
 export const QuickResourceShare: React.FC<QuickResourceShareProps> = ({
   isOpen,
   onClose,
   onShare,
-  isTeacher
+  isTeacher,
+  lessonId
 }) => {
+  const { user } = useAuthStore();
   const [linkUrl, setLinkUrl] = useState('');
   const [recentResources, setRecentResources] = useState<Resource[]>([]);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     if (isOpen) {
@@ -34,9 +41,12 @@ export const QuickResourceShare: React.FC<QuickResourceShareProps> = ({
 
   const loadRecentResources = async () => {
     try {
-      // TODO: Replace with actual API call
-      // const resources = await apiService.getRecentResources(user?.id);
-      // setRecentResources(resources);
+      if (!user?.id) {
+        setRecentResources([]);
+        return;
+      }
+      const resources = await getRecentResources(user.id);
+      setRecentResources(resources as Resource[]);
     } catch (error) {
       console.error('Error loading resources:', error);
     }
@@ -49,46 +59,84 @@ export const QuickResourceShare: React.FC<QuickResourceShareProps> = ({
     }
   };
 
-  const shareLink = () => {
+  const shareLink = async () => {
     if (!linkUrl.trim()) return;
 
-    const resource: Resource = {
-      id: `link-${Date.now()}`,
-      type: 'link',
-      name: linkUrl,
-      url: linkUrl
-    };
-
-    // TODO: Replace with actual API call
-    // await apiService.shareResourceInLesson(lessonId, resource);
-    
-    onShare(resource);
-    setLinkUrl('');
+    try {
+      setUploading(true);
+      setError('');
+      const resourceData = {
+        type: 'link',
+        name: linkUrl,
+        url: linkUrl
+      };
+      const sharedResource = await shareResourceInLesson(lessonId, resourceData);
+      
+      const resource: Resource = {
+        id: sharedResource.id || `link-${Date.now()}`,
+        type: 'link',
+        name: sharedResource.name || linkUrl,
+        url: sharedResource.url || linkUrl
+      };
+      
+      onShare(resource);
+      setLinkUrl('');
+      // Reload recent resources to show the newly shared one
+      await loadRecentResources();
+    } catch (error: any) {
+      console.error('Error sharing resource:', error);
+      setError(error?.response?.data?.message || 'Failed to share link. Please try again.');
+    } finally {
+      setUploading(false);
+    }
   };
 
   const shareFile = async () => {
     if (!selectedFile) return;
 
-    // TODO: Replace with actual API call
-    // const uploaded = await apiService.uploadAndShareFile(lessonId, selectedFile);
-    
-    const resource: Resource = {
-      id: `file-${Date.now()}`,
-      type: selectedFile.type.startsWith('image/') ? 'image' :
-            selectedFile.type.startsWith('video/') ? 'video' : 'file',
-      name: selectedFile.name,
-      url: URL.createObjectURL(selectedFile),
-      size: selectedFile.size
-    };
+    try {
+      setUploading(true);
+      setError('');
+      const uploadedResource = await uploadAndShareFile(lessonId, selectedFile);
+      
+      const resource: Resource = {
+        id: uploadedResource.id || `file-${Date.now()}`,
+        type: selectedFile.type.startsWith('image/') ? 'image' :
+              selectedFile.type.startsWith('video/') ? 'video' : 'file',
+        name: uploadedResource.name || selectedFile.name,
+        url: uploadedResource.url || uploadedResource.downloadUrl || URL.createObjectURL(selectedFile),
+        size: uploadedResource.size || selectedFile.size
+      };
 
-    onShare(resource);
-    setSelectedFile(null);
+      onShare(resource);
+      setSelectedFile(null);
+      // Reload recent resources to show the newly shared one
+      await loadRecentResources();
+    } catch (error: any) {
+      console.error('Error uploading file:', error);
+      setError(error?.response?.data?.message || 'Failed to upload file. Please try again.');
+    } finally {
+      setUploading(false);
+    }
   };
 
-  const shareRecentResource = (resource: Resource) => {
-    // TODO: Replace with actual API call
-    // await apiService.shareResourceInLesson(lessonId, resource);
-    onShare(resource);
+  const shareRecentResource = async (resource: Resource) => {
+    try {
+      setUploading(true);
+      setError('');
+      const resourceData = {
+        type: resource.type,
+        name: resource.name,
+        url: resource.url
+      };
+      await shareResourceInLesson(lessonId, resourceData);
+      onShare(resource);
+    } catch (error: any) {
+      console.error('Error sharing resource:', error);
+      setError(error?.response?.data?.message || 'Failed to share resource. Please try again.');
+    } finally {
+      setUploading(false);
+    }
   };
 
   const getResourceIcon = (type: Resource['type']) => {
@@ -128,6 +176,16 @@ export const QuickResourceShare: React.FC<QuickResourceShareProps> = ({
           </div>
         </div>
 
+        {/* Error Message */}
+        {error && (
+          <div className="px-6 py-3 bg-red-50 dark:bg-red-900/20 border-b border-red-200 dark:border-red-800">
+            <div className="flex items-center space-x-2 text-red-800 dark:text-red-200">
+              <AlertCircle className="h-4 w-4" />
+              <span className="text-sm">{error}</span>
+            </div>
+          </div>
+        )}
+
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
           {/* Share Link */}
@@ -145,11 +203,11 @@ export const QuickResourceShare: React.FC<QuickResourceShareProps> = ({
               />
               <button
                 onClick={shareLink}
-                disabled={!linkUrl.trim()}
+                disabled={!linkUrl.trim() || uploading}
                 className="px-5 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
               >
                 <Send className="h-4 w-4" />
-                <span>Share</span>
+                <span>{uploading ? 'Sharing...' : 'Share'}</span>
               </button>
             </div>
           </div>
@@ -193,9 +251,10 @@ export const QuickResourceShare: React.FC<QuickResourceShareProps> = ({
                     </div>
                     <button
                       onClick={shareFile}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-semibold"
+                      disabled={uploading}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      Share
+                      {uploading ? 'Uploading...' : 'Share'}
                     </button>
                   </div>
                 )}

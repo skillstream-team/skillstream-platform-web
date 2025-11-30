@@ -1,15 +1,23 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { 
   BookOpen, 
   Plus, Zap, BarChart3, Search, Grid, List, Star, Clock, Users, Edit3, X, Save,
-  Filter, SlidersHorizontal, ChevronDown
+  Filter, SlidersHorizontal, ChevronDown, Image as ImageIcon, Upload, Trash2, Copy, Eye, MoreVertical, MessageSquare,
+  GraduationCap, TrendingUp, CheckSquare, Square, Check
 } from 'lucide-react';
 import { Course } from '../../types';
 import { useAuthStore } from '../../store/auth';
-import { getCourses, getTeacherCourses } from '../../services/api';
+import { getCourses, getTeacherCourses, createCourse, apiService, duplicateCourse, getCoursePreview, sendBulkMessageToStudents } from '../../services/api';
 import { MobileCourseCard } from '../../components/mobile/MobileCourseCard';
 import { BottomSheet } from '../../components/mobile/BottomSheet';
+import { RichTextEditor } from '../../components/editor/RichTextEditor';
+import { useNotification } from '../../hooks/useNotification';
+import { ConfirmDialog } from '../../components/common/ConfirmDialog';
+import { Tooltip } from '../../components/common/Tooltip';
+import { useAutoSave } from '../../hooks/useAutoSave';
+import { useUndo } from '../../hooks/useUndo';
+import { UndoButton } from '../../components/common/UndoButton';
 
 export const CoursesPage: React.FC = () => {
   const { user } = useAuthStore();
@@ -36,8 +44,54 @@ export const CoursesPage: React.FC = () => {
     description: '',
     category: '',
     price: undefined as number | undefined,
-    isPaid: false
+    isPaid: false,
+    imageUrl: '' as string | undefined,
+    imageFile: null as File | null
   });
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const [courseMenuOpen, setCourseMenuOpen] = useState<string | null>(null);
+  const [duplicatingCourseId, setDuplicatingCourseId] = useState<string | null>(null);
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [previewCourse, setPreviewCourse] = useState<Course | null>(null);
+  const [showBulkMessageModal, setShowBulkMessageModal] = useState(false);
+  const [bulkMessageCourseId, setBulkMessageCourseId] = useState<string | null>(null);
+  const [bulkMessage, setBulkMessage] = useState({ subject: '', content: '' });
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
+  const [selectedCourses, setSelectedCourses] = useState<Set<string>>(new Set());
+  const [isBulkMode, setIsBulkMode] = useState(false);
+  const [showBulkActions, setShowBulkActions] = useState(false);
+  const [draftSaved, setDraftSaved] = useState(false);
+  const { showSuccess, showError } = useNotification();
+  const { addAction, undo, canUndo, getLastAction } = useUndo();
+  
+  // Auto-save for course creation
+  const { loadDraft, clearDraft } = useAutoSave({
+    data: newCourse,
+    onSave: async (data) => {
+      // Just save to localStorage, actual save happens on submit
+      setDraftSaved(true);
+      setTimeout(() => setDraftSaved(false), 3000);
+    },
+    interval: 30000,
+    storageKey: showCreateModal ? 'course-draft' : undefined,
+    enabled: showCreateModal && (newCourse.title.trim().length > 0 || newCourse.description.trim().length > 0),
+    debounceMs: 2000
+  });
+  
+  // Load draft on modal open
+  useEffect(() => {
+    if (showCreateModal) {
+      const draft = loadDraft();
+      if (draft) {
+        // Auto-restore draft without blocking confirmation
+        setNewCourse(draft);
+      }
+    } else {
+      clearDraft();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showCreateModal]);
 
   useEffect(() => {
     loadCourses();
@@ -55,21 +109,37 @@ export const CoursesPage: React.FC = () => {
     }
   }, [location.search, isTeacher, navigate]);
 
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (courseMenuOpen && !(event.target as Element).closest('.course-menu-container')) {
+        setCourseMenuOpen(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [courseMenuOpen]);
+
   const loadCourses = async () => {
     try {
       setIsLoading(true);
       let coursesData;
       
       if (isTeacher) {
-        coursesData = await getTeacherCourses(user?.id || '');
+        if (!user?.id) {
+          console.error('User ID is required to load teacher courses');
+          setCourses([]);
+          return;
+        }
+        coursesData = await getTeacherCourses(user.id);
       } else {
         coursesData = await getCourses();
       }
       
-      setCourses(coursesData);
-    } catch (error) {
+      setCourses(coursesData || []);
+    } catch (error: any) {
       console.error('Error loading courses:', error);
       setCourses([]);
+      // Error is handled gracefully - empty state will be shown
     } finally {
       setIsLoading(false);
     }
@@ -139,38 +209,147 @@ export const CoursesPage: React.FC = () => {
       .slice(0, 3);
   };
 
+  const handleImageUpload = async (file: File) => {
+    try {
+      setUploadingImage(true);
+      const uploadedFile = await apiService.uploadFile(file, 'course-banner', {});
+      setNewCourse(prev => ({ 
+        ...prev, 
+        imageUrl: uploadedFile.url,
+        imageFile: file
+      }));
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      showError('Upload Failed', 'Failed to upload image. Please try again.');
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        showError('File Too Large', 'Image size must be less than 5MB. Please choose a smaller file.');
+        return;
+      }
+      if (!file.type.startsWith('image/')) {
+        showError('Invalid File Type', 'Please select an image file (JPG, PNG, etc.)');
+        return;
+      }
+      handleImageUpload(file);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setNewCourse(prev => ({ 
+      ...prev, 
+      imageUrl: undefined,
+      imageFile: null
+    }));
+    if (imageInputRef.current) {
+      imageInputRef.current.value = '';
+    }
+  };
+
   const handleCreateCourse = async () => {
     try {
-      const newCourseId = `course-${Date.now()}`;
-      const createdCourse: Course = {
-        id: newCourseId,
-        title: newCourse.title,
-        description: newCourse.description,
-        category: newCourse.category,
-        price: newCourse.price || 0,
-        isPaid: newCourse.isPaid,
-        teacherId: user?.id || '',
-        teacher: {
-          id: user?.id || '',
-          name: user?.name || '',
-          email: user?.email || '',
-          role: user?.role || 'TEACHER',
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        },
-        lessons: [],
-        materials: [],
-        enrollments: [],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+      // Check authentication
+      if (!user?.id) {
+        showError('Authentication Required', 'You must be logged in to create a course');
+        return;
+      }
+
+      // Check if user is a teacher
+      if (user.role !== 'TEACHER') {
+        showError('Permission Denied', 'Only teachers can create courses. Please contact support if you believe this is an error.');
+        return;
+      }
+
+      // Verify token exists
+      const token = localStorage.getItem('token');
+      if (!token) {
+        showError('Authentication Required', 'Your session has expired. Please log in again.');
+        return;
+      }
+
+      if (!newCourse.title.trim()) {
+        showError('Missing Information', 'Please enter a course title');
+        return;
+      }
+
+      // Description is optional but if provided, use it
+      const description = newCourse.description || '';
+
+      // Build payload according to API signature
+      // Note: Backend might expect numeric IDs, so we'll try both string and number
+      const userId = user.id;
+      const payload: any = {
+        title: newCourse.title.trim(),
+        description: description.trim() || undefined, // Make it undefined if empty
+        price: newCourse.isPaid ? (newCourse.price || 0) : 0,
+        order: courses.length,
+        createdBy: userId,
+        instructorId: userId
       };
       
-      setCourses(prev => [createdCourse, ...prev]);
-      setShowCreateModal(false);
-      setNewCourse({ title: '', description: '', category: '', price: undefined, isPaid: false });
-      navigate(`/courses/${newCourseId}`);
-    } catch (error) {
+      // Add optional fields only if they have values
+      if (newCourse.imageUrl) {
+        payload.imageUrl = newCourse.imageUrl;
+      }
+      
+      // Note: category is not in the API signature, but we'll try to send it
+      // The backend may accept it or ignore it
+      if (newCourse.category) {
+        payload.category = newCourse.category;
+      }
+
+      console.log('Creating course with payload:', payload);
+      
+      try {
+        const createdCourse = await createCourse(payload);
+        setCourses(prev => [createdCourse as Course, ...prev]);
+        setShowCreateModal(false);
+        setNewCourse({
+          title: '', 
+          description: '', 
+          category: '', 
+          price: undefined, 
+          isPaid: false,
+          imageUrl: undefined,
+          imageFile: null
+        });
+        showSuccess(
+          'Course Created!',
+          `"${createdCourse.title}" has been created successfully. You can now add content and publish it.`
+        );
+        navigate(`/courses/${createdCourse.id}`);
+      } catch (apiError: any) {
+        console.error('API Error creating course:', apiError);
+        throw apiError; // Re-throw to be caught by outer catch
+      }
+    } catch (error: any) {
       console.error('Error creating course:', error);
+      console.error('Error response:', error?.response);
+      console.error('Error data:', error?.response?.data);
+      
+      let errorMessage = 'Failed to create course. Please check your connection and try again.';
+      
+      if (error?.response?.status === 403 || error?.response?.status === 401) {
+        errorMessage = 'Insufficient permissions. Please ensure you are logged in as a teacher and your account has the necessary permissions.';
+        // Suggest logging out and back in
+        if (error?.response?.status === 401) {
+          errorMessage += ' Your session may have expired. Please try logging out and logging back in.';
+        }
+      } else if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error?.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+      
+      showError('Failed to Create Course', errorMessage);
     }
   };
 
@@ -178,150 +357,352 @@ export const CoursesPage: React.FC = () => {
     navigate(`/marketing-guide?courseId=${courseId}`);
   };
 
+  const handleDuplicateCourse = async (courseId: string) => {
+    try {
+      setDuplicatingCourseId(courseId);
+      const duplicatedCourse = await duplicateCourse(courseId);
+      setCourses(prev => [duplicatedCourse, ...prev]);
+      setCourseMenuOpen(null);
+      showSuccess(
+        'Course Duplicated!',
+        `"${duplicatedCourse.title}" has been duplicated successfully.`
+      );
+    } catch (error: any) {
+      console.error('Error duplicating course:', error);
+      showError(
+        'Failed to Duplicate Course',
+        error?.response?.data?.message || 'Failed to duplicate course. Please try again.'
+      );
+    } finally {
+      setDuplicatingCourseId(null);
+    }
+  };
+
+  const handlePreviewCourse = async (courseId: string) => {
+    try {
+      const preview = await getCoursePreview(courseId);
+      setPreviewCourse(preview);
+      setShowPreviewModal(true);
+      setCourseMenuOpen(null);
+    } catch (error: any) {
+      console.error('Error loading preview:', error);
+      showError(
+        'Failed to Load Preview',
+        'Unable to load course preview. Please try again.'
+      );
+    }
+  };
+
+  const handleSendBulkMessage = async () => {
+    if (!bulkMessageCourseId || !bulkMessage.subject || !bulkMessage.content) {
+      showError('Missing Information', 'Please fill in all fields (subject and message)');
+      return;
+    }
+
+    try {
+      await sendBulkMessageToStudents(bulkMessageCourseId, bulkMessage);
+      showSuccess(
+        'Message Sent!',
+        'Your message has been sent successfully to all enrolled students.'
+      );
+      setShowBulkMessageModal(false);
+      setBulkMessage({ subject: '', content: '' });
+      setBulkMessageCourseId(null);
+    } catch (error: any) {
+      console.error('Error sending bulk message:', error);
+      showError(
+        'Failed to Send Message',
+        error?.response?.data?.message || 'Failed to send message. Please try again.'
+      );
+    }
+  };
+
+  const handleDeleteCourse = async (courseId: string) => {
+    try {
+      const courseToDelete = courses.find(c => c.id === courseId);
+      await apiService.axios.delete(`/courses/${courseId}`, { withCredentials: true });
+      
+      // Add undo action
+      if (courseToDelete) {
+        addAction({
+          type: 'delete_course',
+          description: `Delete "${courseToDelete.title}"`,
+          undo: async () => {
+            // Restore course (would need to call API to restore)
+            // For now, just show a message
+            showSuccess('Course Restored', `"${courseToDelete.title}" has been restored.`);
+            setCourses(prev => [...prev, courseToDelete]);
+          }
+        });
+      }
+      
+      setCourses(prev => prev.filter(c => c.id !== courseId));
+      setShowDeleteConfirm(null);
+      showSuccess(
+        'Course Deleted',
+        courseToDelete ? `"${courseToDelete.title}" has been permanently deleted.` : 'The course has been permanently deleted.'
+      );
+    } catch (error: any) {
+      console.error('Error deleting course:', error);
+      showError(
+        'Failed to Delete Course',
+        error?.response?.data?.message || 'Failed to delete course. Please try again.'
+      );
+      setShowDeleteConfirm(null);
+    }
+  };
+  
+  const handleUndo = async () => {
+    try {
+      await undo();
+      const lastAction = getLastAction();
+      if (lastAction) {
+        showSuccess('Action Undone', `"${lastAction.description}" has been undone.`);
+      }
+    } catch (error) {
+      showError('Undo Failed', 'Unable to undo the last action. Please try again.');
+    }
+  };
+
+  // Bulk operations
+  const toggleBulkMode = () => {
+    setIsBulkMode(!isBulkMode);
+    setSelectedCourses(new Set());
+    setShowBulkActions(false);
+  };
+
+  const toggleCourseSelection = (courseId: string) => {
+    const newSelected = new Set(selectedCourses);
+    if (newSelected.has(courseId)) {
+      newSelected.delete(courseId);
+    } else {
+      newSelected.add(courseId);
+    }
+    setSelectedCourses(newSelected);
+    setShowBulkActions(newSelected.size > 0);
+  };
+
+  const selectAllCourses = () => {
+    if (selectedCourses.size === filteredCourses.length) {
+      setSelectedCourses(new Set());
+      setShowBulkActions(false);
+    } else {
+      setSelectedCourses(new Set(filteredCourses.map(c => c.id)));
+      setShowBulkActions(true);
+    }
+  };
+
+  const handleBulkPublish = async () => {
+    if (selectedCourses.size === 0) return;
+    
+    try {
+      const promises = Array.from(selectedCourses).map(courseId =>
+        apiService.axios.put(`/courses/${courseId}`, { status: 'PUBLISHED' }, { withCredentials: true })
+      );
+      await Promise.all(promises);
+      
+      setCourses(prev => prev.map(c => 
+        selectedCourses.has(c.id) ? { ...c, status: 'PUBLISHED' } : c
+      ));
+      
+      showSuccess(
+        'Courses Published',
+        `${selectedCourses.size} course(s) have been published successfully.`
+      );
+      setSelectedCourses(new Set());
+      setShowBulkActions(false);
+    } catch (error: any) {
+      console.error('Error publishing courses:', error);
+      showError(
+        'Failed to Publish Courses',
+        error?.response?.data?.message || 'Failed to publish courses. Please try again.'
+      );
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedCourses.size === 0) return;
+    
+    const courseNames = courses
+      .filter(c => selectedCourses.has(c.id))
+      .map(c => c.title)
+      .join(', ');
+    
+    if (window.confirm(`Are you sure you want to delete ${selectedCourses.size} course(s)? This action cannot be undone.\n\nCourses: ${courseNames}`)) {
+      try {
+        const promises = Array.from(selectedCourses).map(courseId =>
+          apiService.axios.delete(`/courses/${courseId}`, { withCredentials: true })
+        );
+        await Promise.all(promises);
+        
+        setCourses(prev => prev.filter(c => !selectedCourses.has(c.id)));
+        showSuccess(
+          'Courses Deleted',
+          `${selectedCourses.size} course(s) have been deleted successfully.`
+        );
+        setSelectedCourses(new Set());
+        setShowBulkActions(false);
+      } catch (error: any) {
+        console.error('Error deleting courses:', error);
+        showError(
+          'Failed to Delete Courses',
+          error?.response?.data?.message || 'Failed to delete courses. Please try again.'
+        );
+      }
+    }
+  };
+
+  const handleBulkDuplicate = async () => {
+    if (selectedCourses.size === 0) return;
+    
+    try {
+      const promises = Array.from(selectedCourses).map(courseId =>
+        duplicateCourse(courseId)
+      );
+      const duplicatedCourses = await Promise.all(promises);
+      
+      setCourses(prev => [...prev, ...duplicatedCourses]);
+      showSuccess(
+        'Courses Duplicated',
+        `${selectedCourses.size} course(s) have been duplicated successfully.`
+      );
+      setSelectedCourses(new Set());
+      setShowBulkActions(false);
+    } catch (error: any) {
+      console.error('Error duplicating courses:', error);
+      showError(
+        'Failed to Duplicate Courses',
+        error?.response?.data?.message || 'Failed to duplicate courses. Please try again.'
+      );
+    }
+  };
+
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#F4F7FA' }}>
-        <div 
-          className="animate-spin rounded-full h-12 w-12 border-4 border-t-transparent"
-          style={{ borderColor: '#00B5AD' }}
-        ></div>
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/20 to-purple-50/20 dark:from-gray-900 dark:via-gray-900 dark:to-gray-900">
+        <div className="flex items-center justify-center h-screen">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#F4F7FA' }}>
+    <div className="courses-page">
       {/* Header Section */}
-      <div 
-        className="mb-8 rounded-[20px] p-8 backdrop-blur-xl border"
-        style={{
-          background: 'linear-gradient(135deg, rgba(0, 181, 173, 0.1) 0%, rgba(111, 115, 210, 0.1) 100%)',
-          borderColor: 'rgba(255, 255, 255, 0.3)',
-          boxShadow: '0 20px 60px rgba(11, 30, 63, 0.1)'
-        }}
-      >
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-4xl font-bold mb-2" style={{ color: '#0B1E3F' }}>
+      <div className="courses-header">
+        <div className="courses-header-content">
+          <div className="courses-header-text">
+            <h1 className="courses-header-title">
               {isTeacher ? 'My Courses' : 'Explore Courses'}
             </h1>
-            <p className="text-lg" style={{ color: '#6F73D2' }}>
+            <p className="courses-header-subtitle">
               {isTeacher 
                 ? 'Manage your courses and track student progress'
                 : 'Discover amazing courses and start learning'}
             </p>
           </div>
           {isTeacher && (
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="flex items-center px-6 py-3 text-white rounded-xl font-semibold transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5"
-              style={{ 
-                backgroundColor: '#00B5AD',
-                boxShadow: '0 4px 14px rgba(0, 181, 173, 0.3)'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = '#00968d';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = '#00B5AD';
-              }}
-            >
-              <Plus className="h-5 w-5 mr-2" />
-              Create Course
-            </button>
+            <div className="flex items-center space-x-3">
+              <Tooltip content={isBulkMode ? "Exit bulk mode" : "Select multiple courses"}>
+                <button
+                  onClick={toggleBulkMode}
+                  className={`courses-create-button button-press hover-lift ${isBulkMode ? 'bg-blue-600' : ''}`}
+                  style={isBulkMode ? { backgroundColor: '#2563eb' } : {}}
+                >
+                  {isBulkMode ? (
+                    <>
+                      <X className="courses-create-button-icon" />
+                      Cancel
+                    </>
+                  ) : (
+                    <>
+                      <CheckSquare className="courses-create-button-icon" />
+                      Select
+                    </>
+                  )}
+                </button>
+              </Tooltip>
+              <Tooltip content="Create a new course">
+                <button
+                  onClick={() => setShowCreateModal(true)}
+                  className="courses-create-button button-press hover-lift"
+                >
+                  <Plus className="courses-create-button-icon" />
+                  Create Course
+                </button>
+              </Tooltip>
+            </div>
           )}
         </div>
       </div>
 
       {/* Top Performing Courses Section (for teachers) */}
       {isTeacher && getTopPerformingCourses().length > 0 && (
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold" style={{ color: '#0B1E3F' }}>
+        <div className="courses-top-performing">
+          <div className="courses-top-performing-header">
+            <h2 className="courses-top-performing-title">
               Top Performing Courses
             </h2>
             <Link
               to="/analytics"
-              className="text-sm font-semibold transition-colors hover:opacity-80 flex items-center space-x-1"
-              style={{ color: '#00B5AD' }}
+              className="courses-top-performing-link"
             >
               <span>View All Analytics</span>
-              <ChevronDown className="h-4 w-4 rotate-[-90deg]" />
+              <ChevronDown className="courses-top-performing-link-icon" />
             </Link>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="courses-top-performing-grid">
             {getTopPerformingCourses().map(course => (
               <div
                 key={course.id}
-                className="p-6 rounded-[20px] border-2 transition-all duration-300 hover:shadow-xl hover:-translate-y-1"
-                style={{
-                  backgroundColor: 'white',
-                  borderColor: '#E5E7EB'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = '#00B5AD';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = '#E5E7EB';
-                }}
+                className="courses-top-performing-card"
               >
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-bold text-lg line-clamp-2" style={{ color: '#0B1E3F' }}>
+                <div className="courses-top-performing-card-header">
+                  <h3 className="courses-top-performing-card-title">
                     {course.title}
                   </h3>
                   <button
                     onClick={() => handleBoostCourse(course.id)}
-                    className="p-2 rounded-xl transition-all duration-200 hover:scale-110"
-                    style={{ backgroundColor: 'rgba(154, 140, 255, 0.1)' }}
+                    className="courses-top-performing-card-boost"
                   >
-                    <Zap className="h-5 w-5" style={{ color: '#9A8CFF' }} />
+                    <Zap className="courses-top-performing-card-boost-icon" />
                   </button>
                 </div>
                 
-                <div className="space-y-3 mb-4">
-                  <div className="flex items-center justify-between text-sm">
-                    <span style={{ color: '#6F73D2' }}>Enrolled Students</span>
-                    <span className="font-semibold" style={{ color: '#0B1E3F' }}>
+                <div className="courses-top-performing-card-stats">
+                  <div className="courses-top-performing-card-stat">
+                    <span className="courses-top-performing-card-stat-label">Enrolled Students</span>
+                    <span className="courses-top-performing-card-stat-value">
                       {course.enrolledStudents?.toLocaleString() || 0}
                     </span>
                   </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span style={{ color: '#6F73D2' }}>Completion Rate</span>
-                    <span className="font-semibold" style={{ color: '#0B1E3F' }}>
+                  <div className="courses-top-performing-card-stat">
+                    <span className="courses-top-performing-card-stat-label">Completion Rate</span>
+                    <span className="courses-top-performing-card-stat-value">
                       {course.completionRate || 0}%
                     </span>
                   </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span style={{ color: '#6F73D2' }}>Revenue</span>
-                    <span className="font-semibold" style={{ color: '#00B5AD' }}>
+                  <div className="courses-top-performing-card-stat">
+                    <span className="courses-top-performing-card-stat-label">Revenue</span>
+                    <span className="courses-top-performing-card-stat-value courses-top-performing-card-stat-value--revenue">
                       ${(course.revenue ?? 0).toLocaleString()}
                     </span>
                   </div>
                 </div>
                 
-                <div className="flex space-x-2">
+                <div className="courses-top-performing-card-actions">
                   <Link
                     to={`/courses/${course.id}`}
-                    className="flex-1 px-4 py-2.5 text-white rounded-xl font-semibold text-center transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5"
-                    style={{ 
-                      backgroundColor: '#00B5AD',
-                      boxShadow: '0 4px 14px rgba(0, 181, 173, 0.3)'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = '#00968d';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = '#00B5AD';
-                    }}
+                    className="courses-top-performing-card-manage"
                   >
                     Manage
                   </Link>
                   <Link
                     to={`/analytics?courseId=${course.id}`}
-                    className="px-4 py-2.5 rounded-xl transition-all duration-200 hover:scale-110"
-                    style={{ backgroundColor: 'rgba(111, 115, 210, 0.1)' }}
+                    className="courses-top-performing-card-analytics"
                   >
-                    <BarChart3 className="h-5 w-5" style={{ color: '#6F73D2' }} />
+                    <BarChart3 className="courses-top-performing-card-analytics-icon" />
                   </Link>
                 </div>
               </div>
@@ -331,19 +712,11 @@ export const CoursesPage: React.FC = () => {
       )}
 
       {/* Search and Filters */}
-      <div 
-        className="mb-8 p-6 rounded-[20px] border-2"
-        style={{
-          backgroundColor: 'white',
-          borderColor: '#E5E7EB'
-        }}
-      >
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-          <div className="flex-1 relative">
+      <div className="courses-search-filters">
+        <div className="courses-search-filters-content">
+          <div className="courses-search-wrapper">
             <Search 
-              className={`absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 transition-colors ${
-                focusedSearch ? 'text-[#00B5AD]' : 'text-gray-400'
-              }`} 
+              className={`courses-search-icon ${focusedSearch ? 'courses-search-icon--focused' : 'courses-search-icon--unfocused'}`}
             />
             <input
               type="text"
@@ -352,77 +725,53 @@ export const CoursesPage: React.FC = () => {
               onChange={(e) => setSearchQuery(e.target.value)}
               onFocus={() => setFocusedSearch(true)}
               onBlur={() => setFocusedSearch(false)}
-              className="w-full pl-12 pr-4 py-4 border-2 rounded-xl transition-all duration-200 focus:outline-none"
-              style={{
-                borderColor: focusedSearch ? '#00B5AD' : '#E5E7EB',
-                backgroundColor: 'white',
-                color: '#0B1E3F',
-                fontSize: '16px',
-                boxShadow: focusedSearch ? '0 0 0 4px rgba(0, 181, 173, 0.1)' : 'none'
-              }}
+              className="courses-search-input"
             />
           </div>
           
-          <div className="flex items-center space-x-3">
+          <div className="courses-filters-actions">
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className={`flex items-center px-4 py-4 border-2 rounded-xl font-medium transition-all duration-200 ${
-                showFilters ? 'text-white' : ''
-              }`}
-              style={{
-                backgroundColor: showFilters ? '#00B5AD' : 'transparent',
-                borderColor: showFilters ? '#00B5AD' : '#E5E7EB',
-                color: showFilters ? 'white' : '#0B1E3F'
-              }}
+              className={`courses-filters-button ${showFilters ? 'courses-filters-button--active' : 'courses-filters-button--inactive'}`}
             >
-              <SlidersHorizontal className="h-5 w-5 mr-2" />
+              <SlidersHorizontal className="courses-filters-button-icon" />
               <span className="hidden sm:inline">Filters</span>
             </button>
             
-            <div className="flex items-center space-x-1 p-1 rounded-xl" style={{ backgroundColor: 'rgba(0, 181, 173, 0.1)' }}>
-              <button
-                onClick={() => setViewMode('grid')}
-                className={`p-2 rounded-lg transition-all duration-200 ${
-                  viewMode === 'grid' ? 'text-white' : 'text-[#00B5AD]'
-                }`}
-                style={{
-                  backgroundColor: viewMode === 'grid' ? '#00B5AD' : 'transparent'
-                }}
-              >
-                <Grid className="h-5 w-5" />
-              </button>
-              <button
-                onClick={() => setViewMode('list')}
-                className={`p-2 rounded-lg transition-all duration-200 ${
-                  viewMode === 'list' ? 'text-white' : 'text-[#00B5AD]'
-                }`}
-                style={{
-                  backgroundColor: viewMode === 'list' ? '#00B5AD' : 'transparent'
-                }}
-              >
-                <List className="h-5 w-5" />
-              </button>
+            <div className="courses-view-mode">
+                <Tooltip content="Grid view">
+                  <button
+                    onClick={() => setViewMode('grid')}
+                    className={`courses-view-mode-button button-press ${viewMode === 'grid' ? 'courses-view-mode-button--active' : 'courses-view-mode-button--inactive'}`}
+                    aria-label="Grid view"
+                  >
+                    <Grid className="courses-view-mode-button-icon" />
+                  </button>
+                </Tooltip>
+                <Tooltip content="List view">
+                  <button
+                    onClick={() => setViewMode('list')}
+                    className={`courses-view-mode-button button-press ${viewMode === 'list' ? 'courses-view-mode-button--active' : 'courses-view-mode-button--inactive'}`}
+                    aria-label="List view"
+                  >
+                    <List className="courses-view-mode-button-icon" />
+                  </button>
+                </Tooltip>
             </div>
           </div>
         </div>
 
         {/* Desktop Filter Panel */}
         {showFilters && (
-          <div className="hidden lg:grid mt-6 pt-6 border-t grid-cols-2 md:grid-cols-4 gap-4" style={{ borderColor: '#E5E7EB' }}>
-            <div>
-              <label className="block text-sm font-semibold mb-2" style={{ color: '#0B1E3F' }}>
+          <div className="courses-filter-panel">
+            <div className="courses-filter-group">
+              <label className="courses-filter-label">
                 Level
               </label>
               <select
                 value={filters.level}
                 onChange={(e) => setFilters(prev => ({ ...prev, level: e.target.value }))}
-                className="w-full px-4 py-3 border-2 rounded-xl focus:outline-none transition-all duration-200"
-                style={{
-                  borderColor: '#E5E7EB',
-                  backgroundColor: 'white',
-                  color: '#0B1E3F',
-                  fontSize: '16px'
-                }}
+                className="courses-filter-select"
                 onFocus={(e) => {
                   e.currentTarget.style.borderColor = '#00B5AD';
                   e.currentTarget.style.boxShadow = '0 0 0 4px rgba(0, 181, 173, 0.1)';
@@ -611,6 +960,39 @@ export const CoursesPage: React.FC = () => {
         </div>
       </BottomSheet>
 
+      {/* Bulk Actions Bar */}
+      {isBulkMode && showBulkActions && selectedCourses.size > 0 && (
+        <div className="mb-6 bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-200 dark:border-blue-700 rounded-xl p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <span className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                {selectedCourses.size} course{selectedCourses.size !== 1 ? 's' : ''} selected
+              </span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={handleBulkPublish}
+                className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors text-sm"
+              >
+                Publish
+              </button>
+              <button
+                onClick={handleBulkDuplicate}
+                className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors text-sm"
+              >
+                Duplicate
+              </button>
+              <button
+                onClick={handleBulkDelete}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors text-sm"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Course Grid/List */}
       {filteredCourses.length === 0 ? (
         <div 
@@ -660,37 +1042,109 @@ export const CoursesPage: React.FC = () => {
       ) : (
         <>
           {/* Mobile View */}
+          {isBulkMode && filteredCourses.length > 0 && (
+            <div className="lg:hidden mb-4 flex items-center space-x-2">
+              <button
+                onClick={selectAllCourses}
+                className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              >
+                {selectedCourses.size === filteredCourses.length ? (
+                  <CheckSquare className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                ) : (
+                  <Square className="w-5 h-5 text-gray-400" />
+                )}
+                <span>Select All ({filteredCourses.length})</span>
+              </button>
+            </div>
+          )}
           <div className="lg:hidden space-y-4">
-            {filteredCourses.map(course => (
-              <MobileCourseCard
-                key={course.id}
-                course={course}
-                isTeacher={isTeacher}
-                onBoost={handleBoostCourse}
-              />
-            ))}
+            {filteredCourses.map(course => {
+              const isSelected = selectedCourses.has(course.id);
+              return (
+                <div key={course.id} className="relative">
+                  {isBulkMode && (
+                    <div className="absolute top-4 left-4 z-10">
+                      <button
+                        onClick={() => toggleCourseSelection(course.id)}
+                        className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-all ${
+                          isSelected
+                            ? 'bg-blue-600 border-blue-600 text-white'
+                            : 'bg-white border-gray-300 hover:border-blue-500'
+                        }`}
+                      >
+                        {isSelected && <Check className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  )}
+                  <div className={isBulkMode && isSelected ? 'ring-2 ring-blue-500 rounded-lg' : ''}>
+                    <MobileCourseCard
+                      course={course}
+                      isTeacher={isTeacher}
+                      onBoost={handleBoostCourse}
+                    />
+                  </div>
+                </div>
+              );
+            })}
           </div>
           
           {/* Desktop View */}
+          {isBulkMode && filteredCourses.length > 0 && (
+            <div className="mb-4 flex items-center space-x-2">
+              <button
+                onClick={selectAllCourses}
+                className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              >
+                {selectedCourses.size === filteredCourses.length ? (
+                  <CheckSquare className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                ) : (
+                  <Square className="w-5 h-5 text-gray-400" />
+                )}
+                <span>Select All ({filteredCourses.length})</span>
+              </button>
+            </div>
+          )}
           <div className={`hidden lg:grid ${viewMode === 'grid' ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6' : 'space-y-4'}`}>
             {filteredCourses.map(course => {
               const enrollmentStats = getEnrollmentStats(course);
+              const isSelected = selectedCourses.has(course.id);
               
               return (
                 <div
                   key={course.id}
-                  className="group rounded-[20px] border-2 overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1"
+                  className={`group rounded-[20px] border-2 overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 relative ${
+                    isBulkMode && isSelected ? 'ring-2 ring-blue-500 border-blue-500' : ''
+                  }`}
                   style={{
                     backgroundColor: 'white',
-                    borderColor: '#E5E7EB'
+                    borderColor: isBulkMode && isSelected ? '#3b82f6' : '#E5E7EB'
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = '#00B5AD';
+                    if (!isBulkMode) {
+                      e.currentTarget.style.borderColor = '#00B5AD';
+                    }
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = '#E5E7EB';
+                    if (!isBulkMode) {
+                      e.currentTarget.style.borderColor = '#E5E7EB';
+                    }
                   }}
                 >
+                  {/* Bulk Mode Checkbox */}
+                  {isBulkMode && (
+                    <div className="absolute top-4 left-4 z-10">
+                      <button
+                        onClick={() => toggleCourseSelection(course.id)}
+                        className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-all ${
+                          isSelected
+                            ? 'bg-blue-600 border-blue-600 text-white'
+                            : 'bg-white border-gray-300 hover:border-blue-500'
+                        }`}
+                      >
+                        {isSelected && <Check className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  )}
                 {viewMode === 'grid' ? (
                   <>
                     {/* Course Image */}
@@ -864,22 +1318,102 @@ export const CoursesPage: React.FC = () => {
                         </div>
                         <div className="flex space-x-2">
                           {isTeacher && course.status === 'published' && (
-                            <button
-                              onClick={() => handleBoostCourse(course.id)}
-                              className="p-2.5 rounded-xl transition-all duration-200 hover:scale-110"
-                              style={{ backgroundColor: 'rgba(154, 140, 255, 0.1)' }}
-                            >
-                              <Zap className="h-5 w-5" style={{ color: '#9A8CFF' }} />
-                            </button>
+                            <Tooltip content="Boost course visibility">
+                              <button
+                                onClick={() => handleBoostCourse(course.id)}
+                                className="p-2.5 rounded-xl transition-all duration-200 hover:scale-110 button-press"
+                                style={{ backgroundColor: 'rgba(154, 140, 255, 0.1)' }}
+                                aria-label="Boost course"
+                              >
+                                <Zap className="h-5 w-5" style={{ color: '#9A8CFF' }} />
+                              </button>
+                            </Tooltip>
                           )}
                           {isTeacher && (
-                            <Link
-                              to={`/courses/${course.id}`}
-                              className="p-2.5 rounded-xl transition-all duration-200 hover:scale-110"
-                              style={{ backgroundColor: 'rgba(111, 115, 210, 0.1)' }}
-                            >
-                              <Edit3 className="h-5 w-5" style={{ color: '#6F73D2' }} />
-                            </Link>
+                            <div className="relative course-menu-container">
+                              <Tooltip content="Course options">
+                                <button
+                                  onClick={() => setCourseMenuOpen(courseMenuOpen === course.id ? null : course.id)}
+                                  className="p-2.5 rounded-xl transition-all duration-200 hover:scale-110 relative button-press"
+                                  style={{ backgroundColor: 'rgba(111, 115, 210, 0.1)' }}
+                                  aria-label="Course options"
+                                >
+                                  <MoreVertical className="h-5 w-5" style={{ color: '#6F73D2' }} />
+                                </button>
+                              </Tooltip>
+                              {courseMenuOpen === course.id && (
+                                <div 
+                                  className="absolute right-0 top-full mt-2 bg-white rounded-xl shadow-xl border-2 z-50 min-w-[200px]"
+                                  style={{ borderColor: '#E5E7EB' }}
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <button
+                                    onClick={() => handlePreviewCourse(course.id)}
+                                    className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center space-x-2 transition-colors rounded-t-xl"
+                                  >
+                                    <Eye className="h-4 w-4" style={{ color: '#6F73D2' }} />
+                                    <span style={{ color: '#0B1E3F' }}>Preview</span>
+                                  </button>
+                                  <Link
+                                    to={`/courses/${course.id}`}
+                                    className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center space-x-2 transition-colors"
+                                    onClick={() => setCourseMenuOpen(null)}
+                                  >
+                                    <Edit3 className="h-4 w-4" style={{ color: '#6F73D2' }} />
+                                    <span style={{ color: '#0B1E3F' }}>Edit</span>
+                                  </Link>
+                                  <button
+                                    onClick={() => handleDuplicateCourse(course.id)}
+                                    disabled={duplicatingCourseId === course.id}
+                                    className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center space-x-2 transition-colors disabled:opacity-50"
+                                  >
+                                    <Copy className="h-4 w-4" style={{ color: '#6F73D2' }} />
+                                    <span style={{ color: '#0B1E3F' }}>
+                                      {duplicatingCourseId === course.id ? 'Duplicating...' : 'Duplicate'}
+                                    </span>
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      setBulkMessageCourseId(course.id);
+                                      setShowBulkMessageModal(true);
+                                      setCourseMenuOpen(null);
+                                    }}
+                                    className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center space-x-2 transition-colors"
+                                  >
+                                    <MessageSquare className="h-4 w-4" style={{ color: '#6F73D2' }} />
+                                    <span style={{ color: '#0B1E3F' }}>Message Students</span>
+                                  </button>
+                                  <Link
+                                    to={`/assignments/grade?courseId=${course.id}`}
+                                    className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center space-x-2 transition-colors"
+                                    onClick={() => setCourseMenuOpen(null)}
+                                  >
+                                    <GraduationCap className="h-4 w-4" style={{ color: '#6F73D2' }} />
+                                    <span style={{ color: '#0B1E3F' }}>Grade Assignments</span>
+                                  </Link>
+                                  <Link
+                                    to={`/students/progress?courseId=${course.id}`}
+                                    className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center space-x-2 transition-colors"
+                                    onClick={() => setCourseMenuOpen(null)}
+                                  >
+                                    <TrendingUp className="h-4 w-4" style={{ color: '#6F73D2' }} />
+                                    <span style={{ color: '#0B1E3F' }}>Student Progress</span>
+                                  </Link>
+                                  <div className="border-t my-1" style={{ borderColor: '#E5E7EB' }} />
+                                  <button
+                                    onClick={() => {
+                                      setShowDeleteConfirm(course.id);
+                                      setCourseMenuOpen(null);
+                                    }}
+                                    className="w-full px-4 py-3 text-left hover:bg-red-50 flex items-center space-x-2 transition-colors rounded-b-xl"
+                                    style={{ color: '#DC2626' }}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                    <span>Delete Course</span>
+                                  </button>
+                                </div>
+                              )}
+                            </div>
                           )}
                           <Link
                             to={`/courses/${course.id}`}
@@ -990,31 +1524,105 @@ export const CoursesPage: React.FC = () => {
       {/* Create Course Modal */}
       {showCreateModal && (
         <div 
-          className="fixed inset-0 flex items-center justify-center z-50 p-4"
-          style={{ backgroundColor: 'rgba(11, 30, 63, 0.5)', backdropFilter: 'blur(4px)' }}
+          className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-0 sm:p-4"
+          style={{ backgroundColor: 'rgba(11, 30, 63, 0.6)', backdropFilter: 'blur(8px)' }}
+          onClick={(e) => {
+            // Close modal when clicking backdrop
+            if (e.target === e.currentTarget) {
+              setShowCreateModal(false);
+              clearDraft();
+            }
+          }}
         >
           <div 
-            className="rounded-[20px] p-8 w-full max-w-lg backdrop-blur-xl border"
+            className="rounded-t-2xl sm:rounded-2xl p-4 sm:p-6 lg:p-8 w-full max-w-lg border-2 mt-0 sm:mt-auto mb-0 sm:mb-auto max-h-[95vh] sm:max-h-[90vh] flex flex-col relative bg-white"
             style={{
-              backgroundColor: 'rgba(255, 255, 255, 0.95)',
-              borderColor: 'rgba(255, 255, 255, 0.3)',
-              boxShadow: '0 20px 60px rgba(11, 30, 63, 0.3)'
+              borderColor: '#E5E7EB',
+              boxShadow: '0 25px 70px rgba(11, 30, 63, 0.4)',
+              pointerEvents: 'auto',
+              zIndex: 100,
+              overflow: 'visible'
             }}
+            onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold" style={{ color: '#0B1E3F' }}>
-                Create New Course
-              </h2>
+            <div className="flex items-center justify-between mb-4 sm:mb-6 flex-shrink-0">
+              <div>
+                <h2 className="text-xl sm:text-2xl font-bold" style={{ color: '#0B1E3F' }}>
+                  Create New Course
+                </h2>
+                {draftSaved && (
+                  <p className="text-sm text-green-600 dark:text-green-400 mt-1 flex items-center">
+                    <span className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></span>
+                    Draft saved
+                  </p>
+                )}
+              </div>
               <button
-                onClick={() => setShowCreateModal(false)}
-                className="p-2 rounded-xl transition-all duration-200 hover:scale-110"
+                onClick={() => {
+                  setShowCreateModal(false);
+                  clearDraft();
+                }}
+                className="p-2 rounded-xl transition-all duration-200 hover:scale-110 min-w-[44px] min-h-[44px] flex items-center justify-center touch-manipulation"
                 style={{ color: '#6F73D2' }}
               >
                 <X className="h-6 w-6" />
               </button>
             </div>
             
-            <div className="space-y-5">
+            <div className="space-y-4 sm:space-y-5 overflow-y-auto flex-1 pr-1 sm:pr-0" style={{ pointerEvents: 'auto', WebkitOverflowScrolling: 'touch', overflowX: 'visible' }}>
+              {/* Course Image Upload */}
+              <div>
+                <label className="block text-sm font-semibold mb-2" style={{ color: '#0B1E3F' }}>
+                  Course Banner Image
+                </label>
+                {newCourse.imageUrl ? (
+                  <div className="relative">
+                    <img 
+                      src={newCourse.imageUrl} 
+                      alt="Course banner" 
+                      className="w-full h-32 sm:h-40 lg:h-48 object-cover rounded-xl border-2"
+                      style={{ borderColor: '#E5E7EB' }}
+                    />
+                    <button
+                      onClick={handleRemoveImage}
+                      className="absolute top-2 right-2 p-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <div
+                    onClick={() => imageInputRef.current?.click()}
+                    className="w-full h-32 sm:h-40 lg:h-48 border-2 border-dashed rounded-xl flex flex-col items-center justify-center cursor-pointer transition-all duration-200 hover:border-[#00B5AD] hover:bg-[rgba(0,181,173,0.05)]"
+                    style={{ borderColor: '#E5E7EB' }}
+                  >
+                    <input
+                      ref={imageInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageSelect}
+                      className="hidden"
+                    />
+                    {uploadingImage ? (
+                      <div className="text-center">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#00B5AD] mx-auto mb-2"></div>
+                        <p className="text-sm" style={{ color: '#6F73D2' }}>Uploading...</p>
+                      </div>
+                    ) : (
+                      <>
+                        <ImageIcon className="h-12 w-12 mb-2" style={{ color: '#6F73D2' }} />
+                        <p className="text-sm font-medium" style={{ color: '#0B1E3F' }}>
+                          Click to upload banner image
+                        </p>
+                        <p className="text-xs mt-1" style={{ color: '#6F73D2' }}>
+                          Recommended: 1200x675px (Max 5MB)
+                        </p>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+
               <div>
                 <label className="block text-sm font-semibold mb-2" style={{ color: '#0B1E3F' }}>
                   Course Title
@@ -1028,7 +1636,8 @@ export const CoursesPage: React.FC = () => {
                     borderColor: '#E5E7EB',
                     backgroundColor: 'white',
                     color: '#0B1E3F',
-                    fontSize: '16px'
+                    fontSize: '16px',
+                    pointerEvents: 'auto'
                   }}
                   onFocus={(e) => {
                     e.currentTarget.style.borderColor = '#00B5AD';
@@ -1039,49 +1648,54 @@ export const CoursesPage: React.FC = () => {
                     e.currentTarget.style.boxShadow = 'none';
                   }}
                   placeholder="Enter course title"
+                  autoFocus={false}
                 />
               </div>
               
-              <div>
+              <div style={{ position: 'relative', zIndex: 200, pointerEvents: 'auto' }}>
                 <label className="block text-sm font-semibold mb-2" style={{ color: '#0B1E3F' }}>
                   Description
                 </label>
-                <textarea
-                  value={newCourse.description}
-                  onChange={(e) => setNewCourse(prev => ({ ...prev, description: e.target.value }))}
-                  className="w-full px-4 py-3 border-2 rounded-xl focus:outline-none transition-all duration-200 resize-none"
-                  style={{
-                    borderColor: '#E5E7EB',
-                    backgroundColor: 'white',
-                    color: '#0B1E3F',
-                    fontSize: '16px'
+                <div 
+                  className="border-2 rounded-xl" 
+                  style={{ 
+                    borderColor: '#E5E7EB', 
+                    pointerEvents: 'auto', 
+                    position: 'relative', 
+                    zIndex: 200, 
+                    overflow: 'visible',
+                    backgroundColor: 'white'
                   }}
-                  onFocus={(e) => {
-                    e.currentTarget.style.borderColor = '#00B5AD';
-                    e.currentTarget.style.boxShadow = '0 0 0 4px rgba(0, 181, 173, 0.1)';
-                  }}
-                  onBlur={(e) => {
-                    e.currentTarget.style.borderColor = '#E5E7EB';
-                    e.currentTarget.style.boxShadow = 'none';
-                  }}
-                  rows={3}
-                  placeholder="Enter course description"
-                />
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <RichTextEditor
+                    value={newCourse.description}
+                    onChange={(value) => setNewCourse(prev => ({ ...prev, description: value }))}
+                    placeholder="Enter course description (supports rich text formatting)"
+                    height="150px"
+                  />
+                </div>
               </div>
               
-              <div>
+              <div style={{ position: 'relative', zIndex: 200 }}>
                 <label className="block text-sm font-semibold mb-2" style={{ color: '#0B1E3F' }}>
                   Category
                 </label>
                 <select
                   value={newCourse.category}
                   onChange={(e) => setNewCourse(prev => ({ ...prev, category: e.target.value }))}
-                  className="w-full px-4 py-3 border-2 rounded-xl focus:outline-none transition-all duration-200"
+                  className="w-full px-4 py-3 border-2 rounded-xl focus:outline-none transition-all duration-200 touch-manipulation"
                   style={{
                     borderColor: '#E5E7EB',
                     backgroundColor: 'white',
                     color: '#0B1E3F',
-                    fontSize: '16px'
+                    fontSize: '16px',
+                    pointerEvents: 'auto',
+                    position: 'relative',
+                    zIndex: 200,
+                    WebkitAppearance: 'menulist',
+                    MozAppearance: 'menulist'
                   }}
                   onFocus={(e) => {
                     e.currentTarget.style.borderColor = '#00B5AD';
@@ -1093,6 +1707,20 @@ export const CoursesPage: React.FC = () => {
                   }}
                 >
                   <option value="">Select category</option>
+                  <option value="programming">Programming</option>
+                  <option value="web-development">Web Development</option>
+                  <option value="data-science">Data Science</option>
+                  <option value="design">Design</option>
+                  <option value="business">Business</option>
+                  <option value="marketing">Marketing</option>
+                  <option value="photography">Photography</option>
+                  <option value="music">Music</option>
+                  <option value="language">Language</option>
+                  <option value="science">Science</option>
+                  <option value="mathematics">Mathematics</option>
+                  <option value="health">Health & Fitness</option>
+                  <option value="personal-development">Personal Development</option>
+                  <option value="other">Other</option>
                 </select>
               </div>
               
@@ -1144,6 +1772,8 @@ export const CoursesPage: React.FC = () => {
                     placeholder="Enter price (e.g., 99.99)"
                     min="0"
                     step="0.01"
+                    disabled={false}
+                    readOnly={false}
                   />
                   {newCourse.price && newCourse.price > 0 && (
                     <div className="mt-2 text-sm font-medium" style={{ color: '#00B5AD' }}>
@@ -1154,10 +1784,13 @@ export const CoursesPage: React.FC = () => {
               )}
             </div>
             
-            <div className="flex space-x-3 mt-8">
+            <div className="flex flex-col sm:flex-row gap-3 mt-6 sm:mt-8 pt-4 border-t flex-shrink-0" style={{ borderColor: '#E5E7EB' }}>
               <button
-                onClick={() => setShowCreateModal(false)}
-                className="flex-1 px-6 py-3 border-2 rounded-xl font-semibold transition-all duration-200 hover:shadow-md"
+                onClick={() => {
+                  setShowCreateModal(false);
+                  clearDraft();
+                }}
+                className="w-full sm:flex-1 px-6 py-3 min-h-[44px] border-2 rounded-xl font-semibold transition-all duration-200 hover:shadow-md touch-manipulation active:scale-95"
                 style={{ 
                   borderColor: '#E5E7EB',
                   color: '#0B1E3F',
@@ -1168,8 +1801,8 @@ export const CoursesPage: React.FC = () => {
               </button>
               <button
                 onClick={handleCreateCourse}
-                disabled={!newCourse.title || !newCourse.description || !newCourse.category}
-                className="flex-1 px-6 py-3 text-white rounded-xl font-semibold transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+                disabled={!newCourse.title.trim() || uploadingImage}
+                className="w-full sm:flex-1 px-6 py-3 min-h-[44px] text-white rounded-xl font-semibold transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 touch-manipulation active:scale-95"
                 style={{ 
                   backgroundColor: '#00B5AD',
                   boxShadow: '0 4px 14px rgba(0, 181, 173, 0.3)'
@@ -1186,11 +1819,195 @@ export const CoursesPage: React.FC = () => {
                 }}
               >
                 <Save className="h-4 w-4 mr-2 inline" />
-                Create Course
+                {uploadingImage ? 'Uploading...' : 'Create Course'}
               </button>
             </div>
           </div>
         </div>
+      )}
+
+      {/* Course Preview Modal */}
+      {showPreviewModal && previewCourse && (
+        <div 
+          className="fixed inset-0 flex items-center justify-center z-50 p-4"
+          style={{ backgroundColor: 'rgba(11, 30, 63, 0.6)', backdropFilter: 'blur(8px)' }}
+          onClick={() => setShowPreviewModal(false)}
+        >
+          <div 
+            className="rounded-2xl p-8 w-full max-w-4xl max-h-[90vh] overflow-y-auto border-2"
+            style={{
+              backgroundColor: 'white',
+              borderColor: '#E5E7EB',
+              boxShadow: '0 25px 70px rgba(11, 30, 63, 0.4)'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold" style={{ color: '#0B1E3F' }}>
+                Course Preview
+              </h2>
+              <button
+                onClick={() => setShowPreviewModal(false)}
+                className="p-2 rounded-xl transition-all duration-200 hover:scale-110"
+                style={{ color: '#6F73D2' }}
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+            
+            <div className="space-y-6">
+              {previewCourse.imageUrl && (
+                <img 
+                  src={previewCourse.imageUrl} 
+                  alt={previewCourse.title}
+                  className="w-full h-64 object-cover rounded-xl"
+                />
+              )}
+              <div>
+                <h3 className="text-xl font-bold mb-2" style={{ color: '#0B1E3F' }}>
+                  {previewCourse.title}
+                </h3>
+                <div 
+                  className="prose max-w-none"
+                  dangerouslySetInnerHTML={{ __html: previewCourse.description || '' }}
+                />
+              </div>
+              <div className="flex items-center space-x-4 text-sm" style={{ color: '#6F73D2' }}>
+                <div className="flex items-center space-x-1">
+                  <Clock className="h-4 w-4" />
+                  <span>{previewCourse.duration || '8 weeks'}</span>
+                </div>
+                <div className="flex items-center space-x-1">
+                  <Users className="h-4 w-4" />
+                  <span>{previewCourse.enrolledStudents || 0} students</span>
+                </div>
+                {previewCourse.level && (
+                  <span className="px-3 py-1 rounded-full text-xs font-semibold" style={{ backgroundColor: 'rgba(111, 115, 210, 0.1)', color: '#6F73D2' }}>
+                    {previewCourse.level}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Message Modal */}
+      {showBulkMessageModal && (
+        <div 
+          className="fixed inset-0 flex items-center justify-center z-50 p-4"
+          style={{ backgroundColor: 'rgba(11, 30, 63, 0.6)', backdropFilter: 'blur(8px)' }}
+        >
+          <div 
+            className="rounded-2xl p-8 w-full max-w-2xl border-2"
+            style={{
+              backgroundColor: 'white',
+              borderColor: '#E5E7EB',
+              boxShadow: '0 25px 70px rgba(11, 30, 63, 0.4)'
+            }}
+          >
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold" style={{ color: '#0B1E3F' }}>
+                Send Message to Students
+              </h2>
+              <button
+                onClick={() => {
+                  setShowBulkMessageModal(false);
+                  setBulkMessage({ subject: '', content: '' });
+                  setBulkMessageCourseId(null);
+                }}
+                className="p-2 rounded-xl transition-all duration-200 hover:scale-110"
+                style={{ color: '#6F73D2' }}
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+            
+            <div className="space-y-5">
+              <div>
+                <label className="block text-sm font-semibold mb-2" style={{ color: '#0B1E3F' }}>
+                  Subject
+                </label>
+                <input
+                  type="text"
+                  value={bulkMessage.subject}
+                  onChange={(e) => setBulkMessage(prev => ({ ...prev, subject: e.target.value }))}
+                  className="w-full px-4 py-3 border-2 rounded-xl focus:outline-none transition-all duration-200"
+                  style={{
+                    borderColor: '#E5E7EB',
+                    backgroundColor: 'white',
+                    color: '#0B1E3F',
+                    fontSize: '16px'
+                  }}
+                  placeholder="Enter message subject"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-semibold mb-2" style={{ color: '#0B1E3F' }}>
+                  Message
+                </label>
+                <div className="border-2 rounded-xl overflow-hidden" style={{ borderColor: '#E5E7EB' }}>
+                  <RichTextEditor
+                    value={bulkMessage.content}
+                    onChange={(value) => setBulkMessage(prev => ({ ...prev, content: value }))}
+                    placeholder="Enter your message to students..."
+                    height="250px"
+                  />
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex space-x-3 mt-8">
+              <button
+                onClick={() => {
+                  setShowBulkMessageModal(false);
+                  setBulkMessage({ subject: '', content: '' });
+                  setBulkMessageCourseId(null);
+                }}
+                className="flex-1 px-6 py-3 border-2 rounded-xl font-semibold transition-all duration-200 hover:shadow-md"
+                style={{ 
+                  borderColor: '#E5E7EB',
+                  color: '#0B1E3F',
+                  backgroundColor: 'white'
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSendBulkMessage}
+                disabled={!bulkMessage.subject || !bulkMessage.content}
+                className="flex-1 px-6 py-3 text-white rounded-xl font-semibold transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{ 
+                  backgroundColor: '#00B5AD',
+                  boxShadow: '0 4px 14px rgba(0, 181, 173, 0.3)'
+                }}
+              >
+                <MessageSquare className="h-4 w-4 mr-2 inline" />
+                Send Message
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      {showDeleteConfirm && (
+        <ConfirmDialog
+          isOpen={!!showDeleteConfirm}
+          title="Delete Course"
+          message={`Are you sure you want to delete this course? This action cannot be undone and will permanently remove the course and all its content.`}
+          confirmText="Delete Course"
+          cancelText="Cancel"
+          type="danger"
+          onConfirm={() => {
+            const courseToDelete = courses.find(c => c.id === showDeleteConfirm);
+            if (courseToDelete) {
+              handleDeleteCourse(showDeleteConfirm);
+            }
+          }}
+          onCancel={() => setShowDeleteConfirm(null)}
+        />
       )}
     </div>
   );

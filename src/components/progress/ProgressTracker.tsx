@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import { useAuthStore } from '../../store/auth';
 import { Progress, Course, Certificate } from '../../types';
-import { getStreaks, getProgress, getMyCourses, getCertificates } from '../../services/api';
+import { getStreaks, getProgress, getMyCourses, getCertificates, getCertificateDownloadUrl } from '../../services/api';
 
 interface ProgressTrackerProps {
   courseId?: string;
@@ -82,13 +82,13 @@ export const ProgressTracker: React.FC<ProgressTrackerProps> = ({
   };
 
   const downloadCertificate = (certificate: Certificate) => {
-    // Mock download functionality
-    console.log('Downloading certificate:', certificate.courseName);
-    // In real implementation, this would trigger a download
+    const url = getCertificateDownloadUrl(certificate.courseId, certificate.userId);
+    // Open in a new tab to trigger browser download
+    window.open(url, '_blank');
   };
 
   const shareCertificate = (certificate: Certificate) => {
-    // Mock share functionality
+    // Share certificate using native share API
     if (navigator.share) {
       navigator.share({
         title: `${certificate.courseName} Certificate`,

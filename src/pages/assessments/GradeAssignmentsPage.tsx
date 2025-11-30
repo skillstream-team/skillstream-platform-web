@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { AssignmentSubmissionSummary, StudentSubmission, Assignment } from '../../types';
 import { getAssignmentsForCourse, getAssignmentSubmissionSummaries } from '../../services/api';
+import { useNotification } from '../../hooks/useNotification';
 import { 
   DocumentTextIcon, 
   ClockIcon, 
@@ -18,12 +19,25 @@ import {
 const GradeAssignmentsPage: React.FC = () => {
   const [submissionSummaries, setSubmissionSummaries] = useState<AssignmentSubmissionSummary[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedCourse, setSelectedCourse] = useState<string>('all');
+  const location = useLocation();
+  const navigate = useNavigate();
+  
+  // Get courseId from URL query params
+  const searchParams = new URLSearchParams(location.search);
+  const courseIdFromUrl = searchParams.get('courseId');
+  
+  const [selectedCourse, setSelectedCourse] = useState<string>(courseIdFromUrl || 'all');
   const [filter, setFilter] = useState<'all' | 'submitted' | 'overdue' | 'urgent'>('all');
   const [selectedAssignment, setSelectedAssignment] = useState<AssignmentSubmissionSummary | null>(null);
   const [showStudentModal, setShowStudentModal] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<StudentSubmission | null>(null);
-  const navigate = useNavigate();
+
+  // Update selectedCourse when URL changes
+  useEffect(() => {
+    if (courseIdFromUrl) {
+      setSelectedCourse(courseIdFromUrl);
+    }
+  }, [courseIdFromUrl]);
 
   useEffect(() => {
     loadSubmissionSummaries();
@@ -117,18 +131,8 @@ const GradeAssignmentsPage: React.FC = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/20 to-purple-50/20 dark:from-gray-900 dark:via-gray-900 dark:to-gray-900">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="animate-pulse">
-            <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/4 mb-6"></div>
-            <div className="space-y-4">
-              {[...Array(5)].map((_, i) => (
-                <div key={i} className="bg-white dark:bg-gray-800 rounded-lg p-6">
-                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-2"></div>
-                  <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
-                </div>
-              ))}
-            </div>
-          </div>
+        <div className="flex items-center justify-center h-screen">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
         </div>
       </div>
     );
@@ -202,16 +206,16 @@ const GradeAssignmentsPage: React.FC = () => {
         </div>
 
         {/* Filters */}
-        <div className="mb-6 bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
-          <div className="flex flex-wrap gap-4">
+        <div className="mb-6 bg-white dark:bg-gray-800 rounded-lg p-4 sm:p-6 shadow-sm">
+          <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1 min-w-0">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Course
               </label>
               <select
                 value={selectedCourse}
                 onChange={(e) => setSelectedCourse(e.target.value)}
-                className="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white"
+                className="block w-full px-4 py-3 text-base border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white touch-manipulation"
               >
                 <option value="all">All Courses</option>
                 <option value="course-1">Web Development</option>
@@ -221,13 +225,13 @@ const GradeAssignmentsPage: React.FC = () => {
               </select>
             </div>
             <div className="flex-1 min-w-0">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Priority
               </label>
               <select
                 value={filter}
                 onChange={(e) => setFilter(e.target.value as any)}
-                className="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white"
+                className="block w-full px-4 py-3 text-base border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white touch-manipulation"
               >
                 <option value="all">All Priorities</option>
                 <option value="urgent">Urgent (Overdue)</option>
@@ -262,11 +266,11 @@ const GradeAssignmentsPage: React.FC = () => {
                     'border-gray-200 dark:border-gray-700'
                   } hover:shadow-md`}
                 >
-                  <div className="p-6">
-                    <div className="flex items-start justify-between">
+                  <div className="p-4 sm:p-6">
+                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center space-x-3">
-                          <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                          <h3 className="text-base sm:text-lg font-medium text-gray-900 dark:text-white break-words">
                             {summary.assignmentTitle}
                           </h3>
                           {priority === 'urgent' && (
@@ -322,19 +326,20 @@ const GradeAssignmentsPage: React.FC = () => {
 
                         {/* Quick Grade Actions */}
                         {ungradedSubmissions.length > 0 && (
-                          <div className="mt-4 flex items-center space-x-2">
+                          <div className="mt-4 flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-2">
                             <button
                               onClick={() => setSelectedAssignment(summary)}
-                              className="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                              className="inline-flex items-center justify-center px-4 py-3 min-h-[44px] border border-gray-300 dark:border-gray-600 shadow-sm text-base font-medium rounded-lg text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 touch-manipulation active:scale-95 transition-transform"
                             >
-                              <EyeIcon className="w-4 h-4 mr-1" />
-                              View Submissions ({ungradedSubmissions.length})
+                              <EyeIcon className="w-5 h-5 mr-2" />
+                              <span className="hidden sm:inline">View Submissions</span>
+                              <span className="sm:hidden">View ({ungradedSubmissions.length})</span>
                             </button>
                             <button
                               onClick={() => navigate(`/assignments/${summary.assignmentId}/grade`)}
-                              className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                              className="inline-flex items-center justify-center px-4 py-3 min-h-[44px] border border-transparent text-base font-medium rounded-lg shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 touch-manipulation active:scale-95 transition-transform"
                             >
-                              <PencilIcon className="w-4 h-4 mr-1" />
+                              <PencilIcon className="w-5 h-5 mr-2" />
                               Grade All
                             </button>
                           </div>
@@ -350,20 +355,20 @@ const GradeAssignmentsPage: React.FC = () => {
 
         {/* Assignment Details Modal */}
         {selectedAssignment && (
-          <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-            <div className="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white dark:bg-gray-800">
-              <div className="mt-3">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                    {selectedAssignment.assignmentTitle}
-                  </h3>
-                  <button
-                    onClick={() => setSelectedAssignment(null)}
-                    className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                  >
-                    <XCircleIcon className="w-6 h-6" />
-                  </button>
-                </div>
+          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black bg-opacity-50">
+            <div className="w-full sm:w-11/12 md:w-3/4 lg:w-1/2 max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-lg shadow-lg">
+              <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 sm:p-5 py-4 flex items-center justify-between z-10">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  {selectedAssignment.assignmentTitle}
+                </h3>
+                <button
+                  onClick={() => setSelectedAssignment(null)}
+                  className="p-2 -mr-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center"
+                >
+                  <XCircleIcon className="w-6 h-6" />
+                </button>
+              </div>
+              <div className="p-4 sm:p-5">
                 
                 <div className="mb-4">
                   <p className="text-sm text-gray-600 dark:text-gray-400">
@@ -406,16 +411,16 @@ const GradeAssignmentsPage: React.FC = () => {
                       <div className="flex items-center space-x-2">
                         <button
                           onClick={() => openStudentModal(submission)}
-                          className="text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300"
+                          className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 touch-manipulation"
                         >
-                          <EyeIcon className="w-4 h-4" />
+                          <EyeIcon className="w-5 h-5" />
                         </button>
                         <button
                           onClick={() => {
                             setSelectedAssignment(null);
                             navigate(`/assignments/${selectedAssignment.assignmentId}/grade/${submission.submissionId}`);
                           }}
-                          className="inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded shadow-sm text-white bg-indigo-600 hover:bg-indigo-700"
+                          className="inline-flex items-center justify-center px-4 py-3 min-h-[44px] border border-transparent text-base font-medium rounded-lg shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 touch-manipulation active:scale-95 transition-transform"
                         >
                           Grade
                         </button>
@@ -424,10 +429,10 @@ const GradeAssignmentsPage: React.FC = () => {
                   ))}
                 </div>
 
-                <div className="mt-4 flex justify-end space-x-2">
+                <div className="mt-4 flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-2">
                   <button
                     onClick={() => setSelectedAssignment(null)}
-                    className="px-4 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+                    className="w-full sm:w-auto inline-flex items-center justify-center px-4 py-3 min-h-[44px] border border-gray-300 dark:border-gray-600 shadow-sm text-base font-medium rounded-lg text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 touch-manipulation active:scale-95 transition-transform"
                   >
                     Close
                   </button>
@@ -436,7 +441,7 @@ const GradeAssignmentsPage: React.FC = () => {
                       setSelectedAssignment(null);
                       navigate(`/assignments/${selectedAssignment.assignmentId}/grade`);
                     }}
-                    className="px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700"
+                    className="w-full sm:w-auto inline-flex items-center justify-center px-4 py-3 min-h-[44px] border border-transparent text-base font-medium rounded-lg shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 touch-manipulation active:scale-95 transition-transform"
                   >
                     Grade All
                   </button>
@@ -448,35 +453,34 @@ const GradeAssignmentsPage: React.FC = () => {
 
         {/* Student Profile Modal */}
         {showStudentModal && selectedStudent && (
-          <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-            <div className="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white dark:bg-gray-800">
-              <div className="mt-3">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                    Student Submission
-                  </h3>
-                  <button
-                    onClick={closeStudentModal}
-                    className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                  >
-                    <XCircleIcon className="w-6 h-6" />
-                  </button>
-                </div>
-                
-                <div className="flex items-center space-x-4 mb-6">
+          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black bg-opacity-50">
+            <div className="w-full sm:w-11/12 md:w-3/4 lg:w-1/2 max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-lg shadow-lg">
+              <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 sm:p-5 py-4 flex items-center justify-between z-10">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  Student Submission
+                </h3>
+                <button
+                  onClick={closeStudentModal}
+                  className="p-2 -mr-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 touch-manipulation min-w-[44px] min-h-[44px] flex items-center justify-center"
+                >
+                  <XCircleIcon className="w-6 h-6" />
+                </button>
+              </div>
+              <div className="p-4 sm:p-5">
+                <div className="flex flex-col sm:flex-row items-center sm:items-start space-y-4 sm:space-x-4 mb-6">
                   <img
                     src={selectedStudent.studentAvatar || 'https://via.placeholder.com/80'}
                     alt={selectedStudent.studentName}
-                    className="w-20 h-20 rounded-full"
+                    className="w-20 h-20 sm:w-24 sm:h-24 rounded-full flex-shrink-0"
                   />
-                  <div>
+                  <div className="text-center sm:text-left flex-1">
                     <h4 className="text-xl font-semibold text-gray-900 dark:text-white">
                       {selectedStudent.studentName}
                     </h4>
-                    <p className="text-gray-600 dark:text-gray-400">
+                    <p className="text-gray-600 dark:text-gray-400 text-sm sm:text-base">
                       {selectedStudent.studentEmail}
                     </p>
-                    <div className="flex items-center mt-1">
+                    <div className="flex items-center justify-center sm:justify-start mt-1">
                       <div className="w-2 h-2 rounded-full mr-2 bg-blue-500"></div>
                       <span className="text-sm text-gray-500 dark:text-gray-400">
                         Submitted for grading
@@ -524,10 +528,10 @@ const GradeAssignmentsPage: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="mt-6 flex justify-end space-x-2">
+                <div className="mt-6 flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-2">
                   <button
                     onClick={closeStudentModal}
-                    className="px-4 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+                    className="w-full sm:w-auto inline-flex items-center justify-center px-4 py-3 min-h-[44px] border border-gray-300 dark:border-gray-600 shadow-sm text-base font-medium rounded-lg text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 touch-manipulation active:scale-95 transition-transform"
                   >
                     Close
                   </button>
@@ -536,7 +540,7 @@ const GradeAssignmentsPage: React.FC = () => {
                       closeStudentModal();
                       navigate(`/assignments/${selectedAssignment?.assignmentId}/grade/${selectedStudent.submissionId}`);
                     }}
-                    className="px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700"
+                    className="w-full sm:w-auto inline-flex items-center justify-center px-4 py-3 min-h-[44px] border border-transparent text-base font-medium rounded-lg shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 touch-manipulation active:scale-95 transition-transform"
                   >
                     Grade This Submission
                   </button>

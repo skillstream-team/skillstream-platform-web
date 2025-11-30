@@ -6,8 +6,6 @@ import {
   Bell, 
   MessageCircle, 
   Video, 
-  Sun, 
-  Moon,
   User,
   Settings,
   LogOut,
@@ -16,19 +14,23 @@ import {
   ChevronDown,
   BarChart3,
   DollarSign,
-  GraduationCap
+  GraduationCap,
+  Award,
+  Users,
+  BookOpen
 } from 'lucide-react';
 import { useAuthStore } from '../../store/auth';
-import { useThemeStore } from '../../store/theme';
 import VideoCall from '../video/VideoCall';
 import { VideoCallPopup } from '../video/VideoCallPopup';
 import { NotificationPopup } from '../notifications/NotificationPopup';
 import { MessagingPopup } from '../messaging/MessagingPopup';
 import { getUnreadNotificationCount, getConversations } from '../../services/api';
+import { getInitials } from '../../lib/utils';
+import { EnhancedSearch } from '../common/EnhancedSearch';
+import { Tooltip } from '../common/Tooltip';
 
 export const Header: React.FC = () => {
   const { user, logout } = useAuthStore();
-  const { theme, toggleTheme } = useThemeStore();
   const navigate = useNavigate();
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -110,32 +112,27 @@ export const Header: React.FC = () => {
   return (
     <>
       <header 
-        className="sticky top-0 z-50 w-full backdrop-blur-xl border-b transition-all duration-300 lg:block hidden"
+        className="sticky top-0 z-50 w-full backdrop-blur-2xl border-b transition-all duration-300 lg:block hidden"
         style={{ 
-          backgroundColor: 'rgba(255, 255, 255, 0.9)',
-          borderColor: 'rgba(11, 30, 63, 0.1)',
-          boxShadow: '0 1px 3px rgba(11, 30, 63, 0.05)'
+          backgroundColor: 'rgba(255, 255, 255, 0.98)',
+          borderColor: 'rgba(11, 30, 63, 0.2)',
+          boxShadow: '0 20px 60px rgba(11, 30, 63, 0.2), 0 8px 24px rgba(11, 30, 63, 0.15), 0 2px 8px rgba(11, 30, 63, 0.1), 0 0 0 1px rgba(11, 30, 63, 0.08)'
         }}
       >
         <div className="w-full px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-20">
             {/* Logo and Brand */}
             <div className="flex items-center">
-              <Link to="/home" className="flex items-center space-x-3 group">
-                <div 
-                  className="w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-300 group-hover:scale-105"
-                  style={{ 
-                    background: 'linear-gradient(135deg, #00B5AD 0%, #6F73D2 100%)',
-                    boxShadow: '0 4px 14px rgba(0, 181, 173, 0.3)'
-                  }}
-                >
-                  <Video className="h-6 w-6 text-white" />
-                </div>
+              <Link to="/home" className="group">
                 <span 
-                  className="text-2xl font-bold transition-colors"
+                  className="text-2xl font-bold transition-all duration-300 group-hover:opacity-80"
                   style={{ 
-                    color: '#0B1E3F',
-                    fontFamily: 'Inter, system-ui, -apple-system, sans-serif'
+                    background: 'linear-gradient(135deg, #00B5AD 0%, #6F73D2 50%, #9A8CFF 100%)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    backgroundClip: 'text',
+                    fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
+                    letterSpacing: '-0.02em'
                   }}
                 >
                   SkillStream
@@ -159,36 +156,55 @@ export const Header: React.FC = () => {
               >
                 Home
               </Link>
+              {user?.role === 'TEACHER' ? (
+                <Link
+                  to="/courses"
+                  className={`px-4 py-2 rounded-xl font-medium text-sm transition-all duration-200 ${
+                    isActive('/courses')
+                      ? 'text-white' 
+                      : 'hover:opacity-80'
+                  }`}
+                  style={{
+                    backgroundColor: isActive('/courses') ? '#00B5AD' : 'transparent',
+                    color: isActive('/courses') ? 'white' : '#0B1E3F'
+                  }}
+                >
+                  My Courses
+                </Link>
+              ) : (
+                <>
+                  <Link
+                    to="/learn"
+                    className={`px-4 py-2 rounded-xl font-medium text-sm transition-all duration-200 ${
+                      isActive('/learn') || isActive('/courses')
+                        ? 'text-white' 
+                        : 'hover:opacity-80'
+                    }`}
+                    style={{
+                      backgroundColor: (isActive('/learn') || isActive('/courses')) ? '#00B5AD' : 'transparent',
+                      color: (isActive('/learn') || isActive('/courses')) ? 'white' : '#0B1E3F'
+                    }}
+                  >
+                    Learn
+                  </Link>
+                  <Link
+                    to="/discover"
+                    className={`px-4 py-2 rounded-xl font-medium text-sm transition-all duration-200 ${
+                      isActive('/discover')
+                        ? 'text-white' 
+                        : 'hover:opacity-80'
+                    }`}
+                    style={{
+                      backgroundColor: isActive('/discover') ? '#00B5AD' : 'transparent',
+                      color: isActive('/discover') ? 'white' : '#0B1E3F'
+                    }}
+                  >
+                    Discover
+                  </Link>
+                </>
+              )}
               <Link
-                to="/learn"
-                className={`px-4 py-2 rounded-xl font-medium text-sm transition-all duration-200 ${
-                  isActive('/learn') || isActive('/courses')
-                    ? 'text-white' 
-                    : 'hover:opacity-80'
-                }`}
-                style={{
-                  backgroundColor: (isActive('/learn') || isActive('/courses')) ? '#00B5AD' : 'transparent',
-                  color: (isActive('/learn') || isActive('/courses')) ? 'white' : '#0B1E3F'
-                }}
-              >
-                Learn
-              </Link>
-              <Link
-                to="/discover"
-                className={`px-4 py-2 rounded-xl font-medium text-sm transition-all duration-200 ${
-                  isActive('/discover')
-                    ? 'text-white' 
-                    : 'hover:opacity-80'
-                }`}
-                style={{
-                  backgroundColor: isActive('/discover') ? '#00B5AD' : 'transparent',
-                  color: isActive('/discover') ? 'white' : '#0B1E3F'
-                }}
-              >
-                Discover
-              </Link>
-              <Link
-                to="/schedule"
+                to="/calendar"
                 className={`px-4 py-2 rounded-xl font-medium text-sm transition-all duration-200 ${
                   isActive('/schedule') || isActive('/calendar')
                     ? 'text-white' 
@@ -223,21 +239,23 @@ export const Header: React.FC = () => {
                   </span>
                 )}
               </Link>
-              <Link
-                to="/messages"
-                className={`px-4 py-2 rounded-xl font-medium text-sm transition-all duration-200 ${
-                  isActive('/messages') 
-                    ? 'text-white' 
-                    : 'hover:opacity-80'
-                }`}
-                style={{
-                  backgroundColor: isActive('/messages') ? '#00B5AD' : 'transparent',
-                  color: isActive('/messages') ? 'white' : '#0B1E3F'
-                }}
-              >
-                Messages
-              </Link>
-              {(user?.role === 'TEACHER' || user?.role === 'ADMIN') && (
+              {user?.role === 'TEACHER' && (
+                <Link
+                  to="/analytics"
+                  className={`px-4 py-2 rounded-xl font-medium text-sm transition-all duration-200 ${
+                    isActive('/analytics') 
+                      ? 'text-white' 
+                      : 'hover:opacity-80'
+                  }`}
+                  style={{
+                    backgroundColor: isActive('/analytics') ? '#00B5AD' : 'transparent',
+                    color: isActive('/analytics') ? 'white' : '#0B1E3F'
+                  }}
+                >
+                  Analytics
+                </Link>
+              )}
+              {user?.role === 'ADMIN' && (
                 <Link
                   to="/analytics"
                   className={`px-4 py-2 rounded-xl font-medium text-sm transition-all duration-200 ${
@@ -257,34 +275,11 @@ export const Header: React.FC = () => {
 
             {/* Right Side Actions */}
             <div className="flex items-center space-x-3">
-              {/* Search */}
-              <div className="hidden md:flex items-center relative">
-                <Search className="h-4 w-4 absolute left-3" style={{ color: '#6F73D2' }} />
-                <input
-                  type="text"
-                  placeholder="Search lessons, instructors, topics..."
-                  className="pl-10 pr-4 py-2.5 border-2 rounded-xl text-sm w-56 focus:outline-none transition-all duration-200"
-                  style={{
-                    borderColor: '#E5E7EB',
-                    backgroundColor: 'white',
-                    color: '#0B1E3F'
-                  }}
-                  onFocus={(e) => {
-                    e.currentTarget.style.borderColor = '#00B5AD';
-                    e.currentTarget.style.boxShadow = '0 0 0 4px rgba(0, 181, 173, 0.1)';
-                  }}
-                  onBlur={(e) => {
-                    e.currentTarget.style.borderColor = '#E5E7EB';
-                    e.currentTarget.style.boxShadow = 'none';
-                  }}
-                  onKeyPress={(e) => {
-                    if (e.key === 'Enter') {
-                      const query = (e.currentTarget as HTMLInputElement).value;
-                      if (query.trim()) {
-                        navigate(`/discover?search=${encodeURIComponent(query)}`);
-                      }
-                    }
-                  }}
+              {/* Enhanced Search */}
+              <div className="hidden md:block">
+                <EnhancedSearch
+                  placeholder="Search courses, instructors, topics..."
+                  className="w-64"
                 />
               </div>
 
@@ -292,24 +287,27 @@ export const Header: React.FC = () => {
               <div className="flex items-center space-x-2">
                 {/* Notifications */}
                 <div className="relative">
-                  <button
-                    ref={notificationButtonRef}
-                    onClick={() => setShowNotifications(!showNotifications)}
-                    className="p-2.5 rounded-xl transition-all duration-200 hover:scale-110 relative"
-                    style={{ 
-                      backgroundColor: showNotifications ? 'rgba(0, 181, 173, 0.1)' : 'transparent'
-                    }}
-                  >
-                    <Bell className="h-5 w-5" style={{ color: '#0B1E3F' }} />
-                    {unreadNotificationCount > 0 && (
-                      <span 
-                        className="absolute -top-1 -right-1 h-5 w-5 rounded-full text-xs text-white flex items-center justify-center font-semibold min-w-[20px] px-1"
-                        style={{ backgroundColor: '#00B5AD' }}
-                      >
-                        {unreadNotificationCount > 99 ? '99+' : unreadNotificationCount}
-                      </span>
-                    )}
-                  </button>
+                  <Tooltip content={`Notifications${unreadNotificationCount > 0 ? ` (${unreadNotificationCount} unread)` : ''}`}>
+                    <button
+                      ref={notificationButtonRef}
+                      onClick={() => setShowNotifications(!showNotifications)}
+                      className="p-2.5 rounded-xl transition-all duration-200 hover:scale-110 relative button-press"
+                      style={{ 
+                        backgroundColor: showNotifications ? 'rgba(0, 181, 173, 0.1)' : 'transparent'
+                      }}
+                      aria-label={`Notifications${unreadNotificationCount > 0 ? `, ${unreadNotificationCount} unread` : ''}`}
+                    >
+                      <Bell className="h-5 w-5" style={{ color: '#0B1E3F' }} />
+                      {unreadNotificationCount > 0 && (
+                        <span 
+                          className="absolute -top-1 -right-1 h-5 w-5 rounded-full text-xs text-white flex items-center justify-center font-semibold min-w-[20px] px-1"
+                          style={{ backgroundColor: '#00B5AD' }}
+                        >
+                          {unreadNotificationCount > 99 ? '99+' : unreadNotificationCount}
+                        </span>
+                      )}
+                    </button>
+                  </Tooltip>
                   
                   {showNotifications && (
                     <NotificationPopup 
@@ -327,24 +325,27 @@ export const Header: React.FC = () => {
 
                 {/* Messaging */}
                 <div className="relative">
-                  <button
-                    ref={messagingButtonRef}
-                    onClick={() => setShowMessagingPopup(!showMessagingPopup)}
-                    className="p-2.5 rounded-xl transition-all duration-200 hover:scale-110 relative"
-                    style={{ 
-                      backgroundColor: showMessagingPopup ? 'rgba(0, 181, 173, 0.1)' : 'transparent'
-                    }}
-                  >
-                    <MessageCircle className="h-5 w-5" style={{ color: '#0B1E3F' }} />
-                    {unreadMessageCount > 0 && (
-                      <span 
-                        className="absolute -top-1 -right-1 h-5 w-5 rounded-full text-xs text-white flex items-center justify-center font-semibold min-w-[20px] px-1"
-                        style={{ backgroundColor: '#00B5AD' }}
-                      >
-                        {unreadMessageCount > 99 ? '99+' : unreadMessageCount}
-                      </span>
-                    )}
-                  </button>
+                  <Tooltip content={`Messages${unreadMessageCount > 0 ? ` (${unreadMessageCount} unread)` : ''}`}>
+                    <button
+                      ref={messagingButtonRef}
+                      onClick={() => setShowMessagingPopup(!showMessagingPopup)}
+                      className="p-2.5 rounded-xl transition-all duration-200 hover:scale-110 relative button-press"
+                      style={{ 
+                        backgroundColor: showMessagingPopup ? 'rgba(0, 181, 173, 0.1)' : 'transparent'
+                      }}
+                      aria-label={`Messages${unreadMessageCount > 0 ? `, ${unreadMessageCount} unread` : ''}`}
+                    >
+                      <MessageCircle className="h-5 w-5" style={{ color: '#0B1E3F' }} />
+                      {unreadMessageCount > 0 && (
+                        <span 
+                          className="absolute -top-1 -right-1 h-5 w-5 rounded-full text-xs text-white flex items-center justify-center font-semibold min-w-[20px] px-1"
+                          style={{ backgroundColor: '#00B5AD' }}
+                        >
+                          {unreadMessageCount > 99 ? '99+' : unreadMessageCount}
+                        </span>
+                      )}
+                    </button>
+                  </Tooltip>
                   
                   {showMessagingPopup && (
                     <MessagingPopup 
@@ -366,16 +367,19 @@ export const Header: React.FC = () => {
 
                 {/* Video Call */}
                 <div className="relative">
-                  <button
-                    ref={videoCallButtonRef}
-                    onClick={() => setShowVideoCallPopup(!showVideoCallPopup)}
-                    className="p-2.5 rounded-xl transition-all duration-200 hover:scale-110"
-                    style={{ 
-                      backgroundColor: showVideoCallPopup ? 'rgba(0, 181, 173, 0.1)' : 'transparent'
-                    }}
-                  >
-                    <Video className="h-5 w-5" style={{ color: '#0B1E3F' }} />
-                  </button>
+                  <Tooltip content="Start Video Call">
+                    <button
+                      ref={videoCallButtonRef}
+                      onClick={() => setShowVideoCallPopup(!showVideoCallPopup)}
+                      className="p-2.5 rounded-xl transition-all duration-200 hover:scale-110 button-press"
+                      style={{ 
+                        backgroundColor: showVideoCallPopup ? 'rgba(0, 181, 173, 0.1)' : 'transparent'
+                      }}
+                      aria-label="Start Video Call"
+                    >
+                      <Video className="h-5 w-5" style={{ color: '#0B1E3F' }} />
+                    </button>
+                  </Tooltip>
                   
                   {showVideoCallPopup && (
                     <VideoCallPopup 
@@ -386,21 +390,6 @@ export const Header: React.FC = () => {
                     />
                   )}
                 </div>
-
-                {/* Theme Toggle */}
-                <button
-                  onClick={toggleTheme}
-                  className="p-2.5 rounded-xl transition-all duration-200 hover:scale-110"
-                  style={{ 
-                    backgroundColor: 'transparent'
-                  }}
-                >
-                  {theme === 'dark' ? (
-                    <Sun className="h-5 w-5" style={{ color: '#0B1E3F' }} />
-                  ) : (
-                    <Moon className="h-5 w-5" style={{ color: '#0B1E3F' }} />
-                  )}
-                </button>
 
                 {/* User Menu */}
                 <div className="relative" ref={userMenuRef}>
@@ -417,7 +406,15 @@ export const Header: React.FC = () => {
                         background: 'linear-gradient(135deg, #00B5AD 0%, #6F73D2 100%)'
                       }}
                     >
-                      {user.name?.charAt(0).toUpperCase()}
+                      {user.avatar ? (
+                        <img
+                          src={user.avatar}
+                          alt={user.name}
+                          className="w-full h-full object-cover rounded-lg"
+                        />
+                      ) : (
+                        getInitials(user.name || 'U')
+                      )}
                     </div>
                     <ChevronDown className="h-4 w-4 hidden md:block" style={{ color: '#0B1E3F' }} />
                   </button>
@@ -454,6 +451,17 @@ export const Header: React.FC = () => {
                         <Settings className="h-4 w-4 mr-3" />
                         Settings
                       </Link>
+                      {user.role !== 'TEACHER' && (
+                        <Link
+                          to="/certificates"
+                          className="flex items-center px-4 py-2.5 text-sm transition-colors hover:opacity-80"
+                          style={{ color: '#0B1E3F' }}
+                          onClick={() => setShowUserMenu(false)}
+                        >
+                          <Award className="h-4 w-4 mr-3" />
+                          Your Certificates
+                        </Link>
+                      )}
                       {user.role === 'TEACHER' && (
                         <>
                           <div className="border-t my-2" style={{ borderColor: 'rgba(11, 30, 63, 0.1)' }} />
@@ -467,6 +475,42 @@ export const Header: React.FC = () => {
                             Create Lesson
                           </Link>
                           <Link
+                            to="/lessons/availability"
+                            className="flex items-center px-4 py-2.5 text-sm transition-colors hover:opacity-80"
+                            style={{ color: '#0B1E3F' }}
+                            onClick={() => setShowUserMenu(false)}
+                          >
+                            <Calendar className="h-4 w-4 mr-3" />
+                            Set Availability
+                          </Link>
+                          <Link
+                            to="/assignments/grade"
+                            className="flex items-center px-4 py-2.5 text-sm transition-colors hover:opacity-80"
+                            style={{ color: '#0B1E3F' }}
+                            onClick={() => setShowUserMenu(false)}
+                          >
+                            <GraduationCap className="h-4 w-4 mr-3" />
+                            Grade Assignments
+                          </Link>
+                          <Link
+                            to="/gradebook"
+                            className="flex items-center px-4 py-2.5 text-sm transition-colors hover:opacity-80"
+                            style={{ color: '#0B1E3F' }}
+                            onClick={() => setShowUserMenu(false)}
+                          >
+                            <BarChart3 className="h-4 w-4 mr-3" />
+                            Gradebook
+                          </Link>
+                          <Link
+                            to="/content-library"
+                            className="flex items-center px-4 py-2.5 text-sm transition-colors hover:opacity-80"
+                            style={{ color: '#0B1E3F' }}
+                            onClick={() => setShowUserMenu(false)}
+                          >
+                            <BookOpen className="h-4 w-4 mr-3" />
+                            Content Library
+                          </Link>
+                          <Link
                             to="/analytics"
                             className="flex items-center px-4 py-2.5 text-sm transition-colors hover:opacity-80"
                             style={{ color: '#0B1E3F' }}
@@ -476,13 +520,40 @@ export const Header: React.FC = () => {
                             Instructor Dashboard
                           </Link>
                           <Link
+                            to="/students/progress"
+                            className="flex items-center px-4 py-2.5 text-sm transition-colors hover:opacity-80"
+                            style={{ color: '#0B1E3F' }}
+                            onClick={() => setShowUserMenu(false)}
+                          >
+                            <Users className="h-4 w-4 mr-3" />
+                            Student Progress
+                          </Link>
+                          <Link
+                            to="/students/groups"
+                            className="flex items-center px-4 py-2.5 text-sm transition-colors hover:opacity-80"
+                            style={{ color: '#0B1E3F' }}
+                            onClick={() => setShowUserMenu(false)}
+                          >
+                            <Users className="h-4 w-4 mr-3" />
+                            Student Groups
+                          </Link>
+                          <Link
                             to="/earnings-report"
                             className="flex items-center px-4 py-2.5 text-sm transition-colors hover:opacity-80"
                             style={{ color: '#0B1E3F' }}
                             onClick={() => setShowUserMenu(false)}
                           >
                             <DollarSign className="h-4 w-4 mr-3" />
-                            Earnings
+                            Earnings Report
+                          </Link>
+                          <Link
+                            to="/marketing-guide"
+                            className="flex items-center px-4 py-2.5 text-sm transition-colors hover:opacity-80"
+                            style={{ color: '#0B1E3F' }}
+                            onClick={() => setShowUserMenu(false)}
+                          >
+                            <BarChart3 className="h-4 w-4 mr-3" />
+                            Marketing Guide
                           </Link>
                         </>
                       )}
@@ -529,30 +600,46 @@ export const Header: React.FC = () => {
                 >
                   Home
                 </Link>
+                {user?.role === 'TEACHER' ? (
+                  <Link
+                    to="/courses"
+                    className="block px-4 py-2.5 rounded-xl text-sm font-medium transition-colors"
+                    style={{ 
+                      backgroundColor: isActive('/courses') ? 'rgba(0, 181, 173, 0.1)' : 'transparent',
+                      color: '#0B1E3F'
+                    }}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    My Courses
+                  </Link>
+                ) : (
+                  <>
+                    <Link
+                      to="/learn"
+                      className="block px-4 py-2.5 rounded-xl text-sm font-medium transition-colors"
+                      style={{ 
+                        backgroundColor: isActive('/learn') ? 'rgba(0, 181, 173, 0.1)' : 'transparent',
+                        color: '#0B1E3F'
+                      }}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      Learn
+                    </Link>
+                    <Link
+                      to="/discover"
+                      className="block px-4 py-2.5 rounded-xl text-sm font-medium transition-colors"
+                      style={{ 
+                        backgroundColor: isActive('/discover') ? 'rgba(0, 181, 173, 0.1)' : 'transparent',
+                        color: '#0B1E3F'
+                      }}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      Discover
+                    </Link>
+                  </>
+                )}
                 <Link
-                  to="/learn"
-                  className="block px-4 py-2.5 rounded-xl text-sm font-medium transition-colors"
-                  style={{ 
-                    backgroundColor: isActive('/learn') ? 'rgba(0, 181, 173, 0.1)' : 'transparent',
-                    color: '#0B1E3F'
-                  }}
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  Learn
-                </Link>
-                <Link
-                  to="/discover"
-                  className="block px-4 py-2.5 rounded-xl text-sm font-medium transition-colors"
-                  style={{ 
-                    backgroundColor: isActive('/discover') ? 'rgba(0, 181, 173, 0.1)' : 'transparent',
-                    color: '#0B1E3F'
-                  }}
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  Discover
-                </Link>
-                <Link
-                  to="/schedule"
+                  to="/calendar"
                   className="block px-4 py-2.5 rounded-xl text-sm font-medium transition-colors"
                   style={{ 
                     backgroundColor: (isActive('/schedule') || isActive('/calendar')) ? 'rgba(0, 181, 173, 0.1)' : 'transparent',
@@ -588,6 +675,28 @@ export const Header: React.FC = () => {
                       Create Lesson
                     </Link>
                     <Link
+                      to="/lessons/availability"
+                      className="block px-4 py-2.5 rounded-xl text-sm font-medium transition-colors"
+                      style={{ 
+                        backgroundColor: isActive('/lessons/availability') ? 'rgba(0, 181, 173, 0.1)' : 'transparent',
+                        color: '#0B1E3F'
+                      }}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      Set Availability
+                    </Link>
+                    <Link
+                      to="/assignments/grade"
+                      className="block px-4 py-2.5 rounded-xl text-sm font-medium transition-colors"
+                      style={{ 
+                        backgroundColor: isActive('/assignments/grade') ? 'rgba(0, 181, 173, 0.1)' : 'transparent',
+                        color: '#0B1E3F'
+                      }}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      Grade Assignments
+                    </Link>
+                    <Link
                       to="/analytics"
                       className="block px-4 py-2.5 rounded-xl text-sm font-medium transition-colors"
                       style={{ 
@@ -598,31 +707,66 @@ export const Header: React.FC = () => {
                     >
                       Instructor Dashboard
                     </Link>
+                    <Link
+                      to="/students/progress"
+                      className="block px-4 py-2.5 rounded-xl text-sm font-medium transition-colors"
+                      style={{ 
+                        backgroundColor: isActive('/students/progress') ? 'rgba(0, 181, 173, 0.1)' : 'transparent',
+                        color: '#0B1E3F'
+                      }}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      Student Progress
+                    </Link>
+                    <Link
+                      to="/earnings-report"
+                      className="block px-4 py-2.5 rounded-xl text-sm font-medium transition-colors"
+                      style={{ 
+                        backgroundColor: isActive('/earnings-report') ? 'rgba(0, 181, 173, 0.1)' : 'transparent',
+                        color: '#0B1E3F'
+                      }}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      Earnings Report
+                    </Link>
+                    <Link
+                      to="/marketing-guide"
+                      className="block px-4 py-2.5 rounded-xl text-sm font-medium transition-colors"
+                      style={{ 
+                        backgroundColor: isActive('/marketing-guide') ? 'rgba(0, 181, 173, 0.1)' : 'transparent',
+                        color: '#0B1E3F'
+                      }}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      Marketing Guide
+                    </Link>
                   </>
                 )}
-                <Link
-                  to="/messages"
-                  className="block px-4 py-2.5 rounded-xl text-sm font-medium transition-colors"
-                  style={{ 
-                    backgroundColor: isActive('/messages') ? 'rgba(0, 181, 173, 0.1)' : 'transparent',
-                    color: '#0B1E3F'
-                  }}
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  Messages
-                </Link>
                 {(user?.role === 'TEACHER' || user?.role === 'ADMIN') && (
-                  <Link
-                    to="/analytics"
-                    className="block px-4 py-2.5 rounded-xl text-sm font-medium transition-colors"
-                    style={{ 
-                      backgroundColor: isActive('/analytics') ? 'rgba(0, 181, 173, 0.1)' : 'transparent',
-                      color: '#0B1E3F'
-                    }}
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    Analytics
-                  </Link>
+                  <>
+                    <Link
+                      to="/analytics"
+                      className="block px-4 py-2.5 rounded-xl text-sm font-medium transition-colors"
+                      style={{ 
+                        backgroundColor: isActive('/analytics') ? 'rgba(0, 181, 173, 0.1)' : 'transparent',
+                        color: '#0B1E3F'
+                      }}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      Analytics
+                    </Link>
+                    <Link
+                      to="/students/progress"
+                      className="block px-4 py-2.5 rounded-xl text-sm font-medium transition-colors"
+                      style={{ 
+                        backgroundColor: isActive('/students/progress') ? 'rgba(0, 181, 173, 0.1)' : 'transparent',
+                        color: '#0B1E3F'
+                      }}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      Student Progress
+                    </Link>
+                  </>
                 )}
               </div>
             </div>
@@ -661,29 +805,27 @@ export const MobileHeader: React.FC = () => {
 
   return (
     <header 
-      className="sticky top-0 z-50 w-full backdrop-blur-xl border-b lg:hidden"
+      className="sticky top-0 z-50 w-full backdrop-blur-2xl border-b lg:hidden"
       style={{ 
-        backgroundColor: 'rgba(255, 255, 255, 0.95)',
-        borderColor: 'rgba(11, 30, 63, 0.1)',
-        boxShadow: '0 1px 3px rgba(11, 30, 63, 0.05)'
+        backgroundColor: 'rgba(255, 255, 255, 0.98)',
+        borderColor: 'rgba(11, 30, 63, 0.2)',
+        boxShadow: '0 16px 48px rgba(11, 30, 63, 0.2), 0 6px 20px rgba(11, 30, 63, 0.15), 0 2px 8px rgba(11, 30, 63, 0.1), 0 0 0 1px rgba(11, 30, 63, 0.08)'
       }}
     >
       <div className="px-4 py-3">
         <div className="flex items-center justify-between">
           {/* Logo */}
-          <Link to="/home" className="flex items-center space-x-2">
-            <div 
-              className="w-10 h-10 rounded-xl flex items-center justify-center"
-              style={{ 
-                background: 'linear-gradient(135deg, #00B5AD 0%, #6F73D2 100%)',
-                boxShadow: '0 4px 14px rgba(0, 181, 173, 0.3)'
-              }}
-            >
-              <Video className="h-5 w-5 text-white" />
-            </div>
+          <Link to="/home" className="group">
             <span 
-              className="text-xl font-bold"
-              style={{ color: '#0B1E3F' }}
+              className="text-xl font-bold transition-all duration-300 group-hover:opacity-80"
+              style={{ 
+                background: 'linear-gradient(135deg, #00B5AD 0%, #6F73D2 50%, #9A8CFF 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
+                fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
+                letterSpacing: '-0.02em'
+              }}
             >
               SkillStream
             </span>
@@ -701,33 +843,12 @@ export const MobileHeader: React.FC = () => {
 
         {/* Search Bar */}
         {showSearch && (
-          <form onSubmit={handleSearch} className="mt-3">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5" style={{ color: '#6F73D2' }} />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search courses..."
-                className="w-full pl-10 pr-4 py-3 border-2 rounded-xl focus:outline-none transition-all duration-200"
-                style={{
-                  borderColor: '#E5E7EB',
-                  backgroundColor: 'white',
-                  color: '#0B1E3F',
-                  fontSize: '16px'
-                }}
-                onFocus={(e) => {
-                  e.currentTarget.style.borderColor = '#00B5AD';
-                  e.currentTarget.style.boxShadow = '0 0 0 4px rgba(0, 181, 173, 0.1)';
-                }}
-                onBlur={(e) => {
-                  e.currentTarget.style.borderColor = '#E5E7EB';
-                  e.currentTarget.style.boxShadow = 'none';
-                }}
-                autoFocus
-              />
-            </div>
-          </form>
+          <div className="mt-3">
+            <EnhancedSearch
+              onClose={() => setShowSearch(false)}
+              placeholder="Search courses, instructors, topics..."
+            />
+          </div>
         )}
       </div>
     </header>

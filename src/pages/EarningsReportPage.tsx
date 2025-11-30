@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import { 
   DollarSign, 
   TrendingUp, 
   Calendar,
   Download,
-  ArrowLeft,
   Users,
   Building,
   FileText,
@@ -14,7 +12,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { useAuthStore } from '../store/auth';
-import { PayoutRequest, payoutApi } from '../services/api';
+import { PayoutRequest, payoutApi, getEarningsReport } from '../services/api';
 
 interface CourseEarnings {
   courseId: string;
@@ -82,9 +80,11 @@ export const EarningsReportPage: React.FC = () => {
       if (!user?.id) return;
       
       // Load earnings report from API
-      // TODO: Replace with actual API call when endpoint is available
-      // const data = await payoutApi.getEarningsReport(user.id);
-      const data = {
+      const data = await getEarningsReport(user.id);
+      setEarningsData(data);
+    } catch (error) {
+      console.error('Error loading earnings data:', error);
+      setEarningsData({
         currentMonth: 0,
         previousMonth: 0,
         yearToDate: 0,
@@ -96,10 +96,7 @@ export const EarningsReportPage: React.FC = () => {
         pendingPayoutRequests: [],
         nextPayoutDate: '',
         payoutCutoffDate: ''
-      };
-      setEarningsData(data);
-    } catch (error) {
-      console.error('Error loading earnings data:', error);
+      });
     } finally {
       setLoading(false);
     }
@@ -153,22 +150,8 @@ export const EarningsReportPage: React.FC = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/20 to-purple-50/20 dark:from-gray-900 dark:via-gray-900 dark:to-gray-900">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="animate-pulse">
-            <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/4 mb-8"></div>
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {[...Array(6)].map((_, i) => (
-                <div key={i} className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-4"></div>
-                  <div className="space-y-3">
-                    <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded"></div>
-                    <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-5/6"></div>
-                    <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-4/6"></div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+        <div className="flex items-center justify-center h-screen">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
         </div>
       </div>
     );
@@ -176,33 +159,27 @@ export const EarningsReportPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/20 to-purple-50/20 dark:from-gray-900 dark:via-gray-900 dark:to-gray-900">
-      {/* Header */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between py-6">
-            <div className="flex items-center space-x-4">
-              <Link
-                to="/dashboard"
-                className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-              >
-                <ArrowLeft className="h-6 w-6" />
-              </Link>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                  Detailed Earnings Report
-                </h1>
-                <p className="text-gray-600 dark:text-gray-300 mt-1">
-                  Comprehensive breakdown of your earnings and revenue streams
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-3">
-              <button className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
-                <Download className="h-4 w-4 mr-2" />
-                Export Report
-              </button>
-            </div>
+      {/* Hero Section */}
+      <div className="courses-header">
+        <div className="courses-header-content">
+          <div className="courses-header-text">
+            <h1 className="courses-header-title">
+              Detailed Earnings Report
+            </h1>
+            <p className="courses-header-subtitle">
+              Comprehensive breakdown of your earnings and revenue streams
+            </p>
           </div>
+          <button 
+            className="courses-create-button"
+            onClick={() => {
+              // Export functionality can be added here
+              console.log('Export report');
+            }}
+          >
+            <Download className="courses-create-button-icon" />
+            Export Report
+          </button>
         </div>
       </div>
 

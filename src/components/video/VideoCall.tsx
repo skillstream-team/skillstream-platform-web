@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { VideoConference, VideoParticipant } from '../../types';
 import { apiService } from '../../services/api';
+import { BreakoutRooms } from './BreakoutRooms';
+import { useAuthStore } from '../../store/auth';
+import { getInitials } from '../../lib/utils';
 import { 
   VideoCameraIcon,
   VideoCameraSlashIcon,
@@ -16,7 +19,8 @@ import {
   UsersIcon,
   ChatBubbleLeftIcon,
   VideoCameraIcon as RecordIcon,
-  VideoCameraSlashIcon as StopRecordIcon
+  VideoCameraSlashIcon as StopRecordIcon,
+  RectangleGroupIcon
 } from '@heroicons/react/24/outline';
 
 interface VideoCallProps {
@@ -36,10 +40,13 @@ const VideoCall: React.FC<VideoCallProps> = ({ conferenceId, onLeave }) => {
   const [showChat, setShowChat] = useState(false);
   const [showParticipants, setShowParticipants] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showBreakoutRooms, setShowBreakoutRooms] = useState(false);
   const [chatMessage, setChatMessage] = useState('');
   const [chatMessages, setChatMessages] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const { user } = useAuthStore();
+  const isTeacher = user?.role === 'TEACHER';
 
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const screenShareRef = useRef<HTMLVideoElement>(null);
@@ -242,8 +249,25 @@ const VideoCall: React.FC<VideoCallProps> = ({ conferenceId, onLeave }) => {
     );
   }
 
+  // Convert participants to BreakoutRooms format
+  const breakoutParticipants = participants.map(p => ({
+    id: p.id,
+    name: p.name,
+    avatarUrl: undefined // VideoParticipant might not have avatarUrl
+  }));
+
   return (
     <div className="fixed inset-0 bg-gray-900 flex flex-col">
+      {/* Breakout Rooms Modal */}
+      {showBreakoutRooms && (
+        <BreakoutRooms
+          isOpen={showBreakoutRooms}
+          onClose={() => setShowBreakoutRooms(false)}
+          conferenceId={conferenceId}
+          participants={breakoutParticipants}
+          isTeacher={isTeacher}
+        />
+      )}
       {/* Header */}
       <div className="bg-gray-800 p-4 flex items-center justify-between">
         <div className="flex items-center space-x-4">
@@ -420,7 +444,7 @@ const VideoCall: React.FC<VideoCallProps> = ({ conferenceId, onLeave }) => {
                     <div key={participant.id} className="flex items-center space-x-3 py-2">
                       <div className="w-8 h-8 bg-gray-600 rounded-full flex items-center justify-center">
                         <span className="text-white text-sm font-medium">
-                          {participant.name.charAt(0).toUpperCase()}
+                          {getInitials(participant.name)}
                         </span>
                       </div>
                       <div className="flex-1">
@@ -509,6 +533,18 @@ const VideoCall: React.FC<VideoCallProps> = ({ conferenceId, onLeave }) => {
           >
             <UsersIcon className="w-6 h-6" />
           </button>
+
+          {isTeacher && (
+            <button
+              onClick={() => setShowBreakoutRooms(!showBreakoutRooms)}
+              className={`p-3 rounded-full ${
+                showBreakoutRooms ? 'bg-blue-600 text-white' : 'bg-gray-600 text-white hover:bg-gray-500'
+              }`}
+              title="Breakout Rooms"
+            >
+              <RectangleGroupIcon className="w-6 h-6" />
+            </button>
+          )}
 
           <button
             onClick={leaveConference}

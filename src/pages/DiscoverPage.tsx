@@ -8,12 +8,12 @@ import {
   Users,
   Clock,
   ArrowRight,
-  Sparkles,
-  BookOpen
+  BookOpen,
+  Sparkles
 } from 'lucide-react';
 import { useAuthStore } from '../store/auth';
-import { getCourses } from '../services/api';
-import { Course } from '../types';
+import { getCourses, getTeachers } from '../services/api';
+import { Course, User } from '../types';
 import { MobileCourseCard } from '../components/mobile/MobileCourseCard';
 import { BottomSheet } from '../components/mobile/BottomSheet';
 import { MobileChips } from '../components/mobile/MobileUtils';
@@ -22,6 +22,14 @@ export const DiscoverPage: React.FC = () => {
   const { user } = useAuthStore();
   const location = useLocation();
   const [courses, setCourses] = useState<Course[]>([]);
+  const [featuredInstructors, setFeaturedInstructors] = useState<Array<{
+    id: string;
+    name: string;
+    specialty: string;
+    students: number;
+    rating: number;
+    avatar: string | null;
+  }>>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedLevel, setSelectedLevel] = useState<string>('all');
@@ -39,6 +47,7 @@ export const DiscoverPage: React.FC = () => {
       setSearchQuery(search);
     }
     loadCourses();
+    loadFeaturedInstructors();
   }, [location.search]);
 
   const loadCourses = async () => {
@@ -51,6 +60,74 @@ export const DiscoverPage: React.FC = () => {
       setCourses([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadFeaturedInstructors = async () => {
+    try {
+      const teachers = await getTeachers();
+      const allCourses = await getCourses({ limit: 100 });
+      
+      // Calculate stats for each teacher
+      const instructorsWithStats = teachers.map((teacher: User) => {
+        // Find all courses by this teacher
+        const teacherCourses = allCourses.filter(
+          (course: Course) =>
+            course.teacherId === teacher.id ||
+            course.teacher?.id === teacher.id
+        );
+        
+        // Calculate total students
+        const totalStudents = teacherCourses.reduce(
+          (sum: number, course: Course) => sum + (course.enrolledStudents || 0),
+          0
+        );
+        
+        // Calculate average rating
+        const ratings = teacherCourses
+          .map((course: Course) => course.rating || 0)
+          .filter((rating: number) => rating > 0);
+        const avgRating = ratings.length > 0
+          ? ratings.reduce((sum: number, r: number) => sum + r, 0) / ratings.length
+          : 0;
+        
+        // Get most common category as specialty
+        const categories = teacherCourses
+          .map((course: Course) => course.category)
+          .filter((cat: string | undefined) => cat);
+        const categoryCounts: Record<string, number> = {};
+        categories.forEach((cat: string) => {
+          categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
+        });
+        const specialty = Object.keys(categoryCounts).length > 0
+          ? Object.keys(categoryCounts).reduce((a, b) =>
+              categoryCounts[a] > categoryCounts[b] ? a : b
+            )
+          : 'Instructor';
+        
+        return {
+          id: teacher.id,
+          name: teacher.name,
+          specialty: specialty,
+          students: totalStudents,
+          rating: Math.round(avgRating * 10) / 10, // Round to 1 decimal
+          avatar: teacher.avatar || null,
+        };
+      });
+      
+      // Sort by popularity (students + rating) and take top 3
+      const sorted = instructorsWithStats
+        .sort((a, b) => {
+          const aScore = a.students * 0.7 + a.rating * 100 * 0.3;
+          const bScore = b.students * 0.7 + b.rating * 100 * 0.3;
+          return bScore - aScore;
+        })
+        .slice(0, 3);
+      
+      setFeaturedInstructors(sorted);
+    } catch (error) {
+      console.error('Error loading featured instructors:', error);
+      setFeaturedInstructors([]);
     }
   };
 
@@ -83,65 +160,47 @@ export const DiscoverPage: React.FC = () => {
     .sort((a, b) => (b.enrolledStudents || 0) - (a.enrolledStudents || 0))
     .slice(0, 6);
 
-  const featuredInstructors = [
-    { id: '1', name: 'Sarah Johnson', specialty: 'Web Development', students: 12500, rating: 4.9, avatar: null },
-    { id: '2', name: 'Michael Chen', specialty: 'Design', students: 8900, rating: 4.8, avatar: null },
-    { id: '3', name: 'Emily Rodriguez', specialty: 'Business', students: 11200, rating: 4.9, avatar: null },
-  ];
-
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#F4F7FA' }}>
-        <div 
-          className="animate-spin rounded-full h-12 w-12 border-4 border-t-transparent"
-          style={{ borderColor: '#00B5AD' }}
-        ></div>
+      <div className="discover-loading">
+        <div className="discover-loading-spinner"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#F4F7FA' }}>
+    <div className="discover-page">
+      {/* Header Section */}
+      <div className="courses-header">
+        <div className="courses-header-content">
+          <div className="courses-header-text">
+            <h1 className="courses-header-title">
+              Discover Courses
+            </h1>
+            <p className="courses-header-subtitle">
+              Explore amazing courses and find your next learning adventure
+            </p>
+          </div>
+        </div>
+      </div>
       {/* Sticky Search Bar */}
-      <div 
-        className="sticky top-0 z-30 mb-6 lg:mb-8 py-4 backdrop-blur-xl"
-        style={{ backgroundColor: 'rgba(244, 247, 250, 0.95)' }}
-      >
-        <div className="flex flex-col sm:flex-row gap-3">
-          <div className="relative flex-1">
-            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5" style={{ color: '#6F73D2' }} />
+      <div className="discover-search-bar">
+        <div className="discover-search-content">
+          <div className="discover-search-wrapper">
+            <Search className="discover-search-icon" />
             <input
               type="text"
               placeholder="Search lessons, instructors, topics..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 border-2 rounded-xl focus:outline-none transition-all duration-200"
-              style={{
-                borderColor: '#E5E7EB',
-                backgroundColor: 'white',
-                color: '#0B1E3F',
-                fontSize: '16px'
-              }}
-              onFocus={(e) => {
-                e.currentTarget.style.borderColor = '#00B5AD';
-                e.currentTarget.style.boxShadow = '0 0 0 4px rgba(0, 181, 173, 0.1)';
-              }}
-              onBlur={(e) => {
-                e.currentTarget.style.borderColor = '#E5E7EB';
-                e.currentTarget.style.boxShadow = 'none';
-              }}
+              className="discover-search-input"
             />
           </div>
           <button
             onClick={() => setShowFilters(true)}
-            className="px-6 py-3 border-2 rounded-xl font-semibold transition-all duration-200 active:scale-95"
-            style={{
-              borderColor: '#E5E7EB',
-              color: '#0B1E3F',
-              backgroundColor: 'white'
-            }}
+            className="discover-filters-button"
           >
-            <Filter className="h-5 w-5 inline mr-2" />
+            <Filter className="discover-filters-button-icon" />
             Filters
           </button>
         </div>
@@ -158,21 +217,21 @@ export const DiscoverPage: React.FC = () => {
 
       {/* Trending Lessons */}
       {searchQuery === '' && (
-        <div className="mb-6 lg:mb-8">
-          <div className="flex items-center justify-between mb-4 lg:mb-6">
-            <div className="flex items-center space-x-2">
-              <TrendingUp className="h-6 w-6" style={{ color: '#00B5AD' }} />
-              <h2 className="text-xl lg:text-2xl font-bold" style={{ color: '#0B1E3F' }}>
+        <div className="discover-section">
+          <div className="discover-section-header">
+            <div className="discover-section-title-wrapper">
+              <TrendingUp className="discover-section-icon" />
+              <h2 className="discover-section-title">
                 Trending Now
               </h2>
             </div>
           </div>
           
           {/* Mobile: Horizontal Scroll */}
-          <div className="lg:hidden overflow-x-auto pb-4 scrollbar-hide">
-            <div className="flex space-x-4" style={{ width: 'max-content' }}>
+          <div className="discover-trending-mobile">
+            <div className="discover-trending-mobile-list">
               {trendingCourses.map((course) => (
-                <div key={course.id} className="w-80 flex-shrink-0">
+                <div key={course.id} className="discover-trending-mobile-item">
                   <MobileCourseCard course={course} />
                 </div>
               ))}
@@ -180,61 +239,45 @@ export const DiscoverPage: React.FC = () => {
           </div>
           
           {/* Desktop: Grid */}
-          <div className="hidden lg:grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="discover-trending-desktop">
             {trendingCourses.map((course) => (
               <Link
                 key={course.id}
                 to={`/courses/${course.id}`}
-                className="group rounded-[20px] border-2 overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1"
-                style={{
-                  backgroundColor: 'white',
-                  borderColor: '#E5E7EB'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = '#00B5AD';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = '#E5E7EB';
-                }}
+                className="discover-course-card"
               >
-                <div className="h-48 bg-gray-200 flex items-center justify-center relative overflow-hidden">
+                <div className="discover-course-image">
                   {course.imageUrl ? (
-                    <img src={course.imageUrl} alt={course.title} className="w-full h-full object-cover" />
+                    <img src={course.imageUrl} alt={course.title} />
                   ) : (
-                    <BookOpen className="h-16 w-16" style={{ color: '#00B5AD' }} />
+                    <BookOpen className="discover-course-image-icon" />
                   )}
-                  <div className="absolute top-3 left-3 flex items-center space-x-1 px-2 py-1 rounded-full bg-white/90">
-                    <TrendingUp className="h-3 w-3" style={{ color: '#00B5AD' }} />
-                    <span className="text-xs font-bold" style={{ color: '#00B5AD' }}>Trending</span>
+                  <div className="discover-course-trending-badge">
+                    <TrendingUp className="discover-course-trending-icon" />
+                    <span className="discover-course-trending-text">Trending</span>
                   </div>
                 </div>
-                <div className="p-5">
-                  <span 
-                    className="inline-block px-2 py-1 rounded-full text-xs font-bold mb-2"
-                    style={{ 
-                      backgroundColor: 'rgba(0, 181, 173, 0.1)',
-                      color: '#00B5AD'
-                    }}
-                  >
+                <div className="discover-course-content">
+                  <span className="discover-course-category">
                     {course.category || 'Course'}
                   </span>
-                  <h3 className="text-lg font-bold mb-2 line-clamp-2" style={{ color: '#0B1E3F' }}>
+                  <h3 className="discover-course-title">
                     {course.title}
                   </h3>
-                  <div className="flex items-center space-x-4 text-sm mb-3" style={{ color: '#6F73D2' }}>
-                    <div className="flex items-center space-x-1">
-                      <Star className="h-4 w-4 fill-current" style={{ color: '#F59E0B' }} />
+                  <div className="discover-course-meta">
+                    <div className="discover-course-meta-item">
+                      <Star className="discover-course-meta-icon discover-course-meta-icon--star" />
                       <span className="font-semibold">{course.rating?.toFixed(1) || '4.5'}</span>
                     </div>
-                    <div className="flex items-center space-x-1">
-                      <Users className="h-4 w-4" />
+                    <div className="discover-course-meta-item">
+                      <Users className="discover-course-meta-icon" />
                       <span>{(course.enrolledStudents || 0).toLocaleString()}</span>
                     </div>
                   </div>
                   {course.price === 0 || !course.isPaid ? (
-                    <span className="text-lg font-bold" style={{ color: '#00B5AD' }}>Free</span>
+                    <span className="discover-course-price discover-course-price--free">Free</span>
                   ) : (
-                    <span className="text-lg font-bold" style={{ color: '#0B1E3F' }}>${course.price}</span>
+                    <span className="discover-course-price discover-course-price--paid">${course.price}</span>
                   )}
                 </div>
               </Link>
@@ -244,7 +287,7 @@ export const DiscoverPage: React.FC = () => {
       )}
 
       {/* Featured Instructors */}
-      {searchQuery === '' && (
+      {searchQuery === '' && featuredInstructors.length > 0 && (
         <div className="mb-6 lg:mb-8">
           <div className="flex items-center justify-between mb-4 lg:mb-6">
             <div className="flex items-center space-x-2">
@@ -288,7 +331,7 @@ export const DiscoverPage: React.FC = () => {
                   <div className="flex items-center justify-between text-sm">
                     <div className="flex items-center space-x-1">
                       <Star className="h-3 w-3 fill-current" style={{ color: '#F59E0B' }} />
-                      <span className="font-semibold" style={{ color: '#0B1E3F' }}>{instructor.rating}</span>
+                      <span className="font-semibold" style={{ color: '#0B1E3F' }}>{instructor.rating.toFixed(1)}</span>
                     </div>
                     <span style={{ color: '#6F73D2' }}>{instructor.students.toLocaleString()} students</span>
                   </div>
@@ -335,7 +378,7 @@ export const DiscoverPage: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-1">
                     <Star className="h-4 w-4 fill-current" style={{ color: '#F59E0B' }} />
-                    <span className="font-semibold" style={{ color: '#0B1E3F' }}>{instructor.rating}</span>
+                    <span className="font-semibold" style={{ color: '#0B1E3F' }}>{instructor.rating.toFixed(1)}</span>
                   </div>
                   <span className="text-sm" style={{ color: '#6F73D2' }}>{instructor.students.toLocaleString()} students</span>
                 </div>

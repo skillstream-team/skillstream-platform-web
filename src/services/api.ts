@@ -1,5 +1,5 @@
 //AxiosResponse
-import axios, { AxiosInstance } from 'axios';
+import axios, { AxiosInstance, InternalAxiosRequestConfig, AxiosError } from 'axios';
 import {
   User,
   Course, 
@@ -59,6 +59,262 @@ export const setAuthToken = (token: string | null) => {
   }
 };
 
+// Store refresh token
+let refreshToken: string | null = null;
+export const setRefreshToken = (token: string | null) => {
+  refreshToken = token;
+  if (token) {
+    localStorage.setItem('refreshToken', token);
+  } else {
+    localStorage.removeItem('refreshToken');
+  }
+};
+
+export const getRefreshToken = (): string | null => {
+  if (!refreshToken) {
+    refreshToken = localStorage.getItem('refreshToken');
+  }
+  return refreshToken;
+};
+
+// Axios Interceptor for automatic token refresh
+let isRefreshing = false;
+let failedQueue: Array<{
+  resolve: (value?: any) => void;
+  reject: (error?: any) => void;
+}> = [];
+
+const processQueue = (error: any, token: string | null = null) => {
+  failedQueue.forEach(prom => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  failedQueue = [];
+};
+
+// Request interceptor - add auth token to requests
+axios.interceptors.request.use(
+  (config: InternalAxiosRequestConfig) => {
+    const token = localStorage.getItem('token');
+    if (token && config.headers) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Response interceptor - handle 401 and refresh token
+axios.interceptors.response.use(
+  (response) => response,
+  async (error: AxiosError) => {
+    const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
+
+    // If error is 401 and we haven't already retried
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      if (isRefreshing) {
+        // If already refreshing, queue this request
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        })
+          .then((token) => {
+            if (originalRequest.headers) {
+              originalRequest.headers.Authorization = `Bearer ${token}`;
+            }
+            return axios(originalRequest);
+          })
+          .catch((err) => {
+            return Promise.reject(err);
+          });
+      }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      try {
+        const { token: newToken } = await refreshAuthToken();
+        setAuthToken(newToken);
+        localStorage.setItem('token', newToken);
+        
+        processQueue(null, newToken);
+
+        // Retry original request with new token
+        if (originalRequest.headers) {
+          originalRequest.headers.Authorization = `Bearer ${newToken}`;
+        }
+        return axios(originalRequest);
+      } catch (refreshError) {
+        processQueue(refreshError, null);
+        
+        // If refresh fails, redirect to login
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          localStorage.removeItem('refreshToken');
+          window.location.href = '/login';
+        }
+        return Promise.reject(refreshError);
+      } finally {
+        isRefreshing = false;
+      }
+    }
+
+    return Promise.reject(error);
+  }
+);
+
+// OAuth Login - These functions redirect to backend OAuth endpoints
+// The backend will handle the OAuth flow and redirect back to the frontend
+// Get Google OAuth Client ID from environment or use a default
+// esbuild's define replaces process.env.REACT_APP_* with actual values at build time
+// We need to access them directly for the replacement to work
+const getGoogleClientId = (): string => {
+  // esbuild will replace this exact string with the value from define
+  const clientId = process.env.REACT_APP_GOOGLE_CLIENT_ID || '';
+  return clientId;
+};
+
+const getGoogleClientSecret = (): string => {
+  // esbuild will replace this exact string with the value from define
+  const clientSecret = process.env.REACT_APP_GOOGLE_CLIENT_SECRET || '';
+  return clientSecret;
+};
+
+export function initiateGoogleLogin(): void {
+  const GOOGLE_CLIENT_ID = getGoogleClientId();
+  if (!GOOGLE_CLIENT_ID) {
+    throw new Error('Google OAuth Client ID is not configured. Please set REACT_APP_GOOGLE_CLIENT_ID environment variable.');
+  }
+
+  // Store provider in sessionStorage for callback
+  sessionStorage.setItem('oauth_provider', 'google');
+  const redirectUri = `${window.location.origin}/auth/google/callback`;
+  const state = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+  sessionStorage.setItem('oauth_state', state);
+  sessionStorage.setItem('oauth_redirect_uri', redirectUri);
+
+  // Redirect directly to Google OAuth
+  const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+    `client_id=${GOOGLE_CLIENT_ID}&` +
+    `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+    `response_type=code&` +
+    `scope=email profile&` +
+    `state=${state}`;
+
+  window.location.href = googleAuthUrl;
+}
+
+export function initiateLinkedInLogin(): void {
+  // Store provider in sessionStorage for callback
+  sessionStorage.setItem('oauth_provider', 'linkedin');
+  const redirectUri = `${window.location.origin}/oauth/callback`;
+  const state = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+  sessionStorage.setItem('oauth_state', state);
+  window.location.href = `${API_BASE_URL}/auth/oauth/linkedin?redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}`;
+}
+
+// Exchange authorization code for access token with Google
+async function exchangeCodeForAccessToken(code: string): Promise<string> {
+  const redirectUri = sessionStorage.getItem('oauth_redirect_uri') || `${window.location.origin}/auth/google/callback`;
+  const GOOGLE_CLIENT_ID = getGoogleClientId();
+  const GOOGLE_CLIENT_SECRET = getGoogleClientSecret();
+
+  if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
+    throw new Error('Google OAuth credentials are not configured. Please set REACT_APP_GOOGLE_CLIENT_ID and REACT_APP_GOOGLE_CLIENT_SECRET environment variables.');
+  }
+
+  const response = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      code: code,
+      client_id: GOOGLE_CLIENT_ID,
+      client_secret: GOOGLE_CLIENT_SECRET,
+      redirect_uri: redirectUri,
+      grant_type: 'authorization_code'
+    })
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error_description || errorData.error || 'Failed to exchange code for access token');
+  }
+
+  const data = await response.json();
+  return data.access_token;
+}
+
+// OAuth callback handler (called after OAuth redirect)
+export async function handleOAuthCallback(provider: 'google' | 'linkedin', code: string, state?: string): Promise<{ user: User; token: string; refreshToken?: string }> {
+  if (provider === 'google') {
+    // For Google: Exchange code for access token, then send to backend
+    try {
+      const accessToken = await exchangeCodeForAccessToken(code);
+      
+      // Send access token to backend
+      const response = await axios.post(
+        `${API_BASE_URL}/auth/oauth/google`,
+        { accessToken },
+        { withCredentials: true }
+      );
+      
+      const result = response.data;
+      if (result.refreshToken) {
+        setRefreshToken(result.refreshToken);
+      }
+      return { user: result.user, token: result.token, refreshToken: result.refreshToken };
+    } catch (error: any) {
+      console.error('Google OAuth error:', error);
+      throw new Error(error.message || 'Failed to complete Google OAuth login');
+    }
+  } else {
+    // For LinkedIn: Use existing flow (code-based)
+    const response = await axios.post(
+      `${API_BASE_URL}/auth/oauth/${provider}/callback`,
+      { code, state },
+      { withCredentials: true }
+    );
+    const result = response.data;
+    if (result.refreshToken) {
+      setRefreshToken(result.refreshToken);
+    }
+    return { user: result.user, token: result.token, refreshToken: result.refreshToken };
+  }
+}
+
+// Refresh Token
+export async function refreshAuthToken(): Promise<{ token: string; refreshToken?: string }> {
+  const currentRefreshToken = getRefreshToken();
+  if (!currentRefreshToken) {
+    throw new Error('No refresh token available');
+  }
+  
+  try {
+    const response = await axios.post(
+      `${API_BASE_URL}/users/auth/refresh-token`,
+      { refreshToken: currentRefreshToken },
+      { withCredentials: true }
+    );
+    const result = response.data;
+    if (result.refreshToken) {
+      setRefreshToken(result.refreshToken);
+    }
+    return { token: result.token, refreshToken: result.refreshToken };
+  } catch (error) {
+    // If refresh fails, clear tokens and logout
+    setRefreshToken(null);
+    setAuthToken(null);
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    throw error;
+  }
+}
+
 // Integration Services
 export async function getIntegrations(): Promise<any[]> {
   const response = await axios.get(`${API_BASE_URL}/integrations`);
@@ -93,6 +349,53 @@ export async function prepareOfflineContent(contentId: string): Promise<any> {
 
 export async function syncOfflineData(data?: any): Promise<any> {
   const response = await axios.post(`${API_BASE_URL}/offline/sync`, data || {}, { withCredentials: true });
+  return response.data;
+}
+
+// Admin Services
+export async function sendAdminNotification(payload: {
+  userIds?: string[];
+  userEmails?: string[];
+  title: string;
+  message: string;
+  type?: string;
+  sendEmail?: boolean;
+  link?: string;
+}): Promise<any> {
+  const response = await axios.post(`${API_BASE_URL}/admin/notifications/send`, payload, { withCredentials: true });
+  return response.data;
+}
+
+export async function sendAdminNotificationToAll(payload: {
+  title: string;
+  message: string;
+  type?: string;
+  sendEmail?: boolean;
+  link?: string;
+}): Promise<any> {
+  const response = await axios.post(`${API_BASE_URL}/admin/notifications/send-all`, payload, { withCredentials: true });
+  return response.data;
+}
+
+export async function sendPromotionalEmail(payload: {
+  userIds?: string[];
+  userEmails?: string[];
+  subject: string;
+  content: string;
+  ctaText?: string;
+  ctaLink?: string;
+}): Promise<any> {
+  const response = await axios.post(`${API_BASE_URL}/admin/promotional-email/send`, payload, { withCredentials: true });
+  return response.data;
+}
+
+export async function sendPromotionalEmailToAll(payload: {
+  subject: string;
+  content: string;
+  ctaText?: string;
+  ctaLink?: string;
+}): Promise<any> {
+  const response = await axios.post(`${API_BASE_URL}/admin/promotional-email/send-all`, payload, { withCredentials: true });
   return response.data;
 }
 
@@ -676,8 +979,25 @@ export const payoutApi = {
   }
 };
 
+// Tutor earnings report
+export async function getEarningsReport(userId: string): Promise<any> {
+  const response = await axios.get(`${API_BASE_URL}/users/${userId}/earnings-report`, { withCredentials: true });
+  return response.data;
+}
+
 export async function getAnnouncements(courseId: number): Promise<Announcement[]> {
   const response = await axios.get(`${API_BASE_URL}/courses/${courseId}/announcements`, { withCredentials: true });
+  return response.data;
+}
+
+// Global & user announcements (Home page, cross-course)
+export async function getGlobalAnnouncements(): Promise<Announcement[]> {
+  const response = await axios.get(`${API_BASE_URL}/announcements?scope=global`, { withCredentials: true });
+  return response.data;
+}
+
+export async function getUserAnnouncements(userId: string): Promise<Announcement[]> {
+  const response = await axios.get(`${API_BASE_URL}/users/${userId}/announcements`, { withCredentials: true });
   return response.data;
 }
 
@@ -692,9 +1012,70 @@ export async function deleteAnnouncement(courseId: number, announcementId: strin
 }
 
 // Courses (REST)
-export async function createCourse(data: { title: string; description?: string; price: number; order: number; createdBy?: string; instructorId?: string }): Promise<Course> {
+export async function createCourse(data: { title: string; description?: string; price: number; order: number; createdBy?: string; instructorId?: string; imageUrl?: string }): Promise<Course> {
   // Backend: POST /api/courses/course
-  const response = await axios.post(`${API_BASE_URL}/courses/course`, data);
+  // Ensure token is explicitly included in headers
+  const token = localStorage.getItem('token');
+  const config: any = { 
+    withCredentials: true 
+  };
+  
+  if (token) {
+    config.headers = {
+      'Authorization': `Bearer ${token}`
+    };
+  }
+  
+  const response = await axios.post(`${API_BASE_URL}/courses/course`, data, config);
+  return response.data;
+}
+
+export async function duplicateCourse(courseId: string): Promise<Course> {
+  // Backend: POST /api/courses/{courseId}/duplicate
+  const response = await axios.post(`${API_BASE_URL}/courses/${courseId}/duplicate`, {}, { withCredentials: true });
+  return response.data;
+}
+
+export async function getCoursePreview(courseId: string): Promise<Course> {
+  // Backend: GET /api/courses/{courseId}/preview
+  const response = await axios.get(`${API_BASE_URL}/courses/${courseId}/preview`, { withCredentials: true });
+  return response.data;
+}
+
+export async function sendBulkMessageToStudents(courseId: string, message: { subject: string; content: string; studentIds?: string[] }): Promise<any> {
+  // Backend: POST /api/courses/{courseId}/bulk-message
+  const response = await axios.post(`${API_BASE_URL}/courses/${courseId}/bulk-message`, message, { withCredentials: true });
+  return response.data;
+}
+
+export async function getCourseReviews(courseId: string, params?: { page?: number; limit?: number; rating?: number }): Promise<any> {
+  // Backend: GET /api/courses/{courseId}/reviews
+  const queryParams = new URLSearchParams();
+  if (params?.page) queryParams.append('page', params.page.toString());
+  if (params?.limit) queryParams.append('limit', params.limit.toString());
+  if (params?.rating) queryParams.append('rating', params.rating.toString());
+  const url = `${API_BASE_URL}/courses/${courseId}/reviews${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+  const response = await axios.get(url, { withCredentials: true });
+  return response.data;
+}
+
+export async function updateModuleOrder(courseId: string, moduleIds: string[]): Promise<any> {
+  // Backend: PUT /api/courses/{courseId}/modules/reorder
+  const response = await axios.put(
+    `${API_BASE_URL}/courses/${courseId}/modules/reorder`,
+    { moduleIds },
+    { withCredentials: true }
+  );
+  return response.data;
+}
+
+export async function updateLessonOrder(courseId: string, moduleId: string, lessonIds: string[]): Promise<any> {
+  // Backend: PUT /api/courses/{courseId}/modules/{moduleId}/lessons/reorder
+  const response = await axios.put(
+    `${API_BASE_URL}/courses/${courseId}/modules/${moduleId}/lessons/reorder`,
+    { lessonIds },
+    { withCredentials: true }
+  );
   return response.data;
 }
 
@@ -736,6 +1117,17 @@ export async function getMyAssignments(): Promise<Assignment[]> {
 
 export async function getMyCreatedCourses(): Promise<Course[]> {
   const response = await axios.get(`${API_BASE_URL}/courses/my-created-courses`, { withCredentials: true });
+  return response.data;
+}
+
+// Personalized course recommendations
+export async function getCourseRecommendations(userId: string, limit = 10): Promise<Course[]> {
+  const params = new URLSearchParams();
+  params.append('limit', limit.toString());
+  const response = await axios.get(
+    `${API_BASE_URL}/users/${userId}/recommendations/courses?${params.toString()}`,
+    { withCredentials: true }
+  );
   return response.data;
 }
 
@@ -814,9 +1206,108 @@ export async function getAssignmentSubmissionSummaries(params?: {
 }
 
 export async function getCourseDetails(courseId: number): Promise<Course> {
-  const response = await axios.get(`/courses/${courseId}`);
+  const response = await axios.get(`${API_BASE_URL}/courses/${courseId}`, { withCredentials: true });
   return response.data;
 }
+
+// Course Builder - Modules
+export async function createCourseModule(
+  courseId: number,
+  data: { title: string; description?: string; order?: number }
+): Promise<any> {
+  const response = await axios.post(
+    `${API_BASE_URL}/courses/${courseId}/modules`,
+    data,
+    { withCredentials: true }
+  );
+  return response.data;
+}
+
+export async function updateCourseModule(
+  courseId: number,
+  moduleId: number,
+  data: { title?: string; description?: string; order?: number }
+): Promise<any> {
+  const response = await axios.put(
+    `${API_BASE_URL}/courses/${courseId}/modules/${moduleId}`,
+    data,
+    { withCredentials: true }
+  );
+  return response.data;
+}
+
+export async function deleteCourseModule(courseId: number, moduleId: number): Promise<void> {
+  await axios.delete(
+    `${API_BASE_URL}/courses/${courseId}/modules/${moduleId}`,
+    { withCredentials: true }
+  );
+}
+
+// Course Builder - Lessons in Modules
+export async function addLessonToModule(
+  courseId: number,
+  moduleId: number,
+  data: { title: string; content?: string; scheduledAt?: string; videoUrl?: string; order?: number }
+): Promise<Lesson> {
+  const response = await axios.post(
+    `${API_BASE_URL}/courses/${courseId}/modules/${moduleId}/lessons`,
+    data,
+    { withCredentials: true }
+  );
+  return response.data;
+}
+
+export async function updateLessonInModule(
+  courseId: number,
+  moduleId: number,
+  lessonId: number,
+  data: { title?: string; content?: string; scheduledAt?: string; videoUrl?: string; order?: number }
+): Promise<Lesson> {
+  const response = await axios.put(
+    `${API_BASE_URL}/courses/${courseId}/modules/${moduleId}/lessons/${lessonId}`,
+    data,
+    { withCredentials: true }
+  );
+  return response.data;
+}
+
+export async function deleteLessonFromModule(courseId: number, moduleId: number, lessonId: number): Promise<void> {
+  await axios.delete(
+    `${API_BASE_URL}/courses/${courseId}/modules/${moduleId}/lessons/${lessonId}`,
+    { withCredentials: true }
+  );
+}
+
+// Course Builder - Quizzes for Lessons
+export async function createLessonQuiz(
+  courseId: number,
+  lessonId: number,
+  data: {
+    title: string;
+    description?: string;
+    timeLimit?: number;
+    passingScore: number;
+    questions: Array<{
+      text: string;
+      type: 'MULTIPLE_CHOICE' | 'TRUE_FALSE' | 'SHORT_ANSWER' | 'ESSAY';
+      points: number;
+      order: number;
+      answers?: Array<{
+        text: string;
+        isCorrect: boolean;
+        order: number;
+      }>;
+    }>;
+  }
+): Promise<Quiz> {
+  const response = await axios.post(
+    `${API_BASE_URL}/courses/${courseId}/lessons/${lessonId}/quiz`,
+    data,
+    { withCredentials: true }
+  );
+  return response.data;
+}
+
 // Lessons
 export async function createLesson(data: { courseId: number; title: string; content: string; scheduledAt: string; videoUrl?: string }): Promise<Lesson> {
   const response = await axios.post(`${API_BASE_URL}/lessons`, data, { withCredentials: true });
@@ -861,6 +1352,82 @@ export async function markAttendance(lessonId: number, action: 'join' | 'leave')
 export async function getLessonAttendance(lessonId: number): Promise<any> {
   const response = await axios.get(`${API_BASE_URL}/lessons/${lessonId}/attendance`, { withCredentials: true });
   return response.data;
+}
+
+export async function markStudentAttendance(
+  lessonId: number,
+  studentId: string,
+  status: 'present' | 'absent' | 'late'
+): Promise<any> {
+  const response = await axios.post(
+    `${API_BASE_URL}/lessons/${lessonId}/attendance/${studentId}/mark`,
+    { status },
+    { withCredentials: true }
+  );
+  return response.data;
+}
+
+export async function createAttendanceRecord(
+  lessonId: number,
+  attendanceData: Array<{ studentId: string; status: 'present' | 'absent' | 'late' }>
+): Promise<any> {
+  const response = await axios.post(
+    `${API_BASE_URL}/lessons/${lessonId}/attendance`,
+    { records: attendanceData },
+    { withCredentials: true }
+  );
+  return response.data;
+}
+
+// Lesson booking & scheduling
+export async function getAvailableSlots(params: { date?: string; subject?: string; teacherId?: string }): Promise<any[]> {
+  const searchParams = new URLSearchParams();
+  if (params.date) searchParams.append('date', params.date);
+  if (params.subject && params.subject !== 'all') searchParams.append('subject', params.subject);
+  if (params.teacherId && params.teacherId !== 'all') searchParams.append('teacherId', params.teacherId);
+  const url = `${API_BASE_URL}/lesson-slots${searchParams.toString() ? `?${searchParams.toString()}` : ''}`;
+  const response = await axios.get(url, { withCredentials: true });
+  return response.data;
+}
+
+export async function getMyBookings(userId: string): Promise<any[]> {
+  const response = await axios.get(`${API_BASE_URL}/users/${userId}/bookings`, { withCredentials: true });
+  return response.data;
+}
+
+export async function bookLessonSlot(slotId: string, userId: string): Promise<any> {
+  const response = await axios.post(
+    `${API_BASE_URL}/lesson-slots/${slotId}/bookings`,
+    { userId },
+    { withCredentials: true }
+  );
+  return response.data;
+}
+
+export async function cancelBooking(bookingId: string): Promise<void> {
+  await axios.delete(`${API_BASE_URL}/bookings/${bookingId}`, { withCredentials: true });
+}
+
+// Teacher availability
+export async function getTeacherAvailability(teacherId: string): Promise<{ blocks: any[]; recurringSlots: any[] }> {
+  const response = await axios.get(`${API_BASE_URL}/teachers/${teacherId}/availability`, { withCredentials: true });
+  return response.data;
+}
+
+export async function saveTeacherAvailability(teacherId: string, block: any): Promise<any> {
+  const response = await axios.post(
+    `${API_BASE_URL}/teachers/${teacherId}/availability`,
+    block,
+    { withCredentials: true }
+  );
+  return response.data;
+}
+
+export async function deleteTeacherAvailability(teacherId: string, availabilityId: string): Promise<void> {
+  await axios.delete(
+    `${API_BASE_URL}/teachers/${teacherId}/availability/${availabilityId}`,
+    { withCredentials: true }
+  );
 }
 
 // Users
@@ -1191,8 +1758,20 @@ export async function getCalendarEvents(params?: {
     searchParams.append('includeAllDay', params.includeAllDay ? 'true' : 'false');
   }
   // Backend: GET /api/calendar/events
+  // Ensure token is included
+  const token = localStorage.getItem('token');
+  const config: any = { 
+    withCredentials: true 
+  };
+  
+  if (token) {
+    config.headers = {
+      'Authorization': `Bearer ${token}`
+    };
+  }
+  
   const url = `${API_BASE_URL}/calendar/events${searchParams.toString() ? `?${searchParams.toString()}` : ''}`;
-  const response = await axios.get(url);
+  const response = await axios.get(url, config);
   // REST returns { success, data, count }
   return response.data.data || [];
 }
@@ -1239,17 +1818,53 @@ export async function createCalendarEvent(eventData: {
   metadata?: any;
 }): Promise<CalendarEvent> {
   // Backend: POST /api/calendar/events
-  const response = await axios.post(`${API_BASE_URL}/calendar/events`, eventData);
+  // Ensure token is included
+  const token = localStorage.getItem('token');
+  const config: any = { 
+    withCredentials: true 
+  };
+  
+  if (token) {
+    config.headers = {
+      'Authorization': `Bearer ${token}`
+    };
+  }
+  
+  const response = await axios.post(`${API_BASE_URL}/calendar/events`, eventData, config);
   return response.data;
 }
 
 export async function updateCalendarEvent(eventId: string, updates: Partial<CalendarEvent>): Promise<CalendarEvent> {
-  const response = await axios.put(`${API_BASE_URL}/calendar/events/${eventId}`, updates);
+  // Ensure token is included
+  const token = localStorage.getItem('token');
+  const config: any = { 
+    withCredentials: true 
+  };
+  
+  if (token) {
+    config.headers = {
+      'Authorization': `Bearer ${token}`
+    };
+  }
+  
+  const response = await axios.put(`${API_BASE_URL}/calendar/events/${eventId}`, updates, config);
   return response.data;
 }
 
 export async function deleteCalendarEvent(eventId: string): Promise<{ success: boolean; message: string }> {
-  const response = await axios.delete(`${API_BASE_URL}/calendar/events/${eventId}`);
+  // Ensure token is included
+  const token = localStorage.getItem('token');
+  const config: any = { 
+    withCredentials: true 
+  };
+  
+  if (token) {
+    config.headers = {
+      'Authorization': `Bearer ${token}`
+    };
+  }
+  
+  const response = await axios.delete(`${API_BASE_URL}/calendar/events/${eventId}`, config);
   return response.data;
 }
 
@@ -1263,6 +1878,22 @@ export async function getProgress(courseId: string): Promise<Progress | null> {
   }
 }
 
+export async function getUserProgress(userId: string): Promise<Progress[]> {
+  const response = await axios.get(`${API_BASE_URL}/users/${userId}/progress`, { withCredentials: true });
+  return response.data;
+}
+
+export async function getUserProgressCourses(
+  userId: string,
+  status?: 'in_progress' | 'completed'
+): Promise<Course[]> {
+  const params = new URLSearchParams();
+  if (status) params.append('status', status);
+  const url = `${API_BASE_URL}/users/${userId}/progress/courses${params.toString() ? `?${params.toString()}` : ''}`;
+  const response = await axios.get(url, { withCredentials: true });
+  return response.data;
+}
+
 // Certificates
 export async function getCertificates(): Promise<Certificate[]> {
   try {
@@ -1271,6 +1902,36 @@ export async function getCertificates(): Promise<Certificate[]> {
   } catch {
     return [];
   }
+}
+
+export function getCertificateDownloadUrl(courseId: string, userId: string): string {
+  return `${API_BASE_URL}/courses/${courseId}/certificates/${userId}/download`;
+}
+
+// Recent shared resources
+export async function getRecentResources(userId: string): Promise<any[]> {
+  const response = await axios.get(`${API_BASE_URL}/users/${userId}/resources/recent`, { withCredentials: true });
+  return response.data;
+}
+
+export async function shareResourceInLesson(lessonId: string, resource: any): Promise<any> {
+  const response = await axios.post(
+    `${API_BASE_URL}/lessons/${lessonId}/resources`,
+    resource,
+    { withCredentials: true }
+  );
+  return response.data;
+}
+
+export async function uploadAndShareFile(lessonId: string, file: File): Promise<any> {
+  const formData = new FormData();
+  formData.append('file', file);
+  const response = await axios.post(
+    `${API_BASE_URL}/lessons/${lessonId}/resources/upload`,
+    formData,
+    { withCredentials: true }
+  );
+  return response.data;
 }
 
 // Todos
@@ -1389,6 +2050,12 @@ class ApiService {
     return response.data;
   }
 
+  // Course marketing details
+  async getCourseMarketingDetails(courseId: number): Promise<any> {
+    const response = await this.axios.get(`/courses/${courseId}/marketing`, { withCredentials: true });
+    return response.data;
+  }
+
   async getMyAssignments(): Promise<Assignment[]> {
     const response = await this.axios.get('/assignments/my', { withCredentials: true });
     return response.data;
@@ -1430,6 +2097,28 @@ class ApiService {
 
   async sendVideoReaction(conferenceId: string, reaction: string): Promise<void> {
     await this.axios.post(`/video/conferences/${conferenceId}/reaction`, { reaction }, { withCredentials: true });
+  }
+
+  // Breakout rooms
+  async createBreakoutRooms(conferenceId: string, rooms: Array<{ name: string; participantIds?: string[] }>): Promise<{ rooms: Array<{ id: string; name: string; participantIds: string[] }> }> {
+    const response = await this.axios.post(`/video/conferences/${conferenceId}/breakout-rooms`, { rooms }, { withCredentials: true });
+    return response.data;
+  }
+
+  async assignParticipantToBreakoutRoom(conferenceId: string, roomId: string, participantId: string): Promise<void> {
+    await this.axios.post(`/video/conferences/${conferenceId}/breakout-rooms/${roomId}/assign`, { participantId }, { withCredentials: true });
+  }
+
+  async closeBreakoutRooms(conferenceId: string, roomId?: string): Promise<void> {
+    const url = roomId 
+      ? `/video/conferences/${conferenceId}/breakout-rooms/${roomId}/close`
+      : `/video/conferences/${conferenceId}/breakout-rooms/close-all`;
+    await this.axios.post(url, {}, { withCredentials: true });
+  }
+
+  async getBreakoutRooms(conferenceId: string): Promise<{ rooms: Array<{ id: string; name: string; participantIds: string[] }> }> {
+    const response = await this.axios.get(`/video/conferences/${conferenceId}/breakout-rooms`, { withCredentials: true });
+    return response.data;
   }
 
   // Forum methods - delegate to exported functions
@@ -1558,6 +2247,12 @@ class ApiService {
 
   async makeFilePublic(fileId: string): Promise<void> {
     await this.axios.post(`/files/${fileId}/make-public`, {}, { withCredentials: true });
+  }
+
+  // Recent video contacts
+  async getRecentVideoContacts(userId: string): Promise<any[]> {
+    const response = await this.axios.get(`/users/${userId}/video/recent-contacts`, { withCredentials: true });
+    return response.data;
   }
 }
 

@@ -26,6 +26,8 @@ import {
   XMarkIcon as XMarkIconSolid
 } from '@heroicons/react/24/solid';
 import { getUserPreferences, updateUserPreferences } from '../services/api';
+import { getInitials } from '../lib/utils';
+import './ProfilePage.css';
 
 interface FormDataType {
   name: string;
@@ -367,7 +369,7 @@ const handleInputChange = (field: string, value: string | boolean) => {
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <span>{user?.name?.charAt(0).toUpperCase()}</span>
+                <span>{getInitials(user?.name || 'U')}</span>
               )}
             </div>
             <button 
@@ -594,17 +596,37 @@ const handleInputChange = (field: string, value: string | boolean) => {
 
   const renderSettingsTab = () => (
     <div className="space-y-6">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Account Settings</h3>
-        <div className="space-y-4">
+      <div 
+        className="rounded-2xl border-2 p-4 lg:p-6"
+        style={{
+          backgroundColor: 'white',
+          borderColor: '#E5E7EB'
+        }}
+      >
+        <h3 className="text-lg lg:text-xl font-bold mb-4 lg:mb-6" style={{ color: '#0B1E3F' }}>Account Settings</h3>
+        <div className="space-y-4 lg:space-y-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label className="block text-sm font-semibold mb-2" style={{ color: '#0B1E3F' }}>
               Language
             </label>
             <select 
               value={settingsData.language}
               onChange={(e) => handleLanguageChange(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+              className="w-full px-4 py-3 border-2 rounded-xl focus:outline-none transition-all duration-200"
+              style={{
+                borderColor: '#E5E7EB',
+                backgroundColor: 'white',
+                color: '#0B1E3F',
+                fontSize: '16px'
+              }}
+              onFocus={(e) => {
+                e.currentTarget.style.borderColor = '#00B5AD';
+                e.currentTarget.style.boxShadow = '0 0 0 4px rgba(0, 181, 173, 0.1)';
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.borderColor = '#E5E7EB';
+                e.currentTarget.style.boxShadow = 'none';
+              }}
             >
               <option value="en">English</option>
               <option value="es">Spanish</option>
@@ -614,13 +636,27 @@ const handleInputChange = (field: string, value: string | boolean) => {
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label className="block text-sm font-semibold mb-2" style={{ color: '#0B1E3F' }}>
               Theme
             </label>
             <select 
               value={settingsData.theme}
               onChange={(e) => handleThemeChange(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+              className="w-full px-4 py-3 border-2 rounded-xl focus:outline-none transition-all duration-200"
+              style={{
+                borderColor: '#E5E7EB',
+                backgroundColor: 'white',
+                color: '#0B1E3F',
+                fontSize: '16px'
+              }}
+              onFocus={(e) => {
+                e.currentTarget.style.borderColor = '#00B5AD';
+                e.currentTarget.style.boxShadow = '0 0 0 4px rgba(0, 181, 173, 0.1)';
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.borderColor = '#E5E7EB';
+                e.currentTarget.style.boxShadow = 'none';
+              }}
             >
               <option value="light">Light</option>
               <option value="dark">Dark</option>
@@ -631,13 +667,90 @@ const handleInputChange = (field: string, value: string | boolean) => {
         <div className="mt-6 flex space-x-3">
           <button
             onClick={handleSettingsSave}
-            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="flex items-center px-6 py-3 rounded-xl font-semibold text-white transition-all duration-300 active:scale-95"
+            style={{ 
+              backgroundColor: '#00B5AD',
+              boxShadow: '0 4px 14px rgba(0, 181, 173, 0.3)'
+            }}
           >
-            <CheckIcon className="w-4 h-4 mr-2" />
+            <CheckIcon className="w-5 h-5 mr-2" />
             Save Settings
           </button>
         </div>
       </div>
+
+      {/* Teacher-Specific Settings */}
+      {user?.role === 'TEACHER' && (
+        <div 
+          className="rounded-2xl border-2 p-4 lg:p-6"
+          style={{
+            backgroundColor: 'white',
+            borderColor: '#E5E7EB'
+          }}
+        >
+          <h3 className="text-lg lg:text-xl font-bold mb-4 lg:mb-6" style={{ color: '#0B1E3F' }}>Instructor Settings</h3>
+          <div className="space-y-4 lg:space-y-6">
+            <div>
+              <label className="block text-sm font-semibold mb-2" style={{ color: '#0B1E3F' }}>
+                Default Lesson Duration (minutes)
+              </label>
+              <input
+                type="number"
+                min="15"
+                max="240"
+                defaultValue="60"
+                className="w-full px-4 py-3 border-2 rounded-xl focus:outline-none transition-all duration-200"
+                style={{
+                  borderColor: '#E5E7EB',
+                  backgroundColor: 'white',
+                  color: '#0B1E3F',
+                  fontSize: '16px'
+                }}
+                onFocus={(e) => {
+                  e.currentTarget.style.borderColor = '#00B5AD';
+                  e.currentTarget.style.boxShadow = '0 0 0 4px rgba(0, 181, 173, 0.1)';
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.borderColor = '#E5E7EB';
+                  e.currentTarget.style.boxShadow = 'none';
+                }}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold mb-2" style={{ color: '#0B1E3F' }}>
+                Auto-accept Bookings
+              </label>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  defaultChecked={false}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                <span className="ml-3 text-sm" style={{ color: '#6F73D2' }}>
+                  Automatically accept student lesson bookings
+                </span>
+              </label>
+            </div>
+            <div>
+              <label className="block text-sm font-semibold mb-2" style={{ color: '#0B1E3F' }}>
+                Email Notifications for New Enrollments
+              </label>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  defaultChecked={true}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                <span className="ml-3 text-sm" style={{ color: '#6F73D2' }}>
+                  Receive email when students enroll in your courses
+                </span>
+              </label>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 
@@ -733,16 +846,16 @@ const handleInputChange = (field: string, value: string | boolean) => {
   );
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#F4F7FA' }}>
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4 lg:py-8">
+    <div className="profile-page">
+      <div className="profile-container">
         {/* Header */}
-        <div className="mb-6 lg:mb-8">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3 lg:space-x-4">
+        <div className="profile-header">
+          <div className="profile-header-content">
+            <div className="profile-header-left">
               <BackButton showHome />
               <div>
-                <h1 className="text-2xl lg:text-3xl font-bold" style={{ color: '#0B1E3F' }}>Profile</h1>
-                <p className="mt-1 lg:mt-2 text-sm lg:text-base" style={{ color: '#6F73D2' }}>
+                <h1 className="profile-title">Profile</h1>
+                <p className="profile-subtitle">
                   Manage your account settings and preferences
                 </p>
               </div>
@@ -751,7 +864,7 @@ const handleInputChange = (field: string, value: string | boolean) => {
         </div>
 
         {/* Mobile: Swipeable Tabs */}
-        <div className="lg:hidden mb-6">
+        <div className="profile-tabs-mobile">
           <SwipeableTabs
             tabs={tabs.map(tab => ({
               id: tab.id,
@@ -771,21 +884,15 @@ const handleInputChange = (field: string, value: string | boolean) => {
         </div>
 
         {/* Desktop: Tabs */}
-        <div className="hidden lg:block mb-6">
-          <nav className="flex space-x-8">
+        <div className="profile-tabs-desktop">
+          <nav className="profile-tabs-nav">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center px-3 py-2 text-sm font-medium rounded-xl transition-all duration-200 ${
-                  activeTab === tab.id ? 'scale-105' : ''
-                }`}
-                style={{
-                  backgroundColor: activeTab === tab.id ? '#00B5AD' : 'rgba(0, 181, 173, 0.1)',
-                  color: activeTab === tab.id ? 'white' : '#0B1E3F'
-                }}
+                className={`profile-tab-button ${activeTab === tab.id ? 'profile-tab-button--active' : 'profile-tab-button--inactive'}`}
               >
-                <tab.icon className="w-4 h-4 mr-2" />
+                <tab.icon className="profile-tab-icon" />
                 {tab.name}
               </button>
             ))}
@@ -793,7 +900,7 @@ const handleInputChange = (field: string, value: string | boolean) => {
         </div>
 
         {/* Desktop Tab Content */}
-        <div className="hidden lg:block">
+        <div className="profile-tab-content profile-tab-content--hidden lg:profile-tab-content--active">
           {activeTab === 'profile' && renderProfileTab()}
           {activeTab === 'settings' && renderSettingsTab()}
           {activeTab === 'notifications' && renderNotificationsTab()}

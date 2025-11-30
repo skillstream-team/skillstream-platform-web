@@ -20,6 +20,7 @@ import {
 import { useAuthStore } from '../../store/auth';
 import { MessagingPanel } from '../messaging/MessagingPanel';
 import { getStudyGroups, getTeachers, getStudents } from '../../services/api';
+import { getInitials } from '../../lib/utils';
 
 interface StudyGroup {
   id: string;
@@ -424,7 +425,7 @@ export const StudyGroups: React.FC<StudyGroupProps> = ({ courseId }) => {
                   <div className="relative">
                     <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center">
                       <span className="text-white font-medium text-lg">
-                        {person.name.charAt(0).toUpperCase()}
+                        {getInitials(person.name)}
                       </span>
                     </div>
                     <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white dark:border-gray-800 ${

@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { BackButton } from '../../components/common/BackButton';
+import { useNotification } from '../../hooks/useNotification';
+import { Tooltip, HelpTooltip } from '../../components/common/Tooltip';
 import { 
   Users, 
   BookOpen, 
@@ -434,6 +437,7 @@ export const AnalyticsPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'overview' | 'needs-attention' | 'revenue' | 'performance' | 'insights' | 'courses' | 'students' | 'assignments'>('overview');
   const [showExportModal, setShowExportModal] = useState(false);
   const [exportLoading, setExportLoading] = useState(false);
+  const { showSuccess, showError } = useNotification();
 
   useEffect(() => {
     // Scroll to top when component mounts
@@ -564,11 +568,17 @@ export const AnalyticsPage: React.FC = () => {
       }
 
       // Show success message
-      alert('Report exported successfully!');
       setShowExportModal(false);
+      showSuccess(
+        'Report Exported!',
+        `Your analytics report has been exported successfully in ${options.format.toUpperCase()} format.`
+      );
     } catch (error) {
       console.error('Export failed:', error);
-      alert('Export failed. Please try again.');
+      showError(
+        'Export Failed',
+        'Failed to export analytics report. Please try again.'
+      );
     } finally {
       setExportLoading(false);
     }
@@ -619,7 +629,7 @@ export const AnalyticsPage: React.FC = () => {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } catch (error) {
-      alert('Failed to export analytics report.');
+      showError('Export Failed', 'Failed to export CSV report. Please try again.');
     }
   };
 
@@ -667,40 +677,62 @@ export const AnalyticsPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/20 to-purple-50/20 dark:from-gray-900 dark:via-gray-900 dark:to-gray-900">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
-            <div className="flex items-center space-x-4">
-              <BackButton />
-              <div>
-                <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">Analytics Dashboard</h1>
-                <p className="text-sm lg:text-base text-gray-600 dark:text-gray-400 mt-1">
-                  Comprehensive insights into your teaching performance and student engagement
-                </p>
-              </div>
-            </div>
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
-              <select
-                value={timeRange}
-                onChange={(e) => setTimeRange(e.target.value as any)}
-                className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
-              >
-                <option value="7d">Last 7 days</option>
-                <option value="30d">Last 30 days</option>
-                <option value="90d">Last 90 days</option>
-                <option value="1y">Last year</option>
-              </select>
+      {/* Hero Section */}
+      <div className="courses-header">
+        <div className="courses-header-content">
+          <div className="courses-header-text">
+            <h1 className="courses-header-title">
+              Analytics Dashboard
+            </h1>
+            <p className="courses-header-subtitle">
+              Comprehensive insights into your teaching performance and student engagement
+            </p>
+          </div>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
+            <select
+              value={timeRange}
+              onChange={(e) => setTimeRange(e.target.value as any)}
+              className="px-4 py-3 min-h-[44px] border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-base touch-manipulation"
+            >
+              <option value="7d">Last 7 days</option>
+              <option value="30d">Last 30 days</option>
+              <option value="90d">Last 90 days</option>
+              <option value="1y">Last year</option>
+            </select>
+            <Link
+              to="/earnings-report"
+              className="flex items-center justify-center px-4 py-3 min-h-[44px] rounded-xl font-semibold text-base transition-all duration-200 touch-manipulation active:scale-95"
+              style={{ 
+                backgroundColor: 'rgba(111, 115, 210, 0.1)',
+                color: '#6F73D2',
+                border: '2px solid rgba(111, 115, 210, 0.2)'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = 'rgba(111, 115, 210, 0.2)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'rgba(111, 115, 210, 0.1)';
+              }}
+            >
+              <DollarSign className="h-5 w-5 mr-2" />
+              <span className="hidden sm:inline">View Earnings Report</span>
+              <span className="sm:hidden">Earnings</span>
+            </Link>
+            <Tooltip content="Export analytics data as PDF, Excel, or CSV">
               <button 
                 onClick={() => setShowExportModal(true)}
-                className="flex items-center justify-center px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                className="courses-create-button button-press min-h-[44px] px-4 py-3 text-base touch-manipulation"
               >
-                <Download className="h-3.5 w-3.5 mr-1.5" />
-                Export Report
+                <Download className="courses-create-button-icon" />
+                <span className="hidden sm:inline">Export Report</span>
+                <span className="sm:hidden">Export</span>
               </button>
-            </div>
+            </Tooltip>
           </div>
         </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
         {/* Navigation Tabs */}
         <div className="mb-8">
@@ -721,14 +753,15 @@ export const AnalyticsPage: React.FC = () => {
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id as any)}
-                    className={`flex items-center space-x-2 py-2 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
+                    className={`flex items-center space-x-2 py-3 px-3 sm:px-1 min-h-[44px] border-b-2 font-medium text-base sm:text-sm whitespace-nowrap touch-manipulation ${
                       activeTab === tab.id
                         ? 'border-blue-500 text-blue-600 dark:text-blue-400'
                         : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
                     }`}
                   >
-                    <Icon className="h-4 w-4 flex-shrink-0" />
-                    <span>{tab.label}</span>
+                    <Icon className="h-5 w-5 sm:h-4 sm:w-4 flex-shrink-0" />
+                    <span className="hidden sm:inline">{tab.label}</span>
+                    <span className="sm:hidden text-xs">{tab.label.split(' ')[0]}</span>
                   </button>
                 );
               })}
@@ -738,16 +771,19 @@ export const AnalyticsPage: React.FC = () => {
 
         {/* Overview Tab */}
         {activeTab === 'overview' && analytics && (
-          <>
+          <div className="space-y-6">
             {/* Key Metrics */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 lg:gap-6 mb-8">
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 lg:p-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4 mb-6">
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 lg:p-6 hover-lift">
                 <div className="flex items-center">
                   <div className="flex-shrink-0">
                     <BookOpen className="h-6 w-6 lg:h-8 lg:w-8 text-blue-600 dark:text-blue-400" />
                   </div>
                   <div className="ml-3 lg:ml-4 flex-1 min-w-0">
-                    <p className="text-xs lg:text-sm font-medium text-gray-500 dark:text-gray-400">Total Courses</p>
+                    <div className="flex items-center space-x-1">
+                      <p className="text-xs lg:text-sm font-medium text-gray-500 dark:text-gray-400">Total Courses</p>
+                      <HelpTooltip content="Total number of courses you've created" />
+                    </div>
                     <p className="text-xl lg:text-2xl font-semibold text-gray-900 dark:text-white">
                       {analytics.totalCourses}
                     </p>
@@ -761,13 +797,16 @@ export const AnalyticsPage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 lg:p-6">
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 lg:p-6 hover-lift">
                 <div className="flex items-center">
                   <div className="flex-shrink-0">
                     <Users className="h-6 w-6 lg:h-8 lg:w-8 text-green-600 dark:text-green-400" />
                   </div>
                   <div className="ml-3 lg:ml-4 flex-1 min-w-0">
-                    <p className="text-xs lg:text-sm font-medium text-gray-500 dark:text-gray-400">Total Students</p>
+                    <div className="flex items-center space-x-1">
+                      <p className="text-xs lg:text-sm font-medium text-gray-500 dark:text-gray-400">Total Students</p>
+                      <HelpTooltip content="Total number of students enrolled across all your courses" />
+                    </div>
                     <p className="text-xl lg:text-2xl font-semibold text-gray-900 dark:text-white">
                       {formatNumber(analytics.totalStudents)}
                     </p>
@@ -781,13 +820,16 @@ export const AnalyticsPage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 lg:p-6">
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 lg:p-6 hover-lift">
                 <div className="flex items-center">
                   <div className="flex-shrink-0">
                     <FileText className="h-6 w-6 lg:h-8 lg:w-8 text-orange-600 dark:text-orange-400" />
                   </div>
                   <div className="ml-3 lg:ml-4 flex-1 min-w-0">
-                    <p className="text-xs lg:text-sm font-medium text-gray-500 dark:text-gray-400">Pending Assignments</p>
+                    <div className="flex items-center space-x-1">
+                      <p className="text-xs lg:text-sm font-medium text-gray-500 dark:text-gray-400">Pending Assignments</p>
+                      <HelpTooltip content="Assignments waiting to be graded" />
+                    </div>
                     <p className="text-xl lg:text-2xl font-semibold text-gray-900 dark:text-white">
                       {analytics.pendingAssignments}
                     </p>
@@ -828,13 +870,16 @@ export const AnalyticsPage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 lg:p-6">
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 lg:p-6 hover-lift">
                 <div className="flex items-center">
                   <div className="flex-shrink-0">
                     <DollarSign className="h-6 w-6 lg:h-8 lg:w-8 text-emerald-600 dark:text-emerald-400" />
                   </div>
                   <div className="ml-3 lg:ml-4 flex-1 min-w-0">
-                    <p className="text-xs lg:text-sm font-medium text-gray-500 dark:text-gray-400">Monthly Revenue</p>
+                    <div className="flex items-center space-x-1">
+                      <p className="text-xs lg:text-sm font-medium text-gray-500 dark:text-gray-400">Monthly Revenue</p>
+                      <HelpTooltip content="Total revenue earned this month from course enrollments" />
+                    </div>
                     <p className="text-xl lg:text-2xl font-semibold text-gray-900 dark:text-white">
                       {formatCurrency(analytics.monthlyRevenue)}
                     </p>
@@ -878,7 +923,27 @@ export const AnalyticsPage: React.FC = () => {
               </div>
 
               <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Revenue Summary</h3>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white">Revenue Summary</h3>
+                  <Link
+                    to="/earnings-report"
+                    className="flex items-center px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200"
+                    style={{ 
+                      backgroundColor: 'rgba(111, 115, 210, 0.1)',
+                      color: '#6F73D2',
+                      border: '1px solid rgba(111, 115, 210, 0.2)'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = 'rgba(111, 115, 210, 0.2)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = 'rgba(111, 115, 210, 0.1)';
+                    }}
+                  >
+                    <DollarSign className="h-4 w-4 mr-1.5" />
+                    View Detailed Report
+                  </Link>
+                </div>
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <div className="flex-1 min-w-0">
@@ -922,7 +987,7 @@ export const AnalyticsPage: React.FC = () => {
                 </div>
               </div>
             </div>
-          </>
+          </div>
         )}
 
         {/* Other tabs would go here - for now just show a placeholder */}

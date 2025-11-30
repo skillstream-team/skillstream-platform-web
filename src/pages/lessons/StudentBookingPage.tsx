@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Clock, User, Check, X, BookOpen, Video, Star, MapPin, Filter } from 'lucide-react';
+import { Calendar, Clock, User, Check, X, BookOpen, Star, Users } from 'lucide-react';
 import { useAuthStore } from '../../store/auth';
+import { getAvailableSlots, getMyBookings, bookLessonSlot, cancelBooking as cancelBookingApi } from '../../services/api';
 
 interface AvailableSlot {
   id: string;
@@ -50,10 +51,12 @@ export const StudentBookingPage: React.FC = () => {
   const loadAvailableSlots = async () => {
     try {
       setLoading(true);
-      // TODO: Replace with actual API call
-      // const slots = await apiService.getAvailableSlots({ date: selectedDate, subject: selectedSubject, teacherId: selectedTeacher });
-      // setAvailableSlots(slots);
-      setAvailableSlots([]);
+      const slots = await getAvailableSlots({
+        date: selectedDate,
+        subject: selectedSubject,
+        teacherId: selectedTeacher
+      });
+      setAvailableSlots(slots as AvailableSlot[]);
     } catch (error) {
       console.error('Error loading slots:', error);
     } finally {
@@ -63,10 +66,12 @@ export const StudentBookingPage: React.FC = () => {
 
   const loadMyBookings = async () => {
     try {
-      // TODO: Replace with actual API call
-      // const bookings = await apiService.getMyBookings(user?.id);
-      // setMyBookings(bookings);
-      setMyBookings([]);
+      if (!user?.id) {
+        setMyBookings([]);
+        return;
+      }
+      const bookings = await getMyBookings(user.id);
+      setMyBookings(bookings as Booking[]);
     } catch (error) {
       console.error('Error loading bookings:', error);
     }
@@ -78,12 +83,11 @@ export const StudentBookingPage: React.FC = () => {
   };
 
   const confirmBooking = async () => {
-    if (!selectedSlot) return;
+    if (!selectedSlot || !user?.id) return;
     
     try {
-      // TODO: Replace with actual API call
-      // const booking = await apiService.bookLessonSlot(selectedSlot.id, user?.id);
-      // setMyBookings(prev => [...prev, booking]);
+      const booking = await bookLessonSlot(selectedSlot.id, user.id);
+      setMyBookings(prev => [...prev, booking as Booking]);
       setShowBookingModal(false);
       setSelectedSlot(null);
       loadAvailableSlots();
@@ -97,8 +101,7 @@ export const StudentBookingPage: React.FC = () => {
     if (!confirm('Are you sure you want to cancel this booking?')) return;
     
     try {
-      // TODO: Replace with actual API call
-      // await apiService.cancelBooking(bookingId);
+      await cancelBookingApi(bookingId);
       setMyBookings(prev => prev.filter(b => b.id !== bookingId));
     } catch (error) {
       console.error('Error cancelling booking:', error);

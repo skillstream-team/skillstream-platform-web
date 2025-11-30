@@ -1,15 +1,17 @@
 import React, { useEffect, useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useParams } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useParams, useNavigate } from 'react-router-dom';
 import { useAuthStore } from './store/auth';
 import { useThemeStore } from './store/theme';
+import { setRefreshToken } from './services/api';
 import { Layout } from './components/layout/Layout';
 import { LoginPage } from './pages/auth/LoginPage';
 import { RegisterPage } from './pages/auth/RegisterPage';
-import { DashboardPage } from './pages/DashboardPage';
+import { ForgotPasswordPage } from './pages/auth/ForgotPasswordPage';
+import { ResetPasswordPage } from './pages/auth/ResetPasswordPage';
 import { HomePage } from './pages/HomePage';
 import { LearnPage } from './pages/LearnPage';
 import { DiscoverPage } from './pages/DiscoverPage';
-import { SchedulePage } from './pages/SchedulePage';
+import { SearchResultsPage } from './pages/SearchResultsPage';
 import { CoursesPage } from './pages/courses/CoursesPage';
 import { CourseDetailPage } from './pages/courses/CourseDetailPage';
 import { CourseLearningPage } from './pages/courses/CourseLearningPage';
@@ -22,7 +24,6 @@ import { AIChatAssistant } from './components/ai/AIChatAssistant';
 import websocketService from './services/websocket';
 import { WebSocketMessage } from './types';
 import CalendarPage from './pages/CalendarPage';
-import { SchedulePage } from './pages/SchedulePage';
 import { ProgressTracker } from './components/progress/ProgressTracker';
 import { StudyGroups } from './components/collaboration/StudyGroups';
 import { ForumBoard } from './components/forum/ForumBoard';
@@ -31,14 +32,21 @@ import { MessagesPage } from './pages/MessagesPage';
 import { PeopleGroupsPage } from './pages/PeopleGroupsPage';
 import AssignmentsPage from './pages/assessments/AssignmentsPage';
 import AssignmentSubmitPage from './pages/assessments/AssignmentSubmitPage';
+import GradeAssignmentsPage from './pages/assessments/GradeAssignmentsPage';
+import { GradebookPage } from './pages/gradebook/GradebookPage';
 import ProfilePage from './pages/ProfilePage';
 import CallsPage from './pages/CallsPage';
 import { MarketingGuidePage } from './pages/MarketingGuidePage';
 import { EarningsReportPage } from './pages/EarningsReportPage';
 import { QuickLessonPage } from './pages/lessons/QuickLessonPage';
+import { AdminNotificationsPage } from './pages/admin/AdminNotificationsPage';
 import { TeacherAvailabilityPage } from './pages/lessons/TeacherAvailabilityPage';
 import { StudentBookingPage } from './pages/lessons/StudentBookingPage';
 import { LessonsPage } from './pages/lessons/LessonsPage';
+import { CertificatesPage } from './pages/CertificatesPage';
+import { StudentProgressPage } from './pages/students/StudentProgressPage';
+import { ContentLibraryPage } from './pages/content/ContentLibraryPage';
+import { StudentGroupsPage } from './pages/students/StudentGroupsPage';
 import { ErrorBoundary } from './components/ErrorBoundary';
 
 // Protected Route Component
@@ -53,6 +61,12 @@ const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return user && user.role === 'ADMIN' ? <>{children}</> : <Navigate to="/dashboard" replace />;
 };
 
+// Teacher Route Component
+const TeacherRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user } = useAuthStore();
+  return user && user.role === 'TEACHER' ? <>{children}</> : <Navigate to="/home" replace />;
+};
+
 // Public Route Component (redirects to dashboard if already authenticated)
 const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuthStore();
@@ -65,19 +79,252 @@ const ForumRoute: React.FC = () => {
   return <ForumBoard courseId={courseId || ''} />;
 };
 
+// Google OAuth Callback Component (handles /auth/google/callback)
+const GoogleOAuthCallback: React.FC = () => {
+  const { handleOAuthLogin } = useAuthStore();
+  const navigate = useNavigate();
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const processGoogleOAuthCallback = async () => {
+      try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const code = urlParams.get('code');
+        const state = urlParams.get('state');
+        const errorParam = urlParams.get('error');
+        const errorDescription = urlParams.get('error_description');
+
+        // Check for OAuth errors first
+        if (errorParam) {
+          const errorMessage = errorDescription || errorParam;
+          setError(errorMessage);
+          setLoading(false);
+          setTimeout(() => {
+            navigate(`/login?error=${encodeURIComponent(errorMessage)}`);
+          }, 3000);
+          return;
+        }
+
+        const storedState = sessionStorage.getItem('oauth_state');
+
+        // Validate state if provided
+        if (state && storedState && state !== storedState) {
+          setError('Invalid state parameter. Possible CSRF attack.');
+          setLoading(false);
+          setTimeout(() => {
+            navigate('/login?error=invalid_state');
+          }, 3000);
+          return;
+        }
+
+        if (!code) {
+          setError('Missing authorization code');
+          setLoading(false);
+          setTimeout(() => {
+            navigate('/login?error=missing_code');
+          }, 3000);
+          return;
+        }
+
+        // Clear stored OAuth data
+        sessionStorage.removeItem('oauth_provider');
+        sessionStorage.removeItem('oauth_state');
+        sessionStorage.removeItem('oauth_redirect_uri');
+
+        // Complete OAuth login (this will exchange code for token and send to backend)
+        await handleOAuthLogin('google', code, state || undefined);
+        
+        // Navigate to dashboard on success
+        setLoading(false);
+        navigate('/dashboard');
+      } catch (err: any) {
+        console.error('Google OAuth login failed:', err);
+        const errorMessage = err.response?.data?.error || err.message || 'OAuth login failed';
+        setError(errorMessage);
+        setLoading(false);
+        setTimeout(() => {
+          navigate(`/login?error=${encodeURIComponent(errorMessage)}`);
+        }, 3000);
+      }
+    };
+
+    processGoogleOAuthCallback();
+  }, [handleOAuthLogin, navigate]);
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+      <div className="text-center max-w-md mx-auto p-8">
+        {error ? (
+          <>
+            <div className="text-red-600 dark:text-red-400 mb-4 text-lg font-semibold">
+              Authentication Error
+            </div>
+            <p className="text-gray-600 dark:text-gray-400 mb-4">{error}</p>
+            <p className="text-sm text-gray-500 dark:text-gray-500">Redirecting to login...</p>
+          </>
+        ) : loading ? (
+          <>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+            <p className="text-gray-600 dark:text-gray-400 text-lg">Completing login...</p>
+            <p className="text-sm text-gray-500 dark:text-gray-500 mt-2">Please wait</p>
+          </>
+        ) : null}
+      </div>
+    </div>
+  );
+};
+
+// Generic OAuth Callback Component (for LinkedIn and other providers)
+const OAuthCallback: React.FC = () => {
+  const { handleOAuthLogin } = useAuthStore();
+  const navigate = useNavigate();
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const processOAuthCallback = async () => {
+      try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const code = urlParams.get('code');
+        const state = urlParams.get('state');
+        const errorParam = urlParams.get('error');
+        const errorDescription = urlParams.get('error_description');
+        const provider = urlParams.get('provider') as 'google' | 'linkedin' | null;
+
+        // Check for OAuth errors first
+        if (errorParam) {
+          const errorMessage = errorDescription || errorParam;
+          setError(errorMessage);
+          setLoading(false);
+          setTimeout(() => {
+            navigate(`/login?error=${encodeURIComponent(errorMessage)}`);
+          }, 3000);
+          return;
+        }
+
+        // Get provider from sessionStorage or URL params
+        const storedProvider = sessionStorage.getItem('oauth_provider') as 'google' | 'linkedin' | null;
+        const finalProvider = provider || storedProvider;
+        const storedState = sessionStorage.getItem('oauth_state');
+
+        // Validate state if provided
+        if (state && storedState && state !== storedState) {
+          setError('Invalid state parameter. Possible CSRF attack.');
+          setLoading(false);
+          setTimeout(() => {
+            navigate('/login?error=invalid_state');
+          }, 3000);
+          return;
+        }
+
+        if (!code) {
+          setError('Missing authorization code');
+          setLoading(false);
+          setTimeout(() => {
+            navigate('/login?error=missing_code');
+          }, 3000);
+          return;
+        }
+
+        if (!finalProvider) {
+          setError('Unable to determine OAuth provider');
+          setLoading(false);
+          setTimeout(() => {
+            navigate('/login?error=missing_provider');
+          }, 3000);
+          return;
+        }
+
+        // Clear stored OAuth data
+        sessionStorage.removeItem('oauth_provider');
+        sessionStorage.removeItem('oauth_state');
+        sessionStorage.removeItem('oauth_redirect_uri');
+
+        // Complete OAuth login
+        await handleOAuthLogin(finalProvider, code, state || undefined);
+        
+        // Navigate to dashboard on success
+        navigate('/dashboard');
+      } catch (err: any) {
+        console.error('OAuth login failed:', err);
+        const errorMessage = err.response?.data?.error || err.message || 'OAuth login failed';
+        setError(errorMessage);
+        setLoading(false);
+        setTimeout(() => {
+          navigate(`/login?error=${encodeURIComponent(errorMessage)}`);
+        }, 3000);
+      }
+    };
+
+    processOAuthCallback();
+  }, [handleOAuthLogin, navigate]);
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+      <div className="text-center max-w-md mx-auto p-8">
+        {error ? (
+          <>
+            <div className="text-red-600 dark:text-red-400 mb-4 text-lg font-semibold">
+              Authentication Error
+            </div>
+            <p className="text-gray-600 dark:text-gray-400 mb-4">{error}</p>
+            <p className="text-sm text-gray-500 dark:text-gray-500">Redirecting to login...</p>
+          </>
+        ) : loading ? (
+          <>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+            <p className="text-gray-600 dark:text-gray-400 text-lg">Completing login...</p>
+            <p className="text-sm text-gray-500 dark:text-gray-500 mt-2">Please wait</p>
+          </>
+        ) : null}
+      </div>
+    </div>
+  );
+};
+
 function App() {
   const { user } = useAuthStore();
-  const { theme } = useThemeStore();
+  const { theme, getEffectiveTheme } = useThemeStore();
   const [isAIChatOpen, setIsAIChatOpen] = useState(false);
 
-  // Initialize theme on app load
+  // Initialize refresh token on app load
   useEffect(() => {
-    if (theme === 'dark') {
+    const storedRefreshToken = localStorage.getItem('refreshToken');
+    if (storedRefreshToken) {
+      setRefreshToken(storedRefreshToken);
+    }
+  }, []);
+
+  // Initialize theme on app load and listen for system preference changes
+  useEffect(() => {
+    // Apply initial theme
+    const effectiveTheme = getEffectiveTheme();
+    if (effectiveTheme === 'dark') {
       document.documentElement.classList.add('dark');
     } else {
       document.documentElement.classList.remove('dark');
     }
-  }, [theme]);
+
+    // Listen for system preference changes if theme is set to 'system'
+    if (theme === 'system' && typeof window !== 'undefined') {
+      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      const handleChange = () => {
+        const newEffectiveTheme = getEffectiveTheme();
+        if (newEffectiveTheme === 'dark') {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      };
+      
+      mediaQuery.addEventListener('change', handleChange);
+      
+      return () => {
+        mediaQuery.removeEventListener('change', handleChange);
+      };
+    }
+  }, [theme, getEffectiveTheme]);
 
   useEffect(() => {
     if (user) {
@@ -181,8 +428,12 @@ function App() {
     return (
       <Router>
         <Routes>
+          <Route path="/auth/google/callback" element={<GoogleOAuthCallback />} />
+          <Route path="/oauth/callback" element={<OAuthCallback />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="*" element={<LoginPage />} />
         </Routes>
       </Router>
@@ -248,6 +499,16 @@ function App() {
                 <ProtectedRoute>
                   <Layout>
                     <DiscoverPage />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/search"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <SearchResultsPage />
                   </Layout>
                 </ProtectedRoute>
               }
@@ -333,10 +594,50 @@ function App() {
               }
             />
             <Route
+              path="/students/progress"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <StudentProgressPage />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/courses/:courseId/students/progress"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <StudentProgressPage />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/notifications"
+              element={
+                <AdminRoute>
+                  <AdminNotificationsPage />
+                </AdminRoute>
+              }
+            />
+            <Route
               path="/calendar"
               element={
                 <ProtectedRoute>
-                  <Navigate to="/schedule" replace />
+                  <Layout>
+                    <CalendarPage />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/schedule"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <CalendarPage />
+                  </Layout>
                 </ProtectedRoute>
               }
             />
@@ -356,6 +657,16 @@ function App() {
                         <ProgressTracker />
                       </div>
                     </div>
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/certificates"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <CertificatesPage />
                   </Layout>
                 </ProtectedRoute>
               }
@@ -453,6 +764,46 @@ function App() {
               }
             />
             <Route
+              path="/assignments/grade"
+              element={
+                <TeacherRoute>
+                  <Layout>
+                    <GradeAssignmentsPage />
+                  </Layout>
+                </TeacherRoute>
+              }
+            />
+            <Route
+              path="/gradebook"
+              element={
+                <TeacherRoute>
+                  <Layout>
+                    <GradebookPage />
+                  </Layout>
+                </TeacherRoute>
+              }
+            />
+            <Route
+              path="/content-library"
+              element={
+                <TeacherRoute>
+                  <Layout>
+                    <ContentLibraryPage />
+                  </Layout>
+                </TeacherRoute>
+              }
+            />
+            <Route
+              path="/students/groups"
+              element={
+                <TeacherRoute>
+                  <Layout>
+                    <StudentGroupsPage />
+                  </Layout>
+                </TeacherRoute>
+              }
+            />
+            <Route
               path="/assignments/:assignmentId"
               element={
                 <ProtectedRoute>
@@ -511,11 +862,11 @@ function App() {
             <Route
               path="/lessons/availability"
               element={
-                <ProtectedRoute>
+                <TeacherRoute>
                   <Layout>
                     <TeacherAvailabilityPage />
                   </Layout>
-                </ProtectedRoute>
+                </TeacherRoute>
               }
             />
             <Route
@@ -555,11 +906,11 @@ function App() {
             <Route
               path="/earnings-report"
               element={
-                <ProtectedRoute>
+                <TeacherRoute>
                   <Layout>
                     <EarningsReportPage />
                   </Layout>
-                </ProtectedRoute>
+                </TeacherRoute>
               }
             />
 

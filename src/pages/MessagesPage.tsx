@@ -15,7 +15,6 @@ import {
   ArrowLeft
 } from 'lucide-react';
 import { useAuthStore } from '../store/auth';
-import { BackButton } from '../components/common/BackButton';
 import { AttachmentMenu, Attachment } from '../components/messaging/AttachmentMenu';
 import { 
   getUsers, 
@@ -24,9 +23,7 @@ import {
   getMessages,
   sendMessage,
   markConversationAsRead,
-  uploadMessageFile,
-  addMessageReaction,
-  removeMessageReaction
+  uploadMessageFile
 } from '../services/api';
 import { Conversation, Message } from '../types';
 import { messagingSocketService } from '../services/messagingSocket';
@@ -314,23 +311,6 @@ export const MessagesPage: React.FC = () => {
     }
   };
 
-  const handleAddReaction = async (messageId: string, emoji: string) => {
-    try {
-      await addMessageReaction(messageId, emoji);
-      messagingSocketService.addReaction(messageId, emoji);
-    } catch (error) {
-      console.error('Error adding reaction:', error);
-    }
-  };
-
-  const handleRemoveReaction = async (messageId: string, emoji: string) => {
-    try {
-      await removeMessageReaction(messageId, emoji);
-      messagingSocketService.removeReaction(messageId, emoji);
-    } catch (error) {
-      console.error('Error removing reaction:', error);
-    }
-  };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -396,92 +376,51 @@ export const MessagesPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ backgroundColor: '#F4F7FA' }}>
-      {/* Mobile Header */}
-      <div className="lg:hidden sticky top-0 z-40 backdrop-blur-xl border-b" style={{ 
-        backgroundColor: 'rgba(255, 255, 255, 0.95)',
-        borderColor: 'rgba(11, 30, 63, 0.1)'
-      }}>
-        <div className="px-4 py-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <BackButton showHome />
-              <h1 className="text-lg font-bold" style={{ color: '#0B1E3F' }}>
-                Messages
-              </h1>
-            </div>
-            <button
-              onClick={() => setIsNewMessageMode(true)}
-              className="p-2 rounded-xl transition-all duration-200 active:scale-95"
-              style={{ backgroundColor: 'rgba(0, 181, 173, 0.1)' }}
-            >
-              <Plus className="h-5 w-5" style={{ color: '#00B5AD' }} />
-            </button>
+    <div className="messages-page">
+      {/* Header Section */}
+      <div className="courses-header">
+        <div className="courses-header-content">
+          <div className="courses-header-text">
+            <h1 className="courses-header-title">
+              Messages
+            </h1>
+            <p className="courses-header-subtitle">
+              Connect with instructors and fellow learners
+            </p>
           </div>
+          <button
+            onClick={() => setIsNewMessageMode(true)}
+            className="courses-create-button"
+          >
+            <Plus className="courses-create-button-icon" />
+            New Conversation
+          </button>
         </div>
       </div>
 
-      {/* Desktop Header */}
-      <div className="hidden lg:block bg-white border-b" style={{ borderColor: '#E5E7EB' }}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between py-6">
-            <div className="flex items-center space-x-4">
-              <BackButton showHome />
-              <div>
-                <h1 className="text-2xl font-bold" style={{ color: '#0B1E3F' }}>
-                  {isNewMessageMode ? 'New Message' : 'Messages'}
-                </h1>
-                <p className="text-sm" style={{ color: '#6F73D2' }}>
-                  {isNewMessageMode ? 'Start a new conversation' : 'Connect with students and teachers'}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-3">
-              {!isNewMessageMode && (
-                <button 
-                  onClick={() => setIsNewMessageMode(true)}
-                  className="flex items-center px-6 py-3 rounded-xl font-semibold text-white transition-all duration-300"
-                  style={{ 
-                    backgroundColor: '#00B5AD',
-                    boxShadow: '0 4px 14px rgba(0, 181, 173, 0.3)'
-                  }}
-                >
-                  <Plus className="h-5 w-5 mr-2" />
-                  New Message
-                </button>
-              )}
-              <div 
-                className={`w-3 h-3 rounded-full ${isSocketConnected ? 'bg-green-500' : 'bg-red-500'}`} 
-                title={isSocketConnected ? 'Connected' : 'Disconnected'} 
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="flex-1 flex overflow-hidden">
+      <div className="messages-container">
         {isNewMessageMode ? (
           // New Message Interface
-          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 h-[calc(100vh-250px)] flex">
+          <div className="messages-new-mode">
             {/* User Selection */}
-            <div className="w-80 border-r border-gray-200 dark:border-gray-700 flex flex-col">
-              <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
+            <div className="messages-user-selection">
+              <div className="messages-user-selection-header">
+                <h3 className="messages-user-selection-title">
                   Select Recipient
                 </h3>
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <div className="messages-search-wrapper">
+                  <Search className="messages-search-icon" />
                   <input
                     type="text"
                     placeholder="Search users..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                    className="messages-search-input"
                   />
                 </div>
               </div>
 
-              <div className="flex-1 overflow-y-auto">
+              <div className="messages-user-list">
                 {users.filter(u => 
                   u.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                   u.email.toLowerCase().includes(searchQuery.toLowerCase())
@@ -492,21 +431,19 @@ export const MessagesPage: React.FC = () => {
                       setSelectedUserForNew(userItem);
                       handleCreateConversation(userItem.id);
                     }}
-                    className={`p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${
-                      selectedUserForNew?.id === userItem.id ? 'bg-blue-50 dark:bg-blue-900/20' : ''
-                    }`}
+                    className={`messages-user-item ${selectedUserForNew?.id === userItem.id ? 'messages-user-item--selected' : ''}`}
                   >
-                    <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
-                        <span className="text-sm font-medium text-blue-600 dark:text-blue-400">
+                    <div className="messages-user-item-content">
+                      <div className="messages-user-avatar">
+                        <span className="messages-user-avatar-text">
                           {userItem.name.charAt(0)}
                         </span>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                      <div className="messages-user-info">
+                        <p className="messages-user-name">
                           {userItem.name}
                         </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                        <p className="messages-user-email">
                           {userItem.email}
                         </p>
                       </div>
@@ -517,19 +454,19 @@ export const MessagesPage: React.FC = () => {
             </div>
 
             {/* Message Composition */}
-            <div className="flex-1 flex flex-col">
+            <div className="messages-composition">
               {selectedConversation ? (
                 <>
                   {/* Recipient Header */}
-                  <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
-                        <span className="text-sm font-medium text-blue-600 dark:text-blue-400">
+                  <div className="messages-recipient-header">
+                    <div className="messages-recipient-info">
+                      <div className="messages-recipient-avatar">
+                        <span>
                           {getConversationName(selectedConversation).charAt(0)}
                         </span>
                       </div>
                       <div>
-                        <h3 className="text-sm font-medium text-gray-900 dark:text-white">
+                        <h3 className="messages-recipient-name">
                           {getConversationName(selectedConversation)}
                         </h3>
                       </div>
@@ -541,57 +478,54 @@ export const MessagesPage: React.FC = () => {
                         setSelectedUserForNew(null);
                         setNewMessage('');
                       }}
-                      className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                      className="messages-close-button"
                     >
-                      <X className="h-4 w-4" />
+                      <X className="messages-close-button-icon" />
                     </button>
                   </div>
 
                   {/* Message Input */}
-                  <div className="flex-1 p-4 flex flex-col">
-                    <div className="flex-1 bg-gray-50 dark:bg-gray-700 p-4 mb-4">
+                  <div className="messages-composition-area">
+                    <div className="messages-textarea-wrapper">
                       <textarea
                         value={newMessage}
                         onChange={(e) => setNewMessage(e.target.value)}
                         onKeyPress={handleKeyPress}
                         placeholder="Type your message here..."
-                        className="w-full h-full bg-transparent border-none outline-none resize-none text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                        className="messages-textarea"
                         rows={10}
                       />
                     </div>
                     
                     {attachments.length > 0 && (
-                      <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-700">
-                        <div className="flex flex-wrap gap-2">
+                      <div className="messages-attachments-preview">
+                        <div className="messages-attachments-list">
                           {attachments.map((attachment) => (
-                            <div
-                              key={attachment.id}
-                              className="flex items-center space-x-2 p-2 bg-white dark:bg-gray-600 border border-gray-200 dark:border-gray-600"
-                            >
+                            <div key={attachment.id} className="messages-attachment-item">
                               {attachment.preview ? (
                                 <img
                                   src={attachment.preview}
                                   alt={attachment.name}
-                                  className="w-8 h-8 object-cover"
+                                  className="messages-attachment-preview"
                                 />
                               ) : (
-                                <div className="w-8 h-8 bg-gray-200 dark:bg-gray-500 flex items-center justify-center">
-                                  <File className="h-4 w-4 text-gray-500" />
+                                <div className="messages-attachment-icon">
+                                  <File />
                                 </div>
                               )}
-                              <div className="flex-1 min-w-0">
-                                <p className="text-xs font-medium text-gray-900 dark:text-white truncate">
+                              <div className="messages-attachment-info">
+                                <p className="messages-attachment-name">
                                   {attachment.name}
                                 </p>
-                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                <p className="messages-attachment-size">
                                   {formatFileSize(attachment.size)}
                                 </p>
                               </div>
                               <button
                                 onClick={() => removeAttachment(attachment.id)}
-                                className="text-gray-400 hover:text-red-500"
+                                className="messages-attachment-remove"
                               >
-                                <X className="h-3 w-3" />
+                                <X className="messages-close-button-icon" />
                               </button>
                             </div>
                           ))}
@@ -599,17 +533,17 @@ export const MessagesPage: React.FC = () => {
                       </div>
                     )}
 
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
+                    <div className="messages-composition-actions">
+                      <div className="messages-composition-left">
                         <button
                           ref={attachmentButtonRef}
                           onClick={() => setShowAttachmentMenu(!showAttachmentMenu)}
-                          className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                          className="messages-attachment-button"
                         >
-                          <Paperclip className="h-4 w-4" />
+                          <Paperclip className="messages-attachment-button-icon" />
                         </button>
                       </div>
-                      <div className="flex items-center space-x-2">
+                      <div className="messages-composition-right">
                         <button
                           onClick={() => {
                             setIsNewMessageMode(false);
@@ -617,19 +551,19 @@ export const MessagesPage: React.FC = () => {
                             setSelectedUserForNew(null);
                             setNewMessage('');
                           }}
-                          className="px-4 py-2 text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white"
+                          className="messages-cancel-button"
                         >
                           Cancel
                         </button>
                         <button
                           onClick={() => handleSendMessage(newMessage)}
                           disabled={(!newMessage.trim() && attachments.length === 0) || isSending}
-                          className="flex items-center px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                          className="messages-send-button"
                         >
                           {isSending ? (
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                            <div className="messages-send-spinner"></div>
                           ) : (
-                            <Send className="h-4 w-4 mr-2" />
+                            <Send className="messages-send-button-icon" />
                           )}
                           Send
                         </button>
@@ -638,13 +572,13 @@ export const MessagesPage: React.FC = () => {
                   </div>
                 </>
               ) : (
-                <div className="flex-1 flex items-center justify-center">
-                  <div className="text-center">
-                    <MessageCircle className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                <div className="messages-empty-state">
+                  <div className="messages-empty-state-content">
+                    <MessageCircle className="messages-empty-state-icon" />
+                    <h3 className="messages-empty-state-title">
                       Select a recipient
                     </h3>
-                    <p className="text-gray-500 dark:text-gray-400">
+                    <p className="messages-empty-state-text">
                       Choose someone from the list to start a new conversation
                     </p>
                   </div>
@@ -654,40 +588,23 @@ export const MessagesPage: React.FC = () => {
           </div>
         ) : (
           // Regular Messages Interface - WhatsApp Style
-          <div className="flex-1 flex overflow-hidden" style={{ backgroundColor: '#F4F7FA' }}>
+          <div className="messages-regular-interface">
             {/* Conversations List */}
-            <div className="hidden lg:flex w-80 lg:w-96 border-r flex flex-col" style={{ 
-              backgroundColor: 'white',
-              borderColor: '#E5E7EB'
-            }}>
-              <div className="p-4 border-b" style={{ borderColor: '#E5E7EB' }}>
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5" style={{ color: '#6F73D2' }} />
+            <div className="messages-conversations-list">
+              <div className="messages-conversations-search">
+                <div className="messages-conversations-search-wrapper">
+                  <Search className="messages-conversations-search-icon" />
                   <input
                     type="text"
                     placeholder="Search conversations..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 border-2 rounded-xl focus:outline-none transition-all duration-200"
-                    style={{
-                      borderColor: '#E5E7EB',
-                      backgroundColor: 'white',
-                      color: '#0B1E3F',
-                      fontSize: '16px'
-                    }}
-                    onFocus={(e) => {
-                      e.currentTarget.style.borderColor = '#00B5AD';
-                      e.currentTarget.style.boxShadow = '0 0 0 4px rgba(0, 181, 173, 0.1)';
-                    }}
-                    onBlur={(e) => {
-                      e.currentTarget.style.borderColor = '#E5E7EB';
-                      e.currentTarget.style.boxShadow = 'none';
-                    }}
+                    className="messages-conversations-search-input"
                   />
                 </div>
               </div>
 
-              <div className="flex-1 overflow-y-auto">
+              <div className="messages-conversations-scroll">
                 {filteredConversations.length > 0 ? (
                   filteredConversations.map((conversation) => {
                     const isSelected = selectedConversation?.id === conversation.id;
@@ -698,47 +615,32 @@ export const MessagesPage: React.FC = () => {
                           setSelectedConversation(conversation);
                           markConversationAsRead(conversation.id);
                         }}
-                        className={`p-4 cursor-pointer transition-all duration-200 active:scale-[0.98] ${
-                          isSelected ? '' : ''
-                        }`}
-                        style={{
-                          backgroundColor: isSelected ? 'rgba(0, 181, 173, 0.05)' : 'white',
-                          borderLeft: isSelected ? '3px solid #00B5AD' : 'none'
-                        }}
+                        className={`messages-conversation-item ${isSelected ? 'messages-conversation-item--selected' : ''}`}
                       >
-                        <div className="flex items-center space-x-3">
-                          <div 
-                            className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 text-white font-bold"
-                            style={{ 
-                              background: 'linear-gradient(135deg, #00B5AD 0%, #6F73D2 100%)'
-                            }}
-                          >
+                        <div className="messages-conversation-content">
+                          <div className="messages-conversation-avatar">
                             {getConversationAvatar(conversation) ? (
                               <img
                                 src={getConversationAvatar(conversation)}
                                 alt={getConversationName(conversation)}
-                                className="w-full h-full rounded-2xl object-cover"
                               />
                             ) : (
                               <span>{getConversationName(conversation).charAt(0)}</span>
                             )}
                           </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between mb-1">
-                              <p className="text-sm font-bold truncate" style={{ color: '#0B1E3F' }}>
+                          <div className="messages-conversation-info">
+                            <div className="messages-conversation-header">
+                              <p className="messages-conversation-name">
                                 {getConversationName(conversation)}
                               </p>
                               {conversation.unreadCount > 0 && (
-                                <span 
-                                  className="ml-2 px-2 py-1 rounded-full text-xs font-bold text-white"
-                                  style={{ backgroundColor: '#00B5AD' }}
-                                >
+                                <span className="messages-conversation-unread">
                                   {conversation.unreadCount > 99 ? '99+' : conversation.unreadCount}
                                 </span>
                               )}
                             </div>
                             {conversation.lastMessage && (
-                              <p className="text-xs truncate" style={{ color: '#6F73D2' }}>
+                              <p className="messages-conversation-preview">
                                 {conversation.lastMessage.content}
                               </p>
                             )}
@@ -748,11 +650,11 @@ export const MessagesPage: React.FC = () => {
                     );
                   })
                 ) : (
-                  <div className="flex items-center justify-center h-full p-8">
-                    <div className="text-center">
-                      <MessageCircle className="h-12 w-12 mx-auto mb-3" style={{ color: '#6F73D2', opacity: 0.5 }} />
-                      <p className="text-sm font-semibold" style={{ color: '#0B1E3F' }}>No conversations yet</p>
-                      <p className="text-xs mt-1" style={{ color: '#6F73D2' }}>Start a new conversation to get started</p>
+                  <div className="messages-conversations-empty">
+                    <div className="messages-conversations-empty-content">
+                      <MessageCircle className="messages-conversations-empty-icon" />
+                      <p className="messages-conversations-empty-title">No conversations yet</p>
+                      <p className="messages-conversations-empty-text">Start a new conversation to get started</p>
                     </div>
                   </div>
                 )}
@@ -760,86 +662,57 @@ export const MessagesPage: React.FC = () => {
             </div>
 
             {/* Messages View */}
-            <div className="flex-1 flex flex-col" style={{ backgroundColor: '#F4F7FA' }}>
+            <div className="messages-view">
               {selectedConversation ? (
                 <>
                   {/* Conversation Header - Sticky */}
-                  <div 
-                    className="flex items-center justify-between p-4 border-b backdrop-blur-xl"
-                    style={{ 
-                      backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                      borderColor: '#E5E7EB'
-                    }}
-                  >
-                    <div className="flex items-center space-x-3">
-                      <div 
-                        className="w-10 h-10 rounded-2xl flex items-center justify-center text-white font-bold flex-shrink-0"
-                        style={{ 
-                          background: 'linear-gradient(135deg, #00B5AD 0%, #6F73D2 100%)'
-                        }}
-                      >
+                  <div className="messages-conversation-header-bar">
+                    <div className="messages-conversation-header-left">
+                      <div className="messages-conversation-header-avatar">
                         {getConversationAvatar(selectedConversation) ? (
                           <img
                             src={getConversationAvatar(selectedConversation)}
                             alt={getConversationName(selectedConversation)}
-                            className="w-full h-full rounded-2xl object-cover"
                           />
                         ) : (
                           <span>{getConversationName(selectedConversation).charAt(0)}</span>
                         )}
                       </div>
-                      <div>
-                        <h3 className="text-sm font-bold" style={{ color: '#0B1E3F' }}>
+                      <div className="messages-conversation-header-info">
+                        <h3 className="messages-conversation-header-name">
                           {getConversationName(selectedConversation)}
                         </h3>
                         {selectedConversation.type === 'group' && (
-                          <p className="text-xs" style={{ color: '#6F73D2' }}>
+                          <p className="messages-conversation-header-meta">
                             {selectedConversation.participants.length} participants
                           </p>
                         )}
                       </div>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <button 
-                        className="p-2 rounded-xl transition-all duration-200 active:scale-95"
-                        style={{ backgroundColor: 'rgba(0, 181, 173, 0.1)' }}
-                      >
-                        <Phone className="h-5 w-5" style={{ color: '#00B5AD' }} />
+                    <div className="messages-conversation-header-actions">
+                      <button className="messages-header-action-button">
+                        <Phone className="messages-header-action-icon" />
                       </button>
-                      <button 
-                        className="p-2 rounded-xl transition-all duration-200 active:scale-95"
-                        style={{ backgroundColor: 'rgba(0, 181, 173, 0.1)' }}
-                      >
-                        <Video className="h-5 w-5" style={{ color: '#00B5AD' }} />
+                      <button className="messages-header-action-button">
+                        <Video className="messages-header-action-icon" />
                       </button>
-                      <button 
-                        className="p-2 rounded-xl transition-all duration-200 active:scale-95"
-                        style={{ backgroundColor: 'rgba(0, 181, 173, 0.1)' }}
-                      >
-                        <MoreVertical className="h-5 w-5" style={{ color: '#00B5AD' }} />
+                      <button className="messages-header-action-button">
+                        <MoreVertical className="messages-header-action-icon" />
                       </button>
                     </div>
                   </div>
 
                   {/* Messages - WhatsApp Style */}
-                  <div 
-                    className="flex-1 overflow-y-auto p-4 space-y-3"
-                    style={{ 
-                      backgroundImage: 'radial-gradient(circle at 20% 50%, rgba(0, 181, 173, 0.03) 0%, transparent 50%), radial-gradient(circle at 80% 80%, rgba(111, 115, 210, 0.03) 0%, transparent 50%)'
-                    }}
-                  >
+                  <div className="messages-list-container">
                     {isLoading ? (
-                      <div className="flex items-center justify-center h-full">
-                        <div 
-                          className="animate-spin rounded-full h-8 w-8 border-4 border-t-transparent"
-                          style={{ borderColor: '#00B5AD' }}
-                        ></div>
+                      <div className="messages-empty-state">
+                        <div className="messages-loading-spinner"></div>
                       </div>
                     ) : messages.length === 0 ? (
-                      <div className="flex items-center justify-center h-full">
-                        <div className="text-center">
-                          <MessageCircle className="h-12 w-12 mx-auto mb-2" style={{ color: '#6F73D2', opacity: 0.5 }} />
-                          <p style={{ color: '#6F73D2' }}>No messages yet</p>
+                      <div className="messages-empty-state">
+                        <div className="messages-empty-state-content">
+                          <MessageCircle className="messages-empty-state-icon" />
+                          <p className="messages-empty-state-text">No messages yet</p>
                         </div>
                       </div>
                     ) : (
@@ -848,89 +721,41 @@ export const MessagesPage: React.FC = () => {
                         return (
                           <div
                             key={message.id}
-                            className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}
+                            className={`messages-message-wrapper ${isOwn ? 'messages-message-wrapper--sent' : 'messages-message-wrapper--received'}`}
                           >
-                            <div className={`max-w-xs lg:max-w-md ${isOwn ? 'order-2' : 'order-1'}`}>
-                              {!isOwn && (
-                                <div className="flex items-center space-x-2 mb-1 px-2">
-                                  <span className="text-xs font-semibold" style={{ color: '#0B1E3F' }}>
-                                    {message.sender.username}
-                                  </span>
+                            <div className={`messages-message ${isOwn ? 'messages-message--sent' : 'messages-message--received'}`}>
+                              {message.attachments && message.attachments.length > 0 && (
+                                <div className="messages-message-attachment">
+                                  {message.attachments.map((att, idx) => (
+                                    <div key={idx}>
+                                      {att.mimeType.startsWith('image/') ? (
+                                        <img
+                                          src={att.url}
+                                          alt={att.filename}
+                                          className="messages-message-attachment-image"
+                                        />
+                                      ) : (
+                                        <a
+                                          href={att.url}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="messages-message-attachment-file"
+                                        >
+                                          <File className="messages-message-attachment-file-icon" />
+                                          <div className="messages-message-attachment-file-info">
+                                            <span className="messages-message-attachment-file-name">{att.filename}</span>
+                                          </div>
+                                        </a>
+                                      )}
+                                    </div>
+                                  ))}
                                 </div>
                               )}
-                              <div
-                                className={`p-3 rounded-2xl ${
-                                  isOwn ? 'rounded-tr-sm' : 'rounded-tl-sm'
-                                }`}
-                                style={{
-                                  backgroundColor: isOwn ? '#00B5AD' : 'white',
-                                  color: isOwn ? 'white' : '#0B1E3F',
-                                  boxShadow: '0 2px 8px rgba(11, 30, 63, 0.1)'
-                                }}
-                              >
-                                {message.attachments && message.attachments.length > 0 && (
-                                  <div className="mb-2 space-y-2">
-                                    {message.attachments.map((att, idx) => (
-                                      <div key={idx} className="flex items-center space-x-2">
-                                        {att.mimeType.startsWith('image/') ? (
-                                          <img
-                                            src={att.url}
-                                            alt={att.filename}
-                                            className="max-w-full h-auto rounded"
-                                          />
-                                        ) : (
-                                          <a
-                                            href={att.url}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="flex items-center space-x-2 text-blue-400 hover:text-blue-300"
-                                          >
-                                            <File className="h-4 w-4" />
-                                            <span className="text-sm">{att.filename}</span>
-                                          </a>
-                                        )}
-                                      </div>
-                                    ))}
-                                  </div>
-                                )}
-                                <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-                                {message.reactions && message.reactions.length > 0 && (
-                                  <div className="flex flex-wrap gap-1 mt-2">
-                                    {message.reactions.map((reaction, idx) => (
-                                      <button
-                                        key={idx}
-                                        onClick={() => {
-                                          const hasReacted = reaction.userId === user?.id;
-                                          if (hasReacted) {
-                                            handleRemoveReaction(message.id, reaction.emoji);
-                                          } else {
-                                            handleAddReaction(message.id, reaction.emoji);
-                                          }
-                                        }}
-                                        className={`px-2 py-1 text-xs ${
-                                          reaction.userId === user?.id
-                                            ? 'bg-blue-500 text-white'
-                                            : 'bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300'
-                                        }`}
-                                      >
-                                        {reaction.emoji} {reaction.user.username}
-                                      </button>
-                                    ))}
-                                  </div>
-                                )}
-                              </div>
-                              <div className="flex items-center justify-between mt-1 px-1">
-                                <span className="text-xs text-gray-500 dark:text-gray-400">
-                                  {formatTime(message.createdAt)}
-                                </span>
+                              <p className="messages-message-content">{message.content}</p>
+                              <div className="messages-message-meta">
+                                <span className="messages-message-time">{formatTime(message.createdAt)}</span>
                                 {isOwn && (
-                                  <div className="flex items-center space-x-1">
-                                    {message.readBy && message.readBy.length > 0 ? (
-                                      <CheckCheck className="h-3 w-3 text-blue-500" />
-                                    ) : (
-                                      <CheckCheck className="h-3 w-3 text-gray-400" />
-                                    )}
-                                  </div>
+                                  <CheckCheck className={`messages-message-status ${message.readBy && message.readBy.length > 0 ? 'messages-message-status--read' : 'messages-message-status--sent'}`} />
                                 )}
                               </div>
                             </div>
@@ -939,9 +764,12 @@ export const MessagesPage: React.FC = () => {
                       })
                     )}
                     {typingUsers.size > 0 && (
-                      <div className="flex justify-start">
-                        <div className="bg-gray-100 dark:bg-gray-700 p-2">
-                          <span className="text-xs text-gray-500 dark:text-gray-400">Typing...</span>
+                      <div className="messages-typing-indicator">
+                        <span>Typing</span>
+                        <div className="messages-typing-dots">
+                          <div className="messages-typing-dot"></div>
+                          <div className="messages-typing-dot"></div>
+                          <div className="messages-typing-dot"></div>
                         </div>
                       </div>
                     )}
@@ -949,50 +777,44 @@ export const MessagesPage: React.FC = () => {
                   </div>
 
                   {/* Message Input - Sticky */}
-                  <div 
-                    className="p-4 border-t backdrop-blur-xl"
-                    style={{ 
-                      backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                      borderColor: '#E5E7EB'
-                    }}
-                  >
+                  <div className="messages-input-container">
                     {attachments.length > 0 && (
-                      <div className="mb-2 flex flex-wrap gap-2">
-                        {attachments.map((attachment) => (
-                          <div
-                            key={attachment.id}
-                            className="flex items-center space-x-2 p-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600"
-                          >
-                            {attachment.preview ? (
-                              <img
-                                src={attachment.preview}
-                                alt={attachment.name}
-                                className="w-8 h-8 object-cover"
-                              />
-                            ) : (
-                              <File className="h-4 w-4 text-gray-500" />
-                            )}
-                            <span className="text-xs text-gray-700 dark:text-gray-300 truncate max-w-[100px]">
-                              {attachment.name}
-                            </span>
-                            <button
-                              onClick={() => removeAttachment(attachment.id)}
-                              className="text-gray-400 hover:text-red-500"
-                            >
-                              <X className="h-3 w-3" />
-                            </button>
-                          </div>
-                        ))}
+                      <div className="messages-attachments-preview">
+                        <div className="messages-attachments-list">
+                          {attachments.map((attachment) => (
+                            <div key={attachment.id} className="messages-attachment-item">
+                              {attachment.preview ? (
+                                <img
+                                  src={attachment.preview}
+                                  alt={attachment.name}
+                                  className="messages-attachment-preview"
+                                />
+                              ) : (
+                                <div className="messages-attachment-icon">
+                                  <File />
+                                </div>
+                              )}
+                              <div className="messages-attachment-info">
+                                <p className="messages-attachment-name">{attachment.name}</p>
+                              </div>
+                              <button
+                                onClick={() => removeAttachment(attachment.id)}
+                                className="messages-attachment-remove"
+                              >
+                                <X className="messages-close-button-icon" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     )}
-                    <div className="flex items-center space-x-2">
+                    <div className="messages-input-wrapper">
                       <button
                         ref={attachmentButtonRef}
                         onClick={() => setShowAttachmentMenu(!showAttachmentMenu)}
-                        className="p-3 rounded-xl transition-all duration-200 active:scale-95"
-                        style={{ backgroundColor: 'rgba(0, 181, 173, 0.1)' }}
+                        className="messages-input-attachment-button"
                       >
-                        <Paperclip className="h-5 w-5" style={{ color: '#00B5AD' }} />
+                        <Paperclip className="messages-input-attachment-button-icon" />
                       </button>
                       <input
                         type="text"
@@ -1000,7 +822,7 @@ export const MessagesPage: React.FC = () => {
                         onChange={(e) => setNewMessage(e.target.value)}
                         onKeyPress={handleKeyPress}
                         placeholder="Type a message..."
-                        className="flex-1 px-4 py-3 border-2 rounded-xl focus:outline-none transition-all duration-200"
+                        className="messages-input-field"
                         style={{
                           borderColor: '#E5E7EB',
                           backgroundColor: 'white',
@@ -1034,19 +856,7 @@ export const MessagesPage: React.FC = () => {
                     </div>
                   </div>
                 </>
-              ) : (
-                <div className="flex-1 flex items-center justify-center">
-                  <div className="text-center">
-                    <MessageCircle className="h-16 w-16 mx-auto mb-4" style={{ color: '#6F73D2', opacity: 0.5 }} />
-                    <h3 className="text-lg font-bold mb-2" style={{ color: '#0B1E3F' }}>
-                      Select a conversation
-                    </h3>
-                    <p style={{ color: '#6F73D2' }}>
-                      Choose a conversation from the list to view messages
-                    </p>
-                  </div>
-                </div>
-              )}
+              ) : null}
             </div>
           </div>
         )}
@@ -1054,34 +864,20 @@ export const MessagesPage: React.FC = () => {
 
       {/* Mobile: Conversation List Overlay */}
       {!selectedConversation && (
-        <div className="lg:hidden flex-1 overflow-y-auto" style={{ backgroundColor: 'white' }}>
-          <div className="p-4 border-b" style={{ borderColor: '#E5E7EB' }}>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5" style={{ color: '#6F73D2' }} />
+        <div className="messages-mobile-conversations">
+          <div className="messages-mobile-conversations-search">
+            <div className="messages-mobile-conversations-search-wrapper">
+              <Search className="messages-mobile-conversations-search-icon" />
               <input
                 type="text"
                 placeholder="Search conversations..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border-2 rounded-xl focus:outline-none transition-all duration-200"
-                style={{
-                  borderColor: '#E5E7EB',
-                  backgroundColor: 'white',
-                  color: '#0B1E3F',
-                  fontSize: '16px'
-                }}
-                onFocus={(e) => {
-                  e.currentTarget.style.borderColor = '#00B5AD';
-                  e.currentTarget.style.boxShadow = '0 0 0 4px rgba(0, 181, 173, 0.1)';
-                }}
-                onBlur={(e) => {
-                  e.currentTarget.style.borderColor = '#E5E7EB';
-                  e.currentTarget.style.boxShadow = 'none';
-                }}
+                className="messages-mobile-conversations-search-input"
               />
             </div>
           </div>
-          <div className="overflow-y-auto">
+          <div className="messages-mobile-conversations-scroll">
             {filteredConversations.map((conversation) => (
               <div
                 key={conversation.id}
@@ -1089,45 +885,32 @@ export const MessagesPage: React.FC = () => {
                   setSelectedConversation(conversation);
                   markConversationAsRead(conversation.id);
                 }}
-                className="p-4 border-b transition-all duration-200 active:scale-[0.98]"
-                style={{ 
-                  backgroundColor: 'white',
-                  borderColor: '#E5E7EB'
-                }}
+                className="messages-mobile-conversation-item"
               >
-                <div className="flex items-center space-x-3">
-                  <div 
-                    className="w-12 h-12 rounded-2xl flex items-center justify-center text-white font-bold flex-shrink-0"
-                    style={{ 
-                      background: 'linear-gradient(135deg, #00B5AD 0%, #6F73D2 100%)'
-                    }}
-                  >
+                <div className="messages-conversation-content">
+                  <div className="messages-conversation-avatar">
                     {getConversationAvatar(conversation) ? (
                       <img
                         src={getConversationAvatar(conversation)}
                         alt={getConversationName(conversation)}
-                        className="w-full h-full rounded-2xl object-cover"
                       />
                     ) : (
                       <span>{getConversationName(conversation).charAt(0)}</span>
                     )}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-1">
-                      <p className="text-sm font-bold truncate" style={{ color: '#0B1E3F' }}>
+                  <div className="messages-conversation-info">
+                    <div className="messages-conversation-header">
+                      <p className="messages-conversation-name">
                         {getConversationName(conversation)}
                       </p>
                       {conversation.unreadCount > 0 && (
-                        <span 
-                          className="ml-2 px-2 py-1 rounded-full text-xs font-bold text-white"
-                          style={{ backgroundColor: '#00B5AD' }}
-                        >
+                        <span className="messages-conversation-unread">
                           {conversation.unreadCount > 99 ? '99+' : conversation.unreadCount}
                         </span>
                       )}
                     </div>
                     {conversation.lastMessage && (
-                      <p className="text-xs truncate" style={{ color: '#6F73D2' }}>
+                      <p className="messages-conversation-preview">
                         {conversation.lastMessage.content}
                       </p>
                     )}
@@ -1141,41 +924,28 @@ export const MessagesPage: React.FC = () => {
 
       {/* Mobile: Message View */}
       {selectedConversation && (
-        <div className="lg:hidden flex-1 flex flex-col" style={{ backgroundColor: '#F4F7FA' }}>
+        <div className="messages-mobile-view">
           {/* Mobile Chat Header */}
-          <div 
-            className="flex items-center justify-between p-4 border-b backdrop-blur-xl"
-            style={{ 
-              backgroundColor: 'rgba(255, 255, 255, 0.95)',
-              borderColor: '#E5E7EB'
-            }}
-          >
-            <div className="flex items-center space-x-3">
+          <div className="messages-mobile-chat-header">
+            <div className="messages-mobile-chat-header-left">
               <button
                 onClick={() => setSelectedConversation(null)}
-                className="p-2 rounded-xl transition-all duration-200 active:scale-95"
-                style={{ backgroundColor: 'rgba(0, 181, 173, 0.1)' }}
+                className="messages-mobile-back-button"
               >
-                <ArrowLeft className="h-5 w-5" style={{ color: '#00B5AD' }} />
+                <ArrowLeft className="messages-mobile-back-button-icon" />
               </button>
-              <div 
-                className="w-10 h-10 rounded-2xl flex items-center justify-center text-white font-bold"
-                style={{ 
-                  background: 'linear-gradient(135deg, #00B5AD 0%, #6F73D2 100%)'
-                }}
-              >
+              <div className="messages-mobile-chat-avatar">
                 {getConversationAvatar(selectedConversation) ? (
                   <img
                     src={getConversationAvatar(selectedConversation)}
                     alt={getConversationName(selectedConversation)}
-                    className="w-full h-full rounded-2xl object-cover"
                   />
                 ) : (
                   <span>{getConversationName(selectedConversation).charAt(0)}</span>
                 )}
               </div>
               <div>
-                <h3 className="text-sm font-bold" style={{ color: '#0B1E3F' }}>
+                <h3 className="messages-mobile-chat-name">
                   {getConversationName(selectedConversation)}
                 </h3>
               </div>
@@ -1183,50 +953,21 @@ export const MessagesPage: React.FC = () => {
           </div>
 
           {/* Mobile Messages */}
-          <div 
-            className="flex-1 overflow-y-auto p-4 space-y-3"
-            style={{ 
-              backgroundImage: 'radial-gradient(circle at 20% 50%, rgba(0, 181, 173, 0.03) 0%, transparent 50%), radial-gradient(circle at 80% 80%, rgba(111, 115, 210, 0.03) 0%, transparent 50%)'
-            }}
-          >
+          <div className="messages-list-container">
             {messages.map((message) => {
               const isOwn = message.senderId === user?.id;
               return (
                 <div
                   key={message.id}
-                  className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}
+                  className={`messages-message-wrapper ${isOwn ? 'messages-message-wrapper--sent' : 'messages-message-wrapper--received'}`}
                 >
-                  <div className={`max-w-[75%] ${isOwn ? 'order-2' : 'order-1'}`}>
-                    {!isOwn && (
-                      <div className="flex items-center space-x-2 mb-1 px-2">
-                        <span className="text-xs font-semibold" style={{ color: '#0B1E3F' }}>
-                          {message.sender.username}
-                        </span>
-                      </div>
-                    )}
-                    <div
-                      className={`p-3 rounded-2xl ${
-                        isOwn ? 'rounded-tr-sm' : 'rounded-tl-sm'
-                      }`}
-                      style={{
-                        backgroundColor: isOwn ? '#00B5AD' : 'white',
-                        color: isOwn ? 'white' : '#0B1E3F',
-                        boxShadow: '0 2px 8px rgba(11, 30, 63, 0.1)'
-                      }}
-                    >
-                      <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">
-                        {message.content}
-                      </p>
-                      <div className="flex items-center justify-end mt-2 space-x-2">
-                        <span className="text-xs opacity-70">
-                          {formatTime(message.createdAt)}
-                        </span>
-                        {isOwn && (
-                          <CheckCheck 
-                            className={`h-3 w-3 ${message.readBy && message.readBy.length > 0 ? 'text-blue-300' : 'opacity-50'}`} 
-                          />
-                        )}
-                      </div>
+                  <div className={`messages-message ${isOwn ? 'messages-message--sent' : 'messages-message--received'}`}>
+                    <p className="messages-message-content">{message.content}</p>
+                    <div className="messages-message-meta">
+                      <span className="messages-message-time">{formatTime(message.createdAt)}</span>
+                      {isOwn && (
+                        <CheckCheck className={`messages-message-status ${message.readBy && message.readBy.length > 0 ? 'messages-message-status--read' : 'messages-message-status--sent'}`} />
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1236,21 +977,14 @@ export const MessagesPage: React.FC = () => {
           </div>
 
           {/* Mobile Message Input */}
-          <div 
-            className="p-4 border-t backdrop-blur-xl safe-area-bottom"
-            style={{ 
-              backgroundColor: 'rgba(255, 255, 255, 0.95)',
-              borderColor: '#E5E7EB'
-            }}
-          >
-            <div className="flex items-center space-x-2">
+          <div className="messages-input-container">
+            <div className="messages-input-wrapper">
               <button
                 ref={attachmentButtonRef}
                 onClick={() => setShowAttachmentMenu(!showAttachmentMenu)}
-                className="p-3 rounded-xl transition-all duration-200 active:scale-95"
-                style={{ backgroundColor: 'rgba(0, 181, 173, 0.1)' }}
+                className="messages-input-attachment-button"
               >
-                <Paperclip className="h-5 w-5" style={{ color: '#00B5AD' }} />
+                <Paperclip className="messages-input-attachment-button-icon" />
               </button>
               <input
                 type="text"
@@ -1258,35 +992,17 @@ export const MessagesPage: React.FC = () => {
                 onChange={(e) => setNewMessage(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder="Type a message..."
-                className="flex-1 px-4 py-3 border-2 rounded-xl focus:outline-none transition-all duration-200"
-                style={{
-                  borderColor: '#E5E7EB',
-                  backgroundColor: 'white',
-                  color: '#0B1E3F',
-                  fontSize: '16px'
-                }}
-                onFocus={(e) => {
-                  e.currentTarget.style.borderColor = '#00B5AD';
-                  e.currentTarget.style.boxShadow = '0 0 0 4px rgba(0, 181, 173, 0.1)';
-                }}
-                onBlur={(e) => {
-                  e.currentTarget.style.borderColor = '#E5E7EB';
-                  e.currentTarget.style.boxShadow = 'none';
-                }}
+                className="messages-input-field"
               />
               <button
                 onClick={() => handleSendMessage(newMessage)}
                 disabled={(!newMessage.trim() && attachments.length === 0) || isSending}
-                className="p-3 rounded-xl text-white transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
-                style={{ 
-                  backgroundColor: '#00B5AD',
-                  boxShadow: '0 4px 14px rgba(0, 181, 173, 0.3)'
-                }}
+                className="messages-input-send-button"
               >
                 {isSending ? (
-                  <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
+                  <div className="messages-input-send-spinner"></div>
                 ) : (
-                  <Send className="h-5 w-5" />
+                  <Send className="messages-input-send-button-icon" />
                 )}
               </button>
             </div>

@@ -17,6 +17,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import { useAuthStore } from '../../store/auth';
+import { useNotification } from '../../hooks/useNotification';
 
 interface LessonTemplate {
   id: string;
@@ -64,6 +65,7 @@ const lessonTemplates: LessonTemplate[] = [
 
 export const QuickLessonPage: React.FC = () => {
   const { user } = useAuthStore();
+  const { showSuccess, showError } = useNotification();
   const navigate = useNavigate();
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
   const [lessonData, setLessonData] = useState({
@@ -77,7 +79,12 @@ export const QuickLessonPage: React.FC = () => {
     isPaid: false,
     price: 0,
     lessonType: 'live' as 'live' | 'recorded',
-    materials: [] as string[]
+    materials: [] as string[],
+    isRecurring: false,
+    recurrenceFrequency: 'weekly' as 'daily' | 'weekly' | 'bi-weekly' | 'monthly',
+    recurrenceEndType: 'date' as 'date' | 'count',
+    recurrenceEndDate: '',
+    recurrenceCount: 5
   });
   const [isCreating, setIsCreating] = useState(false);
   const [createdLesson, setCreatedLesson] = useState<{ id: string; joinLink: string } | null>(null);
@@ -97,27 +104,111 @@ export const QuickLessonPage: React.FC = () => {
   const handleCreateLesson = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsCreating(true);
-
+    
+    // If recurring, create multiple lessons
+    if (lessonData.isRecurring) {
+      await createRecurringLessons();
+    } else {
+      await createSingleLesson();
+    }
+  };
+  
+  const createSingleLesson = async () => {
     try {
-      // TODO: Replace with actual API call
-      // const lesson = await apiService.createQuickLesson({
-      //   ...lessonData,
-      //   teacherId: user?.id,
-      //   scheduledAt: new Date(`${lessonData.scheduledDate}T${lessonData.scheduledTime}`).toISOString()
-      // });
-
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Original single lesson creation logic
+      // This would call the API to create one lesson
+      const scheduledAt = new Date(`${lessonData.scheduledDate}T${lessonData.scheduledTime}`).toISOString();
       
-      const mockLesson = {
-        id: `lesson-${Date.now()}`,
-        joinLink: `${window.location.origin}/lessons/join/${Date.now()}`
+      // Mock creation - replace with actual API call
+      const newLesson = {
+        id: Date.now().toString(),
+        joinLink: `https://lesson.skillstream.com/${Date.now()}`
       };
-
-      setCreatedLesson(mockLesson);
+      
+      setCreatedLesson(newLesson);
+      showSuccess('Lesson Created', 'Your lesson has been created successfully.');
     } catch (error) {
       console.error('Error creating lesson:', error);
-      alert('Failed to create lesson. Please try again.');
+      showError('Failed to Create Lesson', 'Unable to create lesson. Please try again.');
+    } finally {
+      setIsCreating(false);
+    }
+  };
+  
+  const createRecurringLessons = async () => {
+    try {
+      const startDate = new Date(`${lessonData.scheduledDate}T${lessonData.scheduledTime}`);
+      const lessons: Array<{ date: Date; scheduledAt: string }> = [];
+      
+      let currentDate = new Date(startDate);
+      let count = 0;
+      const maxCount = lessonData.recurrenceEndType === 'count' 
+        ? lessonData.recurrenceCount 
+        : 100; // Safety limit
+      
+      const endDate = lessonData.recurrenceEndType === 'date' && lessonData.recurrenceEndDate
+        ? new Date(lessonData.recurrenceEndDate)
+        : null;
+      
+      while (count < maxCount && (!endDate || currentDate <= endDate)) {
+        lessons.push({
+          date: new Date(currentDate),
+          scheduledAt: currentDate.toISOString()
+        });
+        
+        // Calculate next date based on frequency
+        switch (lessonData.recurrenceFrequency) {
+          case 'daily':
+            currentDate.setDate(currentDate.getDate() + 1);
+            break;
+          case 'weekly':
+            currentDate.setDate(currentDate.getDate() + 7);
+            break;
+          case 'bi-weekly':
+            currentDate.setDate(currentDate.getDate() + 14);
+            break;
+          case 'monthly':
+            currentDate.setMonth(currentDate.getMonth() + 1);
+            break;
+        }
+        
+        count++;
+      }
+      
+      // Create all lessons (would call API for each)
+      // For now, just show success
+      showSuccess(
+        'Recurring Lessons Created',
+        `${lessons.length} lesson(s) have been scheduled successfully.`
+      );
+      
+      // Store recurring series info
+      const seriesData = {
+        title: lessonData.title,
+        description: lessonData.description,
+        subject: lessonData.subject,
+        duration: lessonData.duration,
+        maxStudents: lessonData.maxStudents,
+        frequency: lessonData.recurrenceFrequency,
+        lessons: lessons.map(l => l.scheduledAt),
+        createdAt: new Date().toISOString()
+      };
+      
+      try {
+        const stored = localStorage.getItem(`recurring-lessons-${user?.id}`);
+        const existing = stored ? JSON.parse(stored) : [];
+        localStorage.setItem(`recurring-lessons-${user?.id}`, JSON.stringify([...existing, seriesData]));
+      } catch (error) {
+        console.error('Error saving recurring series:', error);
+      }
+      
+      setCreatedLesson({
+        id: Date.now().toString(),
+        joinLink: `https://lesson.skillstream.com/series/${Date.now()}`
+      });
+    } catch (error) {
+      console.error('Error creating recurring lessons:', error);
+      showError('Failed to Create Lessons', 'Unable to create recurring lessons. Please try again.');
     } finally {
       setIsCreating(false);
     }
@@ -209,7 +300,12 @@ export const QuickLessonPage: React.FC = () => {
                       isPaid: false,
                       price: 0,
                       lessonType: 'live',
-                      materials: []
+                      materials: [],
+                      isRecurring: false,
+                      recurrenceFrequency: 'weekly',
+                      recurrenceEndType: 'date',
+                      recurrenceEndDate: '',
+                      recurrenceCount: 5
                     });
                     setSelectedTemplate(null);
                   }}
@@ -368,6 +464,98 @@ export const QuickLessonPage: React.FC = () => {
                       className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
                     />
                   </div>
+                </div>
+
+                {/* Recurring Lesson */}
+                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 p-6 rounded-lg">
+                  <div className="flex items-center justify-between mb-4">
+                    <label className="flex items-center text-sm font-semibold text-gray-900 dark:text-white">
+                      <Calendar className="h-4 w-4 mr-1" />
+                      Recurring Lesson Series
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setLessonData(prev => ({ ...prev, isRecurring: !prev.isRecurring }))}
+                      className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                        lessonData.isRecurring ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-600'
+                      }`}
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                          lessonData.isRecurring ? 'translate-x-5' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                  
+                  {lessonData.isRecurring && (
+                    <div className="space-y-4 mt-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Frequency *
+                        </label>
+                        <select
+                          value={lessonData.recurrenceFrequency}
+                          onChange={(e) => setLessonData(prev => ({ ...prev, recurrenceFrequency: e.target.value as any }))}
+                          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                        >
+                          <option value="daily">Daily</option>
+                          <option value="weekly">Weekly</option>
+                          <option value="bi-weekly">Bi-weekly</option>
+                          <option value="monthly">Monthly</option>
+                        </select>
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          End Condition *
+                        </label>
+                        <div className="space-y-2">
+                          <label className="flex items-center">
+                            <input
+                              type="radio"
+                              name="recurrenceEndType"
+                              value="count"
+                              checked={lessonData.recurrenceEndType === 'count'}
+                              onChange={(e) => setLessonData(prev => ({ ...prev, recurrenceEndType: e.target.value as any }))}
+                              className="mr-2"
+                            />
+                            <span className="text-sm text-gray-700 dark:text-gray-300">After a number of occurrences</span>
+                          </label>
+                          {lessonData.recurrenceEndType === 'count' && (
+                            <input
+                              type="number"
+                              min={2}
+                              max={100}
+                              value={lessonData.recurrenceCount}
+                              onChange={(e) => setLessonData(prev => ({ ...prev, recurrenceCount: parseInt(e.target.value) }))}
+                              className="ml-6 w-32 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                            />
+                          )}
+                          <label className="flex items-center">
+                            <input
+                              type="radio"
+                              name="recurrenceEndType"
+                              value="date"
+                              checked={lessonData.recurrenceEndType === 'date'}
+                              onChange={(e) => setLessonData(prev => ({ ...prev, recurrenceEndType: e.target.value as any }))}
+                              className="mr-2"
+                            />
+                            <span className="text-sm text-gray-700 dark:text-gray-300">On a specific date</span>
+                          </label>
+                          {lessonData.recurrenceEndType === 'date' && (
+                            <input
+                              type="date"
+                              value={lessonData.recurrenceEndDate}
+                              onChange={(e) => setLessonData(prev => ({ ...prev, recurrenceEndDate: e.target.value }))}
+                              min={lessonData.scheduledDate}
+                              className="ml-6 w-48 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                            />
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Capacity */}

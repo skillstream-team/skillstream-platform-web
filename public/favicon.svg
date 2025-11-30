@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="bookGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#00B5AD;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#6F73D2;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#9A8CFF;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Left page -->
+  <path d="M 20 15 L 20 85 Q 20 90 25 90 L 45 90 Q 50 90 50 85 L 50 15 Q 50 10 45 10 L 25 10 Q 20 10 20 15 Z" 
+        fill="url(#bookGradient)" 
+        stroke="#0B1E3F" 
+        stroke-width="1.5"/>
+  
+  <!-- Right page -->
+  <path d="M 50 15 L 50 85 Q 50 90 55 90 L 75 90 Q 80 90 80 85 L 80 15 Q 80 10 75 10 L 55 10 Q 50 10 50 15 Z" 
+        fill="url(#bookGradient)" 
+        stroke="#0B1E3F" 
+        stroke-width="1.5"/>
+  
+  <!-- Book spine/binding -->
+  <path d="M 45 10 L 45 90 L 55 90 L 55 10 Z" 
+        fill="#0B1E3F" 
+        opacity="0.3"/>
+  
+  <!-- Text lines on left page -->
+  <line x1="28" y1="30" x2="42" y2="30" stroke="#0B1E3F" stroke-width="1" opacity="0.4"/>
+  <line x1="28" y1="40" x2="42" y2="40" stroke="#0B1E3F" stroke-width="1" opacity="0.4"/>
+  <line x1="28" y1="50" x2="38" y2="50" stroke="#0B1E3F" stroke-width="1" opacity="0.4"/>
+  
+  <!-- Text lines on right page -->
+  <line x1="58" y1="30" x2="72" y2="30" stroke="#0B1E3F" stroke-width="1" opacity="0.4"/>
+  <line x1="58" y1="40" x2="72" y2="40" stroke="#0B1E3F" stroke-width="1" opacity="0.4"/>
+  <line x1="58" y1="50" x2="68" y2="50" stroke="#0B1E3F" stroke-width="1" opacity="0.4"/>
+</svg>
+

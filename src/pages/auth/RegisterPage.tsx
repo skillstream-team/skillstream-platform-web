@@ -73,12 +73,13 @@ export const RegisterPage: React.FC = () => {
   };
 
   const validateStep2 = () => {
-    if (!formData.role) {
+    if (!formData.role || formData.role === '') {
       setErrors({ role: 'Please select a role' });
       setShake(true);
       setTimeout(() => setShake(false), 500);
       return false;
     }
+    setErrors({});
     return true;
   };
 
@@ -108,16 +109,25 @@ export const RegisterPage: React.FC = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleNext = () => {
-    if (step === 1 && validateStep1()) {
-      setStep(2);
-      setErrors({});
-    } else if (step === 2 && validateStep2()) {
-      if (formData.role === 'STUDENT') {
-        handleSubmit();
-      } else {
-        setStep(3);
+  const handleNext = (e?: React.MouseEvent<HTMLButtonElement>) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    if (step === 1) {
+      if (validateStep1()) {
+        setStep(2);
         setErrors({});
+      }
+    } else if (step === 2) {
+      if (validateStep2()) {
+        if (formData.role === 'STUDENT') {
+          handleSubmit();
+        } else {
+          setStep(3);
+          setErrors({});
+        }
       }
     }
   };
@@ -513,9 +523,15 @@ export const RegisterPage: React.FC = () => {
                     <button
                       key={role.id}
                       type="button"
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
                         setFormData(prev => ({ ...prev, role: role.id }));
-                        setErrors({});
+                        setErrors(prev => {
+                          const newErrors = { ...prev };
+                          delete newErrors.role;
+                          return newErrors;
+                        });
                       }}
                       className={`p-6 rounded-xl border-2 transition-all duration-300 text-left hover:shadow-lg hover:-translate-y-1 ${
                         isSelected
@@ -549,7 +565,11 @@ export const RegisterPage: React.FC = () => {
               <div className="flex justify-between mt-8">
                 <button
                   type="button"
-                  onClick={handleBack}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleBack();
+                  }}
                   className="flex items-center px-6 py-5 border-2 rounded-xl font-semibold transition-all duration-200 hover:shadow-md"
                   style={{ 
                     borderColor: '#E5E7EB',
@@ -562,17 +582,26 @@ export const RegisterPage: React.FC = () => {
                 </button>
                 <button
                   type="button"
-                  onClick={handleNext}
-                  className="flex items-center px-8 py-5 text-white rounded-xl font-semibold transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleNext(e);
+                  }}
+                  disabled={!formData.role}
+                  className="flex items-center px-8 py-5 text-white rounded-xl font-semibold transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
                   style={{ 
-                    backgroundColor: '#00B5AD',
-                    boxShadow: '0 4px 14px rgba(0, 181, 173, 0.3)'
+                    backgroundColor: formData.role ? '#00B5AD' : '#9CA3AF',
+                    boxShadow: formData.role ? '0 4px 14px rgba(0, 181, 173, 0.3)' : 'none'
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = '#00968d';
+                    if (formData.role) {
+                      e.currentTarget.style.backgroundColor = '#00968d';
+                    }
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = '#00B5AD';
+                    if (formData.role) {
+                      e.currentTarget.style.backgroundColor = '#00B5AD';
+                    }
                   }}
                 >
                   Continue

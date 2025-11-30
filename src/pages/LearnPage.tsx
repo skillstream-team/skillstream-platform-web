@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { 
   BookOpen, 
   Play, 
@@ -13,29 +13,67 @@ import {
   Search
 } from 'lucide-react';
 import { useAuthStore } from '../store/auth';
-import { getCourses } from '../services/api';
+import { getCourses, getProgress, getUserProgressCourses } from '../services/api';
 import { Course } from '../types';
 import { SwipeableTabs } from '../components/mobile/SwipeableTabs';
 import { MobileCourseCard } from '../components/mobile/MobileCourseCard';
 import { BottomSheet } from '../components/mobile/BottomSheet';
+import { findNextUncompletedLesson } from '../utils/courseProgress';
 
 export const LearnPage: React.FC = () => {
   const { user } = useAuthStore();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'active' | 'completed' | 'saved'>('active');
   const [courses, setCourses] = useState<Course[]>([]);
+  const [activeCourseIds, setActiveCourseIds] = useState<string[]>([]);
+  const [completedCourseIds, setCompletedCourseIds] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [continueLoading, setContinueLoading] = useState<Record<string, boolean>>({});
+  const [courseProgressMap, setCourseProgressMap] = useState<Record<string, number>>({});
 
   useEffect(() => {
     loadCourses();
   }, []);
 
+  useEffect(() => {
+    // Load progress for active courses
+    if (activeCourses.length > 0) {
+      activeCourses.forEach(async (course) => {
+        try {
+          const progress = await getCourseProgress(course.id);
+          setCourseProgressMap(prev => ({ ...prev, [course.id]: progress }));
+        } catch (error) {
+          console.error(`Error loading progress for course ${course.id}:`, error);
+        }
+      });
+    }
+  }, [activeCourses]);
+
   const loadCourses = async () => {
     try {
       setLoading(true);
       const data = await getCourses({ limit: 50 });
+      let activeIds: string[] = [];
+      let completedIds: string[] = [];
+
+      if (user?.id) {
+        try {
+          const [activeCoursesResp, completedCoursesResp] = await Promise.all([
+            getUserProgressCourses(user.id, 'in_progress'),
+            getUserProgressCourses(user.id, 'completed')
+          ]);
+          activeIds = activeCoursesResp.map(c => c.id);
+          completedIds = completedCoursesResp.map(c => c.id);
+        } catch (progressError) {
+          console.error('Error loading user progress course lists:', progressError);
+        }
+      }
+
       setCourses(data);
+      setActiveCourseIds(activeIds);
+      setCompletedCourseIds(completedIds);
     } catch (error) {
       console.error('Error loading courses:', error);
       setCourses([]);
@@ -44,29 +82,24 @@ export const LearnPage: React.FC = () => {
     }
   };
 
-  // Simulate course progress and status
-  const getCourseProgress = (courseId: string) => {
-    // Mock progress data
-    const progressMap: Record<string, number> = {
-      '1': 65,
-      '2': 30,
-      '3': 100,
-      '4': 0,
-    };
-    return progressMap[courseId] || Math.floor(Math.random() * 100);
+  // Get course progress from API
+  const getCourseProgress = async (courseId: string) => {
+    try {
+      const progress = await getProgress(courseId);
+      return progress?.overallProgress ?? 0;
+    } catch {
+      return 0;
+    }
   };
 
-  const activeCourses = courses.filter(c => {
-    const progress = getCourseProgress(c.id);
-    return progress > 0 && progress < 100;
-  });
-
-  const completedCourses = courses.filter(c => {
-    const progress = getCourseProgress(c.id);
-    return progress === 100;
-  });
-
-  const savedCourses = courses.slice(0, 5); // Mock saved courses
+  // Filter courses based on progress lists
+  const activeCourses = activeCourseIds.length
+    ? courses.filter(c => activeCourseIds.includes(c.id))
+    : courses;
+  const completedCourses: Course[] = completedCourseIds.length
+    ? courses.filter(c => completedCourseIds.includes(c.id))
+    : [];
+  const savedCourses: Course[] = [];
 
   const filteredCourses = {
     active: activeCourses.filter(c => 
@@ -82,42 +115,53 @@ export const LearnPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#F4F7FA' }}>
-        <div 
-          className="animate-spin rounded-full h-12 w-12 border-4 border-t-transparent"
-          style={{ borderColor: '#00B5AD' }}
-        ></div>
+      <div className="learn-loading">
+        <div className="learn-loading-spinner"></div>
       </div>
     );
   }
 
-  const renderCourseCard = (course: Course, progress?: number) => (
-    <Link
-      key={course.id}
-      to={`/courses/${course.id}`}
-      className="group rounded-[20px] border-2 overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1"
-      style={{
-        backgroundColor: 'white',
-        borderColor: '#E5E7EB'
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.borderColor = '#00B5AD';
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.borderColor = '#E5E7EB';
-      }}
-    >
-      <div className="flex">
-        <div className="w-32 lg:w-48 h-32 lg:h-40 bg-gray-200 flex items-center justify-center relative overflow-hidden flex-shrink-0">
+  const handleContinueLearning = async (courseId: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    setContinueLoading(prev => ({ ...prev, [courseId]: true }));
+    try {
+      const nextLessonId = await findNextUncompletedLesson(courseId);
+      if (nextLessonId) {
+        navigate(`/courses/${courseId}/learn/${nextLessonId}`);
+      } else {
+        navigate(`/courses/${courseId}`);
+      }
+    } catch (error) {
+      console.error('Error finding next lesson:', error);
+      navigate(`/courses/${courseId}`);
+    } finally {
+      setContinueLoading(prev => ({ ...prev, [courseId]: false }));
+    }
+  };
+
+  const renderCourseCard = (course: Course, progress?: number) => {
+    const courseProgress = progress ?? courseProgressMap[course.id] ?? 0;
+    const hasProgress = courseProgress > 0;
+    
+    return (
+    <div key={course.id} className="learn-course-card">
+      <Link
+        to={`/courses/${course.id}`}
+        className="learn-course-card-link"
+      >
+      <div className="learn-course-card-content">
+        <div className="learn-course-image-wrapper">
           {course.imageUrl ? (
-            <img src={course.imageUrl} alt={course.title} className="w-full h-full object-cover" />
+            <img src={course.imageUrl} alt={course.title} />
           ) : (
-            <BookOpen className="h-12 w-12" style={{ color: '#00B5AD' }} />
+            <BookOpen className="learn-course-image-icon" />
           )}
-          {progress !== undefined && (
-            <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
-              <div className="relative w-16 h-16">
-                <svg className="transform -rotate-90 w-16 h-16">
+          {courseProgress > 0 && (
+            <div className="learn-course-progress-overlay">
+              <div className="learn-course-progress-circle">
+                <svg>
                   <circle
                     cx="32"
                     cy="32"
@@ -134,134 +178,130 @@ export const LearnPage: React.FC = () => {
                     strokeWidth="4"
                     fill="transparent"
                     strokeDasharray={`${2 * Math.PI * 28}`}
-                    strokeDashoffset={`${2 * Math.PI * 28 * (1 - progress / 100)}`}
+                    strokeDashoffset={`${2 * Math.PI * 28 * (1 - courseProgress / 100)}`}
                     className="transition-all duration-300"
                   />
                 </svg>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-xs font-bold text-white">{progress}%</span>
+                <div className="learn-course-progress-text">
+                  <span>{Math.round(courseProgress)}%</span>
                 </div>
               </div>
             </div>
           )}
         </div>
-        <div className="flex-1 p-5">
-          <div className="flex items-start justify-between mb-2">
-            <div className="flex-1">
-              <span 
-                className="inline-block px-2 py-1 rounded-full text-xs font-bold mb-2"
-                style={{ 
-                  backgroundColor: 'rgba(0, 181, 173, 0.1)',
-                  color: '#00B5AD'
-                }}
-              >
+        <div className="learn-course-info">
+          <div className="learn-course-header">
+            <div className="learn-course-header-left">
+              <span className="learn-course-category">
                 {course.category || 'Course'}
               </span>
-              <h3 className="text-lg font-bold mb-2 line-clamp-2" style={{ color: '#0B1E3F' }}>
+              <h3 className="learn-course-title">
                 {course.title}
               </h3>
             </div>
-            {progress === 100 && (
-              <CheckCircle className="h-6 w-6 flex-shrink-0 ml-2" style={{ color: '#00B5AD' }} />
+            {courseProgress === 100 && (
+              <CheckCircle className="learn-course-complete-icon" />
             )}
           </div>
           
-          <div className="flex items-center space-x-4 text-sm mb-3" style={{ color: '#6F73D2' }}>
-            <div className="flex items-center space-x-1">
-              <Star className="h-4 w-4 fill-current" style={{ color: '#F59E0B' }} />
+          <div className="learn-course-meta">
+            <div className="learn-course-meta-item">
+              <Star className="learn-course-meta-icon learn-course-meta-icon--star" />
               <span className="font-semibold">{course.rating?.toFixed(1) || '4.5'}</span>
             </div>
-            <div className="flex items-center space-x-1">
-              <Clock className="h-4 w-4" />
+            <div className="learn-course-meta-item">
+              <Clock className="learn-course-meta-icon" />
               <span>{course.duration || '8 weeks'}</span>
             </div>
-            <div className="flex items-center space-x-1">
-              <Users className="h-4 w-4" />
+            <div className="learn-course-meta-item">
+              <Users className="learn-course-meta-icon" />
               <span>{course.enrolledStudents || 0}</span>
             </div>
           </div>
           
-          {progress !== undefined && progress < 100 && (
-            <div className="mb-3">
-              <div className="w-full h-2 rounded-full" style={{ backgroundColor: '#E5E7EB' }}>
+          {courseProgress > 0 && courseProgress < 100 && (
+            <div className="learn-course-progress-bar">
+              <div className="learn-course-progress-bar-bg">
                 <div 
-                  className="h-2 rounded-full transition-all duration-300"
-                  style={{ 
-                    width: `${progress}%`,
-                    backgroundColor: '#00B5AD'
-                  }}
+                  className="learn-course-progress-bar-fill"
+                  style={{ width: `${courseProgress}%` }}
                 />
               </div>
             </div>
           )}
-          
-          <button
-            className="flex items-center space-x-2 px-4 py-2 rounded-xl font-semibold text-white transition-all duration-300"
-            style={{ 
-              backgroundColor: '#00B5AD',
-              boxShadow: '0 4px 14px rgba(0, 181, 173, 0.3)'
-            }}
-            onClick={(e) => {
-              e.preventDefault();
-              window.location.href = `/courses/${course.id}/learn`;
-            }}
-          >
-            <span>{progress === 100 ? 'Review' : progress && progress > 0 ? 'Resume' : 'Start'}</span>
-            <Play className="h-4 w-4" />
-          </button>
         </div>
       </div>
     </Link>
-  );
+    <button
+      className="learn-course-action-button"
+      onClick={(e) => handleContinueLearning(course.id, e)}
+      disabled={continueLoading[course.id]}
+    >
+      {continueLoading[course.id] ? (
+        <span>Loading...</span>
+      ) : courseProgress === 100 ? (
+        <>
+          <span>Review</span>
+          <Play className="learn-course-action-button-icon" />
+        </>
+      ) : hasProgress ? (
+        <>
+          <span>Continue</span>
+          <Play className="learn-course-action-button-icon" />
+        </>
+      ) : (
+        <>
+          <span>Start</span>
+          <Play className="learn-course-action-button-icon" />
+        </>
+      )}
+    </button>
+    </div>
+    );
+  };
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#F4F7FA' }}>
+    <div className="learn-page">
+      {/* Header Section */}
+      <div className="courses-header">
+        <div className="courses-header-content">
+          <div className="courses-header-text">
+            <h1 className="courses-header-title">
+              My Learning
+            </h1>
+            <p className="courses-header-subtitle">
+              Continue your courses and track your progress
+            </p>
+          </div>
+        </div>
+      </div>
       {/* Header */}
-      <div className="mb-6 lg:mb-8">
-        <h1 className="text-2xl lg:text-3xl font-bold mb-2" style={{ color: '#0B1E3F' }}>
+      <div className="learn-header">
+        <h1 className="learn-title">
           My Learning
         </h1>
-        <p className="text-base" style={{ color: '#6F73D2' }}>
+        <p className="learn-subtitle">
           Track your progress and continue your learning journey
         </p>
       </div>
 
       {/* Search and Filter */}
-      <div className="mb-6 flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5" style={{ color: '#6F73D2' }} />
+      <div className="learn-search-filter">
+        <div className="learn-search-wrapper">
+          <Search className="learn-search-icon" />
           <input
             type="text"
             placeholder="Search your courses..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-3 border-2 rounded-xl focus:outline-none transition-all duration-200"
-            style={{
-              borderColor: '#E5E7EB',
-              backgroundColor: 'white',
-              color: '#0B1E3F',
-              fontSize: '16px'
-            }}
-            onFocus={(e) => {
-              e.currentTarget.style.borderColor = '#00B5AD';
-              e.currentTarget.style.boxShadow = '0 0 0 4px rgba(0, 181, 173, 0.1)';
-            }}
-            onBlur={(e) => {
-              e.currentTarget.style.borderColor = '#E5E7EB';
-              e.currentTarget.style.boxShadow = 'none';
-            }}
+            className="learn-search-input"
           />
         </div>
         <button
           onClick={() => setShowFilters(true)}
-          className="px-6 py-3 border-2 rounded-xl font-semibold transition-all duration-200 active:scale-95"
-          style={{
-            borderColor: '#E5E7EB',
-            color: '#0B1E3F',
-            backgroundColor: 'white'
-          }}
+          className="learn-filters-button"
         >
-          <Filter className="h-5 w-5 inline mr-2" />
+          <Filter className="learn-filters-button-icon" />
           Filters
         </button>
       </div>
@@ -282,20 +322,16 @@ export const LearnPage: React.FC = () => {
                       </div>
                     ))
                   ) : (
-                    <div className="text-center py-12">
-                      <BookOpen className="h-16 w-16 mx-auto mb-4" style={{ color: '#6F73D2', opacity: 0.5 }} />
-                      <p className="text-lg font-semibold mb-2" style={{ color: '#0B1E3F' }}>No active courses</p>
-                      <p className="text-sm" style={{ color: '#6F73D2' }}>Start learning to see your progress here</p>
+                    <div className="learn-empty-state">
+                      <BookOpen className="learn-empty-state-icon" />
+                      <p className="learn-empty-state-title">No active courses</p>
+                      <p className="learn-empty-state-text">Start learning to see your progress here</p>
                       <Link
                         to="/discover"
-                        className="inline-flex items-center space-x-2 mt-4 px-6 py-3 rounded-xl font-semibold text-white"
-                        style={{ 
-                          backgroundColor: '#00B5AD',
-                          boxShadow: '0 4px 14px rgba(0, 181, 173, 0.3)'
-                        }}
+                        className="learn-empty-state-button"
                       >
                         <span>Discover Courses</span>
-                        <ArrowRight className="h-4 w-4" />
+                        <ArrowRight className="learn-empty-state-button-icon" />
                       </Link>
                     </div>
                   )}
@@ -314,10 +350,10 @@ export const LearnPage: React.FC = () => {
                       </div>
                     ))
                   ) : (
-                    <div className="text-center py-12">
-                      <CheckCircle className="h-16 w-16 mx-auto mb-4" style={{ color: '#6F73D2', opacity: 0.5 }} />
-                      <p className="text-lg font-semibold mb-2" style={{ color: '#0B1E3F' }}>No completed courses yet</p>
-                      <p className="text-sm" style={{ color: '#6F73D2' }}>Complete your first course to see it here</p>
+                    <div className="learn-empty-state">
+                      <CheckCircle className="learn-empty-state-icon" />
+                      <p className="learn-empty-state-title">No completed courses yet</p>
+                      <p className="learn-empty-state-text">Complete your first course to see it here</p>
                     </div>
                   )}
                 </div>
@@ -335,10 +371,10 @@ export const LearnPage: React.FC = () => {
                       </div>
                     ))
                   ) : (
-                    <div className="text-center py-12">
-                      <Bookmark className="h-16 w-16 mx-auto mb-4" style={{ color: '#6F73D2', opacity: 0.5 }} />
-                      <p className="text-lg font-semibold mb-2" style={{ color: '#0B1E3F' }}>No saved courses</p>
-                      <p className="text-sm" style={{ color: '#6F73D2' }}>Save courses to access them later</p>
+                    <div className="learn-empty-state">
+                      <Bookmark className="learn-empty-state-icon" />
+                      <p className="learn-empty-state-title">No saved courses</p>
+                      <p className="learn-empty-state-text">Save courses to access them later</p>
                     </div>
                   )}
                 </div>
@@ -352,7 +388,7 @@ export const LearnPage: React.FC = () => {
 
       {/* Desktop: Tabs */}
       <div className="hidden lg:block">
-        <div className="flex space-x-2 mb-6">
+        <div className="learn-desktop-tabs">
           {[
             { id: 'active', label: 'Active', count: filteredCourses.active.length },
             { id: 'completed', label: 'Completed', count: filteredCourses.completed.length },
@@ -361,18 +397,11 @@ export const LearnPage: React.FC = () => {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as 'active' | 'completed' | 'saved')}
-              className={`px-6 py-3 rounded-xl font-semibold transition-all duration-200 ${
-                activeTab === tab.id ? 'scale-105' : ''
-              }`}
-              style={{
-                backgroundColor: activeTab === tab.id ? '#00B5AD' : 'rgba(0, 181, 173, 0.1)',
-                color: activeTab === tab.id ? 'white' : '#0B1E3F',
-                boxShadow: activeTab === tab.id ? '0 4px 14px rgba(0, 181, 173, 0.3)' : 'none'
-              }}
+              className={`learn-tab-button ${activeTab === tab.id ? 'learn-tab-button--active' : 'learn-tab-button--inactive'}`}
             >
               {tab.label}
               {tab.count > 0 && (
-                <span className="ml-2 px-2 py-0.5 rounded-full text-xs" style={{ backgroundColor: activeTab === tab.id ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 181, 173, 0.2)' }}>
+                <span className={`learn-tab-count ${activeTab === tab.id ? 'learn-tab-count--active' : 'learn-tab-count--inactive'}`}>
                   {tab.count}
                 </span>
               )}
@@ -386,24 +415,20 @@ export const LearnPage: React.FC = () => {
             <>
               {filteredCourses.active.length > 0 ? (
                 filteredCourses.active.map(course => {
-                  const progress = getCourseProgress(course.id);
-                  return renderCourseCard(course, progress);
+                  // TODO: Load actual progress when API is available
+                  return renderCourseCard(course);
                 })
               ) : (
-                <div className="text-center py-16 rounded-2xl border-2" style={{ backgroundColor: 'white', borderColor: '#E5E7EB' }}>
-                  <BookOpen className="h-16 w-16 mx-auto mb-4" style={{ color: '#6F73D2', opacity: 0.5 }} />
-                  <p className="text-xl font-bold mb-2" style={{ color: '#0B1E3F' }}>No active courses</p>
-                  <p className="text-sm mb-6" style={{ color: '#6F73D2' }}>Start learning to see your progress here</p>
+                <div className="learn-empty-state-desktop">
+                  <BookOpen className="learn-empty-state-desktop-icon" />
+                  <p className="learn-empty-state-desktop-title">No active courses</p>
+                  <p className="learn-empty-state-desktop-text">Start learning to see your progress here</p>
                   <Link
                     to="/discover"
-                    className="inline-flex items-center space-x-2 px-6 py-3 rounded-xl font-semibold text-white"
-                    style={{ 
-                      backgroundColor: '#00B5AD',
-                      boxShadow: '0 4px 14px rgba(0, 181, 173, 0.3)'
-                    }}
+                    className="learn-empty-state-button"
                   >
                     <span>Discover Courses</span>
-                    <ArrowRight className="h-4 w-4" />
+                    <ArrowRight className="learn-empty-state-button-icon" />
                   </Link>
                 </div>
               )}
@@ -415,10 +440,10 @@ export const LearnPage: React.FC = () => {
               {filteredCourses.completed.length > 0 ? (
                 filteredCourses.completed.map(course => renderCourseCard(course, 100))
               ) : (
-                <div className="text-center py-16 rounded-2xl border-2" style={{ backgroundColor: 'white', borderColor: '#E5E7EB' }}>
-                  <CheckCircle className="h-16 w-16 mx-auto mb-4" style={{ color: '#6F73D2', opacity: 0.5 }} />
-                  <p className="text-xl font-bold mb-2" style={{ color: '#0B1E3F' }}>No completed courses yet</p>
-                  <p className="text-sm" style={{ color: '#6F73D2' }}>Complete your first course to see it here</p>
+                <div className="learn-empty-state-desktop">
+                  <CheckCircle className="learn-empty-state-desktop-icon" />
+                  <p className="learn-empty-state-desktop-title">No completed courses yet</p>
+                  <p className="learn-empty-state-desktop-text">Complete your first course to see it here</p>
                 </div>
               )}
             </>
@@ -429,10 +454,10 @@ export const LearnPage: React.FC = () => {
               {filteredCourses.saved.length > 0 ? (
                 filteredCourses.saved.map(course => renderCourseCard(course))
               ) : (
-                <div className="text-center py-16 rounded-2xl border-2" style={{ backgroundColor: 'white', borderColor: '#E5E7EB' }}>
-                  <Bookmark className="h-16 w-16 mx-auto mb-4" style={{ color: '#6F73D2', opacity: 0.5 }} />
-                  <p className="text-xl font-bold mb-2" style={{ color: '#0B1E3F' }}>No saved courses</p>
-                  <p className="text-sm" style={{ color: '#6F73D2' }}>Save courses to access them later</p>
+                <div className="learn-empty-state-desktop">
+                  <Bookmark className="learn-empty-state-desktop-icon" />
+                  <p className="learn-empty-state-desktop-title">No saved courses</p>
+                  <p className="learn-empty-state-desktop-text">Save courses to access them later</p>
                 </div>
               )}
             </>

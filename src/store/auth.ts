@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { User } from '../types';
-import { apiService, setAuthToken } from '../services/api';
+import { apiService, setAuthToken, setRefreshToken, handleOAuthCallback } from '../services/api';
 
 interface AuthState {
   user: User | null;
@@ -13,6 +13,8 @@ interface AuthState {
 interface AuthActions {
   login: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string, role: 'STUDENT' | 'TEACHER') => Promise<void>;
+  loginWithOAuth: (provider: 'google' | 'linkedin') => Promise<void>;
+  handleOAuthLogin: (provider: 'google' | 'linkedin', code: string, state?: string) => Promise<void>;
   logout: () => void;
   clearError: () => void;
   setLoading: (loading: boolean) => void;
@@ -41,8 +43,13 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   login: async (email: string, password: string) => {
     set({ isLoading: true, error: null });
     try {
-      const { user, token } = await apiService.login({ email, password });
+      const response = await apiService.login({ email, password });
+      const { user, token } = response;
       setAuthToken(token);
+      // Check if response includes refresh token
+      if ((response as any).refreshToken) {
+        setRefreshToken((response as any).refreshToken);
+      }
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));
       set({
@@ -64,8 +71,13 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   register: async (name: string, email: string, password: string, role: 'STUDENT' | 'TEACHER') => {
     set({ isLoading: true, error: null });
     try {
-      const { user, token } = await apiService.register({ name, email, password, role });
+      const response = await apiService.register({ name, email, password, role });
+      const { user, token } = response;
       setAuthToken(token);
+      // Check if response includes refresh token
+      if ((response as any).refreshToken) {
+        setRefreshToken((response as any).refreshToken);
+      }
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));
       set({
@@ -84,8 +96,58 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     }
   },
 
+  loginWithOAuth: async (provider: 'google' | 'linkedin') => {
+    set({ isLoading: true, error: null });
+    try {
+      // Import OAuth initiation functions
+      const { initiateGoogleLogin, initiateLinkedInLogin } = await import('../services/api');
+      if (provider === 'google') {
+        initiateGoogleLogin();
+      } else if (provider === 'linkedin') {
+        initiateLinkedInLogin();
+      } else {
+        throw new Error('Unsupported OAuth provider');
+      }
+      // Note: This will redirect to OAuth provider, so the function won't return normally
+      // The loading state will remain until the callback completes
+    } catch (error: any) {
+      set({
+        isLoading: false,
+        error: error.message || 'OAuth login failed',
+      });
+      throw error;
+    }
+  },
+
+  handleOAuthLogin: async (provider: 'google' | 'linkedin', code: string, state?: string) => {
+    set({ isLoading: true, error: null });
+    try {
+      const { user, token, refreshToken: refresh } = await handleOAuthCallback(provider, code, state);
+      setAuthToken(token);
+      if (refresh) {
+        setRefreshToken(refresh);
+      }
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(user));
+      set({
+        user,
+        token,
+        isAuthenticated: true,
+        isLoading: false,
+        error: null,
+      });
+    } catch (error: any) {
+      set({
+        isLoading: false,
+        error: error.response?.data?.error || 'OAuth login failed',
+      });
+      throw error;
+    }
+  },
+
   logout: () => {
     setAuthToken(null);
+    setRefreshToken(null);
     set({
       user: null,
       token: null,
@@ -95,6 +157,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     });
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    localStorage.removeItem('refreshToken');
   },
 
   clearError: () => {

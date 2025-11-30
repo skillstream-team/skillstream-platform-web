@@ -8,18 +8,13 @@ import {
   Plus,
   BookOpen,
   TrendingUp,
-  CheckCircle,
-  AlertCircle,
   ArrowRight,
-  MapPin,
   DollarSign,
-  Star,
-  Zap,
-  GraduationCap,
-  Briefcase
+  GraduationCap
 } from 'lucide-react';
 import { useAuthStore } from '../store/auth';
-import { getMyCalendarEvents } from '../services/api';
+import { getPersonalCalendar, getTeacherStats, getEarningsReport } from '../services/api';
+import { CalendarEvent } from '../types';
 
 interface UpcomingLesson {
   id: string;
@@ -38,12 +33,16 @@ export const DashboardPage: React.FC = () => {
   const isTeacher = user?.role === 'TEACHER';
   
   const [upcomingLessons, setUpcomingLessons] = useState<UpcomingLesson[]>([]);
-  const [recentBookings, setRecentBookings] = useState<any[]>([]);
+  const [upcomingEvents, setUpcomingEvents] = useState<CalendarEvent[]>([]);
+  const [upcomingDeadlines, setUpcomingDeadlines] = useState<CalendarEvent[]>([]);
   const [stats, setStats] = useState({
     totalLessons: 0,
     totalStudents: 0,
     upcomingToday: 0,
-    earnings: 0
+    earnings: 0,
+    enrollments: 0,
+    completionRate: 0,
+    revenue: 0
   });
   const [loading, setLoading] = useState(true);
 
@@ -54,24 +53,69 @@ export const DashboardPage: React.FC = () => {
   const loadDashboardData = async () => {
     try {
       setLoading(true);
+      
+      // Load calendar events and deadlines
       try {
-        const events = await getMyCalendarEvents({});
-        setUpcomingLessons([]);
+        const personal = await getPersonalCalendar();
+        const events = personal.events || [];
+        setUpcomingEvents(events.slice(0, 5));
+        
+        // Filter deadlines (assignments, quizzes with due dates)
+        const deadlines = events.filter(e => {
+          return (e.type === 'assignment' || e.type === 'quiz') && 
+            e.endTime && 
+            new Date(e.endTime) > new Date();
+        }).sort((a, b) => {
+          const dateA = new Date(a.endTime || '').getTime();
+          const dateB = new Date(b.endTime || '').getTime();
+          return dateA - dateB;
+        }).slice(0, 5);
+        setUpcomingDeadlines(deadlines);
       } catch (err) {
-        setUpcomingLessons([]);
+        console.error('Error loading calendar events:', err);
+        setUpcomingEvents([]);
+        setUpcomingDeadlines([]);
       }
       
-      if (isTeacher) {
-        setStats({
-          totalLessons: 0,
-          totalStudents: 0,
-          upcomingToday: 0,
-          earnings: 0
-        });
+      // Load teacher stats
+      if (isTeacher && user?.id) {
+        try {
+          const [teacherStats, earnings] = await Promise.all([
+            getTeacherStats(user.id),
+            getEarningsReport(user.id).catch(() => ({ totalRevenue: 0, monthlyRevenue: 0 }))
+          ]);
+          
+          setStats({
+            totalLessons: teacherStats.totalLessons || 0,
+            totalStudents: teacherStats.totalStudents || 0,
+            upcomingToday: upcomingEvents.filter(e => {
+              const eventDate = new Date(e.startTime || '');
+              const today = new Date();
+              return eventDate.toDateString() === today.toDateString();
+            }).length,
+            earnings: earnings.totalRevenue || 0,
+            enrollments: teacherStats.totalStudents || 0,
+            completionRate: teacherStats.averageCompletionRate || 0,
+            revenue: earnings.monthlyRevenue || 0
+          });
+        } catch (err) {
+          console.error('Error loading teacher stats:', err);
+          setStats({
+            totalLessons: 0,
+            totalStudents: 0,
+            upcomingToday: 0,
+            earnings: 0,
+            enrollments: 0,
+            completionRate: 0,
+            revenue: 0
+          });
+        }
       }
     } catch (error) {
       console.error('Error loading dashboard:', error);
       setUpcomingLessons([]);
+      setUpcomingEvents([]);
+      setUpcomingDeadlines([]);
     } finally {
       setLoading(false);
     }
@@ -96,48 +140,34 @@ export const DashboardPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#F4F7FA' }}>
-        <div 
-          className="animate-spin rounded-full h-12 w-12 border-4 border-t-transparent"
-          style={{ borderColor: '#00B5AD' }}
-        ></div>
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/20 to-purple-50/20 dark:from-gray-900 dark:via-gray-900 dark:to-gray-900">
+        <div className="flex items-center justify-center h-screen">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#F4F7FA' }}>
+    <div className="dashboard-page">
       {/* Welcome Header with Glassmorphism */}
-      <div 
-        className="mb-6 lg:mb-8 rounded-2xl lg:rounded-[20px] p-6 lg:p-8 backdrop-blur-xl border"
-        style={{
-          background: 'linear-gradient(135deg, rgba(0, 181, 173, 0.1) 0%, rgba(111, 115, 210, 0.1) 100%)',
-          borderColor: 'rgba(255, 255, 255, 0.3)',
-          boxShadow: '0 20px 60px rgba(11, 30, 63, 0.1)'
-        }}
-      >
-        <div className="flex items-center justify-between">
-          <div className="flex-1">
-            <h1 className="text-2xl lg:text-4xl font-bold mb-2" style={{ color: '#0B1E3F' }}>
+      <div className="dashboard-welcome">
+        <div className="dashboard-welcome-content">
+          <div className="dashboard-welcome-text">
+            <h1 className="dashboard-welcome-title">
               Welcome back, {user?.name?.split(' ')[0]}! 👋
             </h1>
-            <p className="text-base lg:text-lg" style={{ color: '#6F73D2' }}>
+            <p className="dashboard-welcome-subtitle">
               {isTeacher 
                 ? 'Ready to inspire your students today?' 
                 : 'Continue your learning journey'}
             </p>
           </div>
-          <div 
-            className="w-16 h-16 lg:w-20 lg:h-20 rounded-2xl flex items-center justify-center flex-shrink-0 ml-4"
-            style={{
-              background: 'linear-gradient(135deg, #00B5AD 0%, #6F73D2 100%)',
-              boxShadow: '0 10px 30px rgba(0, 181, 173, 0.3)'
-            }}
-          >
+          <div className="dashboard-welcome-icon">
             {isTeacher ? (
-              <GraduationCap className="h-8 w-8 lg:h-10 lg:w-10 text-white" />
+              <GraduationCap />
             ) : (
-              <BookOpen className="h-8 w-8 lg:h-10 lg:w-10 text-white" />
+              <BookOpen />
             )}
           </div>
         </div>
@@ -145,81 +175,53 @@ export const DashboardPage: React.FC = () => {
 
       {/* Hero Section - Next Lesson */}
       {nextLesson && (
-        <div 
-          className="mb-8 rounded-[20px] p-8 backdrop-blur-xl border transition-all duration-300 hover:shadow-xl"
-          style={{
-            backgroundColor: 'rgba(255, 255, 255, 0.9)',
-            borderColor: 'rgba(0, 181, 173, 0.2)',
-            boxShadow: '0 20px 60px rgba(11, 30, 63, 0.1)'
-          }}
-        >
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <div className="flex items-center space-x-2 mb-3">
-                <div 
-                  className="w-10 h-10 rounded-xl flex items-center justify-center"
-                  style={{ backgroundColor: 'rgba(0, 181, 173, 0.1)' }}
-                >
-                  <Clock className="h-5 w-5" style={{ color: '#00B5AD' }} />
+        <div className="dashboard-next-lesson">
+          <div className="dashboard-next-lesson-content">
+            <div className="dashboard-next-lesson-info">
+              <div className="dashboard-next-lesson-header">
+                <div className="dashboard-next-lesson-icon-wrapper">
+                  <Clock className="dashboard-next-lesson-icon" />
                 </div>
-                <span className="text-sm font-semibold" style={{ color: '#00B5AD' }}>
+                <span className="dashboard-next-lesson-time">
                   {nextLesson.scheduledAt ? `Next lesson: ${formatTime(nextLesson.scheduledAt)}` : 'Upcoming Lesson'}
                 </span>
               </div>
-              <h2 className="text-3xl font-bold mb-3" style={{ color: '#0B1E3F' }}>
+              <h2 className="dashboard-next-lesson-title">
                 {nextLesson.title}
               </h2>
-              <div className="flex items-center space-x-6 text-sm" style={{ color: '#6F73D2' }}>
+              <div className="dashboard-next-lesson-meta">
                 {isTeacher ? (
                   <>
-                    <span className="flex items-center space-x-2">
-                      <Users className="h-4 w-4" />
+                    <div className="dashboard-next-lesson-meta-item">
+                      <Users className="dashboard-next-lesson-meta-icon" />
                       <span>{nextLesson.studentCount} {nextLesson.studentCount === 1 ? 'student' : 'students'}</span>
-                    </span>
+                    </div>
                   </>
                 ) : (
                   <>
-                    <span className="flex items-center space-x-2">
-                      <Users className="h-4 w-4" />
+                    <div className="dashboard-next-lesson-meta-item">
+                      <Users className="dashboard-next-lesson-meta-icon" />
                       <span>with {nextLesson.teacherName}</span>
-                    </span>
+                    </div>
                   </>
                 )}
-                <span className="flex items-center space-x-2">
-                  <Clock className="h-4 w-4" />
+                <div className="dashboard-next-lesson-meta-item">
+                  <Clock className="dashboard-next-lesson-meta-icon" />
                   <span>{nextLesson.duration} minutes</span>
-                </span>
+                </div>
               </div>
             </div>
-            <div className="flex flex-col space-y-3 ml-6">
+            <div className="dashboard-next-lesson-actions">
               {nextLesson.joinLink && (
                 <button
                   onClick={() => window.open(nextLesson.joinLink, '_blank')}
-                  className="px-6 py-3 text-white rounded-xl font-semibold transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5 flex items-center space-x-2"
-                  style={{ 
-                    backgroundColor: '#00B5AD',
-                    boxShadow: '0 4px 14px rgba(0, 181, 173, 0.3)'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = '#00968d';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = '#00B5AD';
-                  }}
+                  className="dashboard-button-primary"
                 >
-                  <Video className="h-5 w-5" />
+                  <Video className="dashboard-button-primary-icon" />
                   <span>Join Now</span>
                 </button>
               )}
-              <Link
-                to="/calendar"
-                className="px-6 py-3 rounded-xl font-semibold text-center transition-all duration-200 hover:shadow-md border-2"
-                style={{ 
-                  borderColor: '#E5E7EB',
-                  color: '#0B1E3F',
-                  backgroundColor: 'white'
-                }}
-              >
+              <Link to="/calendar" className="dashboard-button-secondary">
                 View Calendar
               </Link>
             </div>
@@ -228,108 +230,63 @@ export const DashboardPage: React.FC = () => {
       )}
 
       {/* Quick Actions */}
-      <div className="mb-6 lg:mb-8">
-        <h3 className="text-xl lg:text-2xl font-bold mb-4 lg:mb-6" style={{ color: '#0B1E3F' }}>
+      <div className="dashboard-quick-actions">
+        <h3 className="dashboard-quick-actions-title">
           Quick Actions
         </h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-6">
+        <div className="dashboard-quick-actions-grid">
           {isTeacher ? (
             <>
               <button
                 onClick={() => navigate('/lessons/create')}
-                className="p-6 rounded-[20px] text-left transition-all duration-300 hover:shadow-xl hover:-translate-y-1 border-2 group"
-                style={{
-                  backgroundColor: 'white',
-                  borderColor: '#E5E7EB'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = '#00B5AD';
-                  e.currentTarget.style.boxShadow = '0 20px 60px rgba(0, 181, 173, 0.15)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = '#E5E7EB';
-                  e.currentTarget.style.boxShadow = 'none';
-                }}
+                className="dashboard-quick-action-card dashboard-quick-action-card--teal"
               >
-                <div className="flex items-center space-x-4 mb-4">
-                  <div 
-                    className="w-14 h-14 rounded-xl flex items-center justify-center transition-all duration-300 group-hover:scale-110"
-                    style={{ backgroundColor: 'rgba(0, 181, 173, 0.1)' }}
-                  >
-                    <Plus className="h-7 w-7" style={{ color: '#00B5AD' }} />
+                <div className="dashboard-quick-action-header">
+                  <div className="dashboard-quick-action-icon-wrapper dashboard-quick-action-icon-wrapper--teal">
+                    <Plus className="dashboard-quick-action-icon dashboard-quick-action-icon--teal" />
                   </div>
-                  <div>
-                    <h4 className="font-bold text-lg" style={{ color: '#0B1E3F' }}>Create Lesson</h4>
-                    <p className="text-sm" style={{ color: '#6F73D2' }}>Start a new lesson</p>
+                  <div className="dashboard-quick-action-text">
+                    <h4 className="dashboard-quick-action-title">Create Lesson</h4>
+                    <p className="dashboard-quick-action-subtitle">Start a new lesson</p>
                   </div>
                 </div>
-                <p className="text-sm" style={{ color: '#6F73D2' }}>
+                <p className="dashboard-quick-action-description">
                   Set up an extra lesson in minutes
                 </p>
               </button>
 
               <Link
                 to="/lessons/availability"
-                className="p-6 rounded-[20px] text-left transition-all duration-300 hover:shadow-xl hover:-translate-y-1 border-2 group block"
-                style={{
-                  backgroundColor: 'white',
-                  borderColor: '#E5E7EB'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = '#6F73D2';
-                  e.currentTarget.style.boxShadow = '0 20px 60px rgba(111, 115, 210, 0.15)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = '#E5E7EB';
-                  e.currentTarget.style.boxShadow = 'none';
-                }}
+                className="dashboard-quick-action-card dashboard-quick-action-card--purple"
               >
-                <div className="flex items-center space-x-4 mb-4">
-                  <div 
-                    className="w-14 h-14 rounded-xl flex items-center justify-center transition-all duration-300 group-hover:scale-110"
-                    style={{ backgroundColor: 'rgba(111, 115, 210, 0.1)' }}
-                  >
-                    <Calendar className="h-7 w-7" style={{ color: '#6F73D2' }} />
+                <div className="dashboard-quick-action-header">
+                  <div className="dashboard-quick-action-icon-wrapper dashboard-quick-action-icon-wrapper--purple">
+                    <Calendar className="dashboard-quick-action-icon dashboard-quick-action-icon--purple" />
                   </div>
-                  <div>
-                    <h4 className="font-bold text-lg" style={{ color: '#0B1E3F' }}>Set Availability</h4>
-                    <p className="text-sm" style={{ color: '#6F73D2' }}>Manage your schedule</p>
+                  <div className="dashboard-quick-action-text">
+                    <h4 className="dashboard-quick-action-title">Set Availability</h4>
+                    <p className="dashboard-quick-action-subtitle">Manage your schedule</p>
                   </div>
                 </div>
-                <p className="text-sm" style={{ color: '#6F73D2' }}>
+                <p className="dashboard-quick-action-description">
                   Let students book your time
                 </p>
               </Link>
 
               <Link
                 to="/analytics"
-                className="p-6 rounded-[20px] text-left transition-all duration-300 hover:shadow-xl hover:-translate-y-1 border-2 group block"
-                style={{
-                  backgroundColor: 'white',
-                  borderColor: '#E5E7EB'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = '#9A8CFF';
-                  e.currentTarget.style.boxShadow = '0 20px 60px rgba(154, 140, 255, 0.15)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = '#E5E7EB';
-                  e.currentTarget.style.boxShadow = 'none';
-                }}
+                className="dashboard-quick-action-card dashboard-quick-action-card--light-purple"
               >
-                <div className="flex items-center space-x-4 mb-4">
-                  <div 
-                    className="w-14 h-14 rounded-xl flex items-center justify-center transition-all duration-300 group-hover:scale-110"
-                    style={{ backgroundColor: 'rgba(154, 140, 255, 0.1)' }}
-                  >
-                    <TrendingUp className="h-7 w-7" style={{ color: '#9A8CFF' }} />
+                <div className="dashboard-quick-action-header">
+                  <div className="dashboard-quick-action-icon-wrapper dashboard-quick-action-icon-wrapper--light-purple">
+                    <TrendingUp className="dashboard-quick-action-icon dashboard-quick-action-icon--light-purple" />
                   </div>
-                  <div>
-                    <h4 className="font-bold text-lg" style={{ color: '#0B1E3F' }}>View Analytics</h4>
-                    <p className="text-sm" style={{ color: '#6F73D2' }}>Track performance</p>
+                  <div className="dashboard-quick-action-text">
+                    <h4 className="dashboard-quick-action-title">View Analytics</h4>
+                    <p className="dashboard-quick-action-subtitle">Track performance</p>
                   </div>
                 </div>
-                <p className="text-sm" style={{ color: '#6F73D2' }}>
+                <p className="dashboard-quick-action-description">
                   See your teaching stats
                 </p>
               </Link>
@@ -338,99 +295,54 @@ export const DashboardPage: React.FC = () => {
             <>
               <Link
                 to="/lessons/book"
-                className="p-6 rounded-[20px] text-left transition-all duration-300 hover:shadow-xl hover:-translate-y-1 border-2 group block"
-                style={{
-                  backgroundColor: 'white',
-                  borderColor: '#E5E7EB'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = '#00B5AD';
-                  e.currentTarget.style.boxShadow = '0 20px 60px rgba(0, 181, 173, 0.15)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = '#E5E7EB';
-                  e.currentTarget.style.boxShadow = 'none';
-                }}
+                className="dashboard-quick-action-card dashboard-quick-action-card--teal"
               >
-                <div className="flex items-center space-x-4 mb-4">
-                  <div 
-                    className="w-14 h-14 rounded-xl flex items-center justify-center transition-all duration-300 group-hover:scale-110"
-                    style={{ backgroundColor: 'rgba(0, 181, 173, 0.1)' }}
-                  >
-                    <BookOpen className="h-7 w-7" style={{ color: '#00B5AD' }} />
+                <div className="dashboard-quick-action-header">
+                  <div className="dashboard-quick-action-icon-wrapper dashboard-quick-action-icon-wrapper--teal">
+                    <BookOpen className="dashboard-quick-action-icon dashboard-quick-action-icon--teal" />
                   </div>
-                  <div>
-                    <h4 className="font-bold text-lg" style={{ color: '#0B1E3F' }}>Book a Lesson</h4>
-                    <p className="text-sm" style={{ color: '#6F73D2' }}>Find available lessons</p>
+                  <div className="dashboard-quick-action-text">
+                    <h4 className="dashboard-quick-action-title">Book a Lesson</h4>
+                    <p className="dashboard-quick-action-subtitle">Find available lessons</p>
                   </div>
                 </div>
-                <p className="text-sm" style={{ color: '#6F73D2' }}>
+                <p className="dashboard-quick-action-description">
                   Browse teachers and book slots
                 </p>
               </Link>
 
               <Link
                 to="/courses"
-                className="p-6 rounded-[20px] text-left transition-all duration-300 hover:shadow-xl hover:-translate-y-1 border-2 group block"
-                style={{
-                  backgroundColor: 'white',
-                  borderColor: '#E5E7EB'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = '#6F73D2';
-                  e.currentTarget.style.boxShadow = '0 20px 60px rgba(111, 115, 210, 0.15)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = '#E5E7EB';
-                  e.currentTarget.style.boxShadow = 'none';
-                }}
+                className="dashboard-quick-action-card dashboard-quick-action-card--purple"
               >
-                <div className="flex items-center space-x-4 mb-4">
-                  <div 
-                    className="w-14 h-14 rounded-xl flex items-center justify-center transition-all duration-300 group-hover:scale-110"
-                    style={{ backgroundColor: 'rgba(111, 115, 210, 0.1)' }}
-                  >
-                    <Video className="h-7 w-7" style={{ color: '#6F73D2' }} />
+                <div className="dashboard-quick-action-header">
+                  <div className="dashboard-quick-action-icon-wrapper dashboard-quick-action-icon-wrapper--purple">
+                    <Video className="dashboard-quick-action-icon dashboard-quick-action-icon--purple" />
                   </div>
-                  <div>
-                    <h4 className="font-bold text-lg" style={{ color: '#0B1E3F' }}>My Lessons</h4>
-                    <p className="text-sm" style={{ color: '#6F73D2' }}>View enrolled lessons</p>
+                  <div className="dashboard-quick-action-text">
+                    <h4 className="dashboard-quick-action-title">My Lessons</h4>
+                    <p className="dashboard-quick-action-subtitle">View enrolled lessons</p>
                   </div>
                 </div>
-                <p className="text-sm" style={{ color: '#6F73D2' }}>
+                <p className="dashboard-quick-action-description">
                   Access your learning materials
                 </p>
               </Link>
 
               <Link
                 to="/calendar"
-                className="p-6 rounded-[20px] text-left transition-all duration-300 hover:shadow-xl hover:-translate-y-1 border-2 group block"
-                style={{
-                  backgroundColor: 'white',
-                  borderColor: '#E5E7EB'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = '#9A8CFF';
-                  e.currentTarget.style.boxShadow = '0 20px 60px rgba(154, 140, 255, 0.15)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = '#E5E7EB';
-                  e.currentTarget.style.boxShadow = 'none';
-                }}
+                className="dashboard-quick-action-card dashboard-quick-action-card--light-purple"
               >
-                <div className="flex items-center space-x-4 mb-4">
-                  <div 
-                    className="w-14 h-14 rounded-xl flex items-center justify-center transition-all duration-300 group-hover:scale-110"
-                    style={{ backgroundColor: 'rgba(154, 140, 255, 0.1)' }}
-                  >
-                    <Calendar className="h-7 w-7" style={{ color: '#9A8CFF' }} />
+                <div className="dashboard-quick-action-header">
+                  <div className="dashboard-quick-action-icon-wrapper dashboard-quick-action-icon-wrapper--light-purple">
+                    <Calendar className="dashboard-quick-action-icon dashboard-quick-action-icon--light-purple" />
                   </div>
-                  <div>
-                    <h4 className="font-bold text-lg" style={{ color: '#0B1E3F' }}>My Schedule</h4>
-                    <p className="text-sm" style={{ color: '#6F73D2' }}>View calendar</p>
+                  <div className="dashboard-quick-action-text">
+                    <h4 className="dashboard-quick-action-title">My Schedule</h4>
+                    <p className="dashboard-quick-action-subtitle">View calendar</p>
                   </div>
                 </div>
-                <p className="text-sm" style={{ color: '#6F73D2' }}>
+                <p className="dashboard-quick-action-description">
                   See all your lessons
                 </p>
               </Link>
@@ -441,115 +353,165 @@ export const DashboardPage: React.FC = () => {
 
       {/* Stats Grid */}
       {isTeacher && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-6 lg:mb-8">
-          <div 
-            className="p-6 rounded-[20px] border-2 transition-all duration-300 hover:shadow-xl hover:-translate-y-1"
-            style={{
-              backgroundColor: 'white',
-              borderColor: '#E5E7EB'
-            }}
-          >
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-sm font-medium" style={{ color: '#6F73D2' }}>Total Lessons</span>
-              <div 
-                className="w-10 h-10 rounded-xl flex items-center justify-center"
-                style={{ backgroundColor: 'rgba(0, 181, 173, 0.1)' }}
-              >
-                <Video className="h-5 w-5" style={{ color: '#00B5AD' }} />
+        <div className="dashboard-stats-grid">
+          <div className="dashboard-stat-card">
+            <div className="dashboard-stat-header">
+              <span className="dashboard-stat-label">Total Lessons</span>
+              <div className="dashboard-stat-icon-wrapper dashboard-stat-icon-wrapper--teal">
+                <Video className="dashboard-stat-icon dashboard-stat-icon--teal" />
               </div>
             </div>
-            <p className="text-3xl font-bold" style={{ color: '#0B1E3F' }}>{stats.totalLessons}</p>
+            <p className="dashboard-stat-value">{stats.totalLessons}</p>
           </div>
-          <div 
-            className="p-6 rounded-[20px] border-2 transition-all duration-300 hover:shadow-xl hover:-translate-y-1"
-            style={{
-              backgroundColor: 'white',
-              borderColor: '#E5E7EB'
-            }}
-          >
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-sm font-medium" style={{ color: '#6F73D2' }}>Total Students</span>
-              <div 
-                className="w-10 h-10 rounded-xl flex items-center justify-center"
-                style={{ backgroundColor: 'rgba(111, 115, 210, 0.1)' }}
-              >
-                <Users className="h-5 w-5" style={{ color: '#6F73D2' }} />
+          <div className="dashboard-stat-card">
+            <div className="dashboard-stat-header">
+              <span className="dashboard-stat-label">Total Students</span>
+              <div className="dashboard-stat-icon-wrapper dashboard-stat-icon-wrapper--purple">
+                <Users className="dashboard-stat-icon dashboard-stat-icon--purple" />
               </div>
             </div>
-            <p className="text-3xl font-bold" style={{ color: '#0B1E3F' }}>{stats.totalStudents}</p>
+            <p className="dashboard-stat-value">{stats.totalStudents}</p>
           </div>
-          <div 
-            className="p-6 rounded-[20px] border-2 transition-all duration-300 hover:shadow-xl hover:-translate-y-1"
-            style={{
-              backgroundColor: 'white',
-              borderColor: '#E5E7EB'
-            }}
-          >
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-sm font-medium" style={{ color: '#6F73D2' }}>Today's Lessons</span>
-              <div 
-                className="w-10 h-10 rounded-xl flex items-center justify-center"
-                style={{ backgroundColor: 'rgba(154, 140, 255, 0.1)' }}
-              >
-                <Clock className="h-5 w-5" style={{ color: '#9A8CFF' }} />
+          <div className="dashboard-stat-card">
+            <div className="dashboard-stat-header">
+              <span className="dashboard-stat-label">Today's Lessons</span>
+              <div className="dashboard-stat-icon-wrapper dashboard-stat-icon-wrapper--light-purple">
+                <Clock className="dashboard-stat-icon dashboard-stat-icon--light-purple" />
               </div>
             </div>
-            <p className="text-3xl font-bold" style={{ color: '#0B1E3F' }}>{stats.upcomingToday}</p>
+            <p className="dashboard-stat-value">{stats.upcomingToday}</p>
           </div>
-          <div 
-            className="p-6 rounded-[20px] border-2 transition-all duration-300 hover:shadow-xl hover:-translate-y-1"
-            style={{
-              backgroundColor: 'white',
-              borderColor: '#E5E7EB'
-            }}
-          >
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-sm font-medium" style={{ color: '#6F73D2' }}>Earnings</span>
-              <div 
-                className="w-10 h-10 rounded-xl flex items-center justify-center"
-                style={{ backgroundColor: 'rgba(0, 181, 173, 0.1)' }}
-              >
-                <DollarSign className="h-5 w-5" style={{ color: '#00B5AD' }} />
+          <div className="dashboard-stat-card">
+            <div className="dashboard-stat-header">
+              <span className="dashboard-stat-label">Enrollments</span>
+              <div className="dashboard-stat-icon-wrapper dashboard-stat-icon-wrapper--purple">
+                <Users className="dashboard-stat-icon dashboard-stat-icon--purple" />
               </div>
             </div>
-            <p className="text-3xl font-bold" style={{ color: '#0B1E3F' }}>${stats.earnings}</p>
+            <p className="dashboard-stat-value">{stats.enrollments}</p>
+          </div>
+          <div className="dashboard-stat-card">
+            <div className="dashboard-stat-header">
+              <span className="dashboard-stat-label">Completion Rate</span>
+              <div className="dashboard-stat-icon-wrapper dashboard-stat-icon-wrapper--teal">
+                <TrendingUp className="dashboard-stat-icon dashboard-stat-icon--teal" />
+              </div>
+            </div>
+            <p className="dashboard-stat-value">{Math.round(stats.completionRate)}%</p>
+          </div>
+          <div className="dashboard-stat-card">
+            <div className="dashboard-stat-header">
+              <span className="dashboard-stat-label">Monthly Revenue</span>
+              <div className="dashboard-stat-icon-wrapper dashboard-stat-icon-wrapper--teal">
+                <DollarSign className="dashboard-stat-icon dashboard-stat-icon--teal" />
+              </div>
+            </div>
+            <p className="dashboard-stat-value">${stats.revenue.toLocaleString()}</p>
           </div>
         </div>
       )}
 
+      {/* Upcoming Events & Deadlines */}
+      {(upcomingEvents.length > 0 || upcomingDeadlines.length > 0) && (
+        <div className="dashboard-events-section">
+          {upcomingEvents.length > 0 && (
+            <div className="dashboard-events-card">
+              <div className="dashboard-events-header">
+                <h3 className="dashboard-events-title">Upcoming Events</h3>
+                <Link to="/calendar" className="dashboard-events-link">
+                  <span>View All</span>
+                  <ArrowRight className="dashboard-events-link-icon" />
+                </Link>
+              </div>
+              <div className="dashboard-events-list">
+                {upcomingEvents.slice(0, 5).map((event) => (
+                  <div 
+                    key={event.id} 
+                    className="dashboard-event-item"
+                    onClick={() => navigate('/calendar')}
+                  >
+                    <div className="dashboard-event-icon-wrapper">
+                      <Calendar className="dashboard-event-icon" />
+                    </div>
+                    <div className="dashboard-event-content">
+                      <h4 className="dashboard-event-title">{event.title}</h4>
+                      <p className="dashboard-event-meta">
+                        {event.startTime && formatTime(event.startTime)}
+                        {event.endTime && ` - ${formatTime(event.endTime)}`}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {upcomingDeadlines.length > 0 && (
+            <div className="dashboard-events-card">
+              <div className="dashboard-events-header">
+                <h3 className="dashboard-events-title">Upcoming Deadlines</h3>
+                <Link to="/calendar" className="dashboard-events-link">
+                  <span>View All</span>
+                  <ArrowRight className="dashboard-events-link-icon" />
+                </Link>
+              </div>
+              <div className="dashboard-events-list">
+                {upcomingDeadlines.slice(0, 5).map((deadline) => {
+                  const dueDate = new Date(deadline.endTime || '');
+                  const daysUntil = Math.ceil((dueDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+                  
+                  return (
+                    <div 
+                      key={deadline.id} 
+                      className="dashboard-event-item dashboard-event-item--deadline"
+                      onClick={() => {
+                        if (deadline.type === 'assignment') {
+                          navigate(`/assignments/${deadline.id}`);
+                        } else if (deadline.type === 'quiz') {
+                          navigate(`/quiz/${deadline.id}`);
+                        } else {
+                          navigate('/calendar');
+                        }
+                      }}
+                    >
+                      <div className={`dashboard-event-icon-wrapper dashboard-event-icon-wrapper--${daysUntil <= 3 ? 'urgent' : 'normal'}`}>
+                        <Clock className="dashboard-event-icon" />
+                      </div>
+                      <div className="dashboard-event-content">
+                        <h4 className="dashboard-event-title">{deadline.title}</h4>
+                        <p className="dashboard-event-meta">
+                          Due: {dueDate.toLocaleDateString()} ({daysUntil} {daysUntil === 1 ? 'day' : 'days'} left)
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Upcoming Lessons */}
-      <div className="mb-6 lg:mb-8">
-        <div className="flex items-center justify-between mb-4 lg:mb-6">
-          <h3 className="text-xl lg:text-2xl font-bold" style={{ color: '#0B1E3F' }}>
+      <div className="dashboard-upcoming">
+        <div className="dashboard-upcoming-header">
+          <h3 className="dashboard-upcoming-title">
             {isTeacher ? 'Upcoming Lessons' : 'My Upcoming Lessons'}
           </h3>
-          <Link
-            to="/calendar"
-            className="text-sm font-semibold transition-colors hover:opacity-80 flex items-center space-x-1"
-            style={{ color: '#00B5AD' }}
-          >
+          <Link to="/calendar" className="dashboard-upcoming-link">
             <span>View All</span>
-            <ArrowRight className="h-4 w-4" />
+            <ArrowRight className="dashboard-upcoming-link-icon" />
           </Link>
         </div>
         {upcomingLessons.length === 0 ? (
-          <div 
-            className="p-12 text-center rounded-[20px] border-2"
-            style={{
-              backgroundColor: 'white',
-              borderColor: '#E5E7EB'
-            }}
-          >
-            <div 
-              className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4"
-              style={{ backgroundColor: 'rgba(0, 181, 173, 0.1)' }}
-            >
-              <Calendar className="h-8 w-8" style={{ color: '#00B5AD' }} />
+          <div className="dashboard-empty-state">
+            <div className="dashboard-empty-state-icon-wrapper">
+              <Calendar className="dashboard-empty-state-icon" />
             </div>
-            <h4 className="text-xl font-bold mb-2" style={{ color: '#0B1E3F' }}>
+            <h4 className="dashboard-empty-state-title">
               No upcoming lessons
             </h4>
-            <p className="mb-6" style={{ color: '#6F73D2' }}>
+            <p className="dashboard-empty-state-text">
               {isTeacher 
                 ? 'Create your first lesson to get started'
                 : 'Book a lesson to start learning'
@@ -558,117 +520,60 @@ export const DashboardPage: React.FC = () => {
             {isTeacher ? (
               <button
                 onClick={() => navigate('/lessons/create')}
-                className="px-8 py-3 text-white rounded-xl font-semibold transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5"
-                style={{ 
-                  backgroundColor: '#00B5AD',
-                  boxShadow: '0 4px 14px rgba(0, 181, 173, 0.3)'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = '#00968d';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = '#00B5AD';
-                }}
+                className="dashboard-empty-state-button"
               >
                 Create Lesson
               </button>
             ) : (
-              <Link
-                to="/lessons/book"
-                className="inline-block px-8 py-3 text-white rounded-xl font-semibold transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5"
-                style={{ 
-                  backgroundColor: '#00B5AD',
-                  boxShadow: '0 4px 14px rgba(0, 181, 173, 0.3)'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = '#00968d';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = '#00B5AD';
-                }}
-              >
+              <Link to="/lessons/book" className="dashboard-empty-state-button">
                 Book a Lesson
               </Link>
             )}
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="dashboard-lessons-list">
             {upcomingLessons.map((lesson) => (
-              <div
-                key={lesson.id}
-                className="p-6 rounded-[20px] border-2 transition-all duration-300 hover:shadow-xl hover:-translate-y-1"
-                style={{
-                  backgroundColor: 'white',
-                  borderColor: '#E5E7EB'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = '#00B5AD';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = '#E5E7EB';
-                }}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-3 mb-3">
-                      <h4 className="font-bold text-lg" style={{ color: '#0B1E3F' }}>
+              <div key={lesson.id} className="dashboard-lesson-card">
+                <div className="dashboard-lesson-content">
+                  <div className="dashboard-lesson-info">
+                    <div className="dashboard-lesson-header">
+                      <h4 className="dashboard-lesson-title">
                         {lesson.title}
                       </h4>
                       {lesson.type === 'live' && (
-                        <span 
-                          className="px-3 py-1 rounded-full text-xs font-semibold"
-                          style={{ 
-                            backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                            color: '#dc2626'
-                          }}
-                        >
+                        <span className="dashboard-lesson-badge">
                           Live
                         </span>
                       )}
                     </div>
-                    <div className="flex items-center space-x-6 text-sm" style={{ color: '#6F73D2' }}>
-                      <span className="flex items-center space-x-2">
-                        <Clock className="h-4 w-4" />
+                    <div className="dashboard-lesson-meta">
+                      <div className="dashboard-lesson-meta-item">
+                        <Clock className="dashboard-lesson-meta-icon" />
                         <span>{formatTime(lesson.scheduledAt)} • {lesson.duration} min</span>
-                      </span>
+                      </div>
                       {isTeacher ? (
-                        <span className="flex items-center space-x-2">
-                          <Users className="h-4 w-4" />
+                        <div className="dashboard-lesson-meta-item">
+                          <Users className="dashboard-lesson-meta-icon" />
                           <span>{lesson.studentCount} {lesson.studentCount === 1 ? 'student' : 'students'}</span>
-                        </span>
+                        </div>
                       ) : (
                         <span>with {lesson.teacherName}</span>
                       )}
                     </div>
                   </div>
-                  <div className="flex items-center space-x-3 ml-6">
+                  <div className="dashboard-lesson-actions">
                     {lesson.joinLink && (
                       <button
                         onClick={() => window.open(lesson.joinLink, '_blank')}
-                        className="px-6 py-3 text-white rounded-xl font-semibold transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 flex items-center space-x-2"
-                        style={{ 
-                          backgroundColor: '#00B5AD',
-                          boxShadow: '0 4px 14px rgba(0, 181, 173, 0.3)'
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.backgroundColor = '#00968d';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.backgroundColor = '#00B5AD';
-                        }}
+                        className="dashboard-button-small dashboard-button-small-primary"
                       >
-                        <Video className="h-4 w-4" />
+                        <Video className="dashboard-button-small-icon" />
                         <span>Join</span>
                       </button>
                     )}
                     <Link
                       to={`/lessons/${lesson.id}`}
-                      className="px-6 py-3 rounded-xl font-semibold transition-all duration-200 hover:shadow-md border-2"
-                      style={{ 
-                        borderColor: '#E5E7EB',
-                        color: '#0B1E3F',
-                        backgroundColor: 'white'
-                      }}
+                      className="dashboard-button-small dashboard-button-small-secondary"
                     >
                       Details
                     </Link>

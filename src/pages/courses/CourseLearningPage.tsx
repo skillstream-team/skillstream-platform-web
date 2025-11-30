@@ -2,9 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { Course, Lesson, Material } from '../../types';
 import { BackButton } from '../../components/common/BackButton';
-import { getCourseByIdWithLanguage, getLessonByIdWithLanguage, getMaterialByIdWithLanguage } from '../../services/api';
-import { Bookmark, Share2, Settings, VolumeX, Volume2, Maximize2, Video, Check, FileText, Download, ArrowLeft, ArrowRight, List, X } from 'lucide-react';
+import { apiService } from '../../services/api';
+import { Bookmark, Share2, Settings, Video, Check, FileText, Download, ArrowLeft, ArrowRight, List, X, ChevronDown } from 'lucide-react';
 import { BottomSheet } from '../../components/mobile/BottomSheet';
+import { EnhancedVideoPlayer } from '../../components/video/EnhancedVideoPlayer';
+import { NotesAndBookmarks } from '../../components/learning/NotesAndBookmarks';
+import { LessonQandA } from '../../components/learning/LessonQandA';
 
 export const CourseLearningPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -13,31 +16,52 @@ export const CourseLearningPage: React.FC = () => {
   const [materials, setMaterials] = useState<Material[]>([]);
   const [currentLesson, setCurrentLesson] = useState<Lesson | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isMuted, setIsMuted] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
   const [showSidebar, setShowSidebar] = useState(true);
   const [showLessonList, setShowLessonList] = useState(false);
   const [completedLessons, setCompletedLessons] = useState<string[]>([]);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [curriculum, setCurriculum] = useState<any[]>([]);
+  const [expandedModules, setExpandedModules] = useState<number[]>([]);
 
   useEffect(() => {
     if (!id) return;
     async function loadData() {
       setIsLoading(true);
       try {
-        const courseData = await getCourseByIdWithLanguage(Number(id));
+        const courseData = await apiService.getCourseDetails(Number(id));
         setCourse(courseData);
-        // Fetch lessons and materials using real API endpoints
-        const lessonsData = courseData.lessons || [];
-        setLessons(lessonsData);
+        
+        // Get curriculum structure
+        const curriculumData = (courseData as any)?.curriculum || [];
+        setCurriculum(curriculumData);
+        
+        // Flatten lessons from curriculum
+        const allLessons: Lesson[] = [];
+        curriculumData.forEach((module: any) => {
+          if (module.lessons && Array.isArray(module.lessons)) {
+            allLessons.push(...module.lessons);
+          }
+        });
+        
+        setLessons(allLessons);
         setMaterials(courseData.materials || []);
-        setCurrentLesson(lessonsData.length > 0 ? lessonsData[0] : null);
+        
+        // Set first lesson as current
+        if (allLessons.length > 0) {
+          setCurrentLesson(allLessons[0]);
+          // Expand first module
+          if (curriculumData.length > 0) {
+            setExpandedModules([0]);
+          }
+        }
       } catch (error) {
+        console.error('Error loading course:', error);
         setCourse(null);
         setLessons([]);
         setMaterials([]);
         setCurrentLesson(null);
+        setCurriculum([]);
       } finally {
         setIsLoading(false);
       }
@@ -48,15 +72,18 @@ export const CourseLearningPage: React.FC = () => {
   const handleLessonClick = (lesson: Lesson) => {
     setCurrentLesson(lesson);
     setCurrentTime(0);
+    // Close mobile lesson list
+    setShowLessonList(false);
   };
 
-  const handleVideoPlay = () => {
-    // setIsVideoPlaying(true); // This line was removed as per the edit hint.
+  const toggleModule = (moduleIndex: number) => {
+    setExpandedModules(prev =>
+      prev.includes(moduleIndex)
+        ? prev.filter(i => i !== moduleIndex)
+        : [...prev, moduleIndex]
+    );
   };
 
-  const handleVideoPause = () => {
-    // setIsVideoPlaying(false); // This line was removed as per the edit hint.
-  };
 
   const handleCompleteLesson = () => {
     if (currentLesson && !completedLessons.includes(currentLesson.id)) {
@@ -83,11 +110,10 @@ export const CourseLearningPage: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64" style={{ backgroundColor: '#F4F7FA' }}>
-        <div 
-          className="animate-spin rounded-full h-12 w-12 border-4 border-t-transparent"
-          style={{ borderColor: '#00B5AD' }}
-        ></div>
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/20 to-purple-50/20 dark:from-gray-900 dark:via-gray-900 dark:to-gray-900">
+        <div className="flex items-center justify-center h-screen">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+        </div>
       </div>
     );
   }
@@ -101,13 +127,15 @@ export const CourseLearningPage: React.FC = () => {
     );
   }
 
-  const courseDetails = {
-    curriculum: [
-      { title: 'Introduction', lessons: lessons.slice(0, 3) },
-      { title: 'Basic Concepts', lessons: lessons.slice(3, 6) },
-      { title: 'Advanced Topics', lessons: lessons.slice(6, 9) },
-      { title: 'Conclusion', lessons: lessons.slice(9, 12) },
-    ],
+  const getModuleProgress = (module: any) => {
+    if (!module.lessons || module.lessons.length === 0) return 0;
+    const completed = module.lessons.filter((l: Lesson) => completedLessons.includes(l.id)).length;
+    return Math.round((completed / module.lessons.length) * 100);
+  };
+
+  const getTotalProgress = () => {
+    if (lessons.length === 0) return 0;
+    return Math.round((completedLessons.length / lessons.length) * 100);
   };
 
   return (
@@ -184,47 +212,22 @@ export const CourseLearningPage: React.FC = () => {
       <div className="flex h-[calc(100vh-80px)] lg:h-[calc(100vh-80px)]">
         {/* Main Content */}
         <div className="flex-1 flex flex-col">
-          {/* Video Player - Mobile Full Width */}
+          {/* Enhanced Video Player */}
           <div className="bg-black relative w-full">
             <div className="aspect-video lg:aspect-video bg-gray-900 flex items-center justify-center w-full">
               {currentLesson?.videoUrl ? (
-                <div className="relative w-full h-full">
-                  <video
-                    className="w-full h-full object-cover"
-                    controls
-                    onPlay={handleVideoPlay}
-                    onPause={handleVideoPause}
-                    onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
-                    onLoadedMetadata={(e) => setDuration(e.currentTarget.duration)}
-                  >
-                    <source src={currentLesson.videoUrl} type="video/mp4" />
-                    Your browser does not support the video tag.
-                  </video>
-                  
-                  {/* Custom Video Controls */}
-                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
-                    <div className="flex items-center justify-between text-white">
-                      <div className="flex items-center space-x-4">
-                        <button
-                          onClick={() => setIsMuted(!isMuted)}
-                          className="p-2 hover:bg-white/20 rounded"
-                        >
-                          {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
-                        </button>
-                        <div className="text-sm">
-                          {Math.floor(currentTime / 60)}:{(currentTime % 60).toFixed(0).padStart(2, '0')} / 
-                          {Math.floor(duration / 60)}:{(duration % 60).toFixed(0).padStart(2, '0')}
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => setIsFullscreen(!isFullscreen)}
-                        className="p-2 hover:bg-white/20 rounded"
-                      >
-                        <Maximize2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
+                <EnhancedVideoPlayer
+                  videoUrl={currentLesson.videoUrl}
+                  poster={course.imageUrl}
+                  onTimeUpdate={(time, dur) => {
+                    setCurrentTime(time);
+                    setDuration(dur);
+                  }}
+                  onComplete={handleCompleteLesson}
+                  autoResume={true}
+                  lessonId={currentLesson.id}
+                  allowDownload={false}
+                />
               ) : (
                 <div className="text-center text-white">
                   <Video className="h-16 w-16 mx-auto mb-4 text-gray-400" />
@@ -239,6 +242,18 @@ export const CourseLearningPage: React.FC = () => {
             <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4 lg:py-8">
               {currentLesson && (
                 <div className="space-y-6">
+                  {/* Notes & Bookmarks */}
+                  <NotesAndBookmarks
+                    lessonId={currentLesson.id}
+                    currentTime={currentTime}
+                    duration={duration}
+                    onJumpToTime={(time) => {
+                      const videoElement = document.querySelector('video');
+                      if (videoElement) {
+                        videoElement.currentTime = time;
+                      }
+                    }}
+                  />
                   <div 
                     className="p-6 rounded-2xl border-2"
                     style={{
@@ -315,6 +330,9 @@ export const CourseLearningPage: React.FC = () => {
                     </div>
                   )}
 
+                  {/* Q&A Section */}
+                  <LessonQandA lessonId={currentLesson.id} courseId={id} />
+
                   {/* Navigation */}
                   <div 
                     className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 pt-6 border-t"
@@ -370,92 +388,230 @@ export const CourseLearningPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Desktop Sidebar */}
+        {/* Desktop Sidebar - Udemy Style */}
         {showSidebar && (
-          <div className="hidden lg:block w-80 bg-white border-l overflow-y-auto" style={{ borderColor: '#E5E7EB' }}>
+          <div className="hidden lg:block w-96 bg-white border-l overflow-y-auto" style={{ borderColor: '#E5E7EB' }}>
             <div className="p-4">
-              <h3 className="text-lg font-bold mb-4" style={{ color: '#0B1E3F' }}>
-                Course Content
-              </h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold" style={{ color: '#0B1E3F' }}>
+                  Course Content
+                </h3>
+                <button
+                  onClick={() => setShowSidebar(false)}
+                  className="p-1 hover:bg-gray-100 rounded"
+                >
+                  <X className="h-5 w-5" style={{ color: '#6F73D2' }} />
+                </button>
+              </div>
               
               {/* Progress Overview */}
               <div 
-                className="mb-6 p-4 rounded-xl"
-                style={{ backgroundColor: 'rgba(0, 181, 173, 0.1)' }}
+                className="mb-6 p-4 rounded-xl border-2"
+                style={{ 
+                  backgroundColor: 'rgba(0, 181, 173, 0.05)',
+                  borderColor: '#E5E7EB'
+                }}
               >
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-semibold" style={{ color: '#0B1E3F' }}>Progress</span>
+                  <span className="text-sm font-semibold" style={{ color: '#0B1E3F' }}>Course Progress</span>
                   <span className="text-sm font-bold" style={{ color: '#00B5AD' }}>
-                    {getProgressPercentage()}%
+                    {getTotalProgress()}%
                   </span>
                 </div>
-                <div className="w-full rounded-full h-2" style={{ backgroundColor: '#E5E7EB' }}>
+                <div className="w-full rounded-full h-2 mb-2" style={{ backgroundColor: '#E5E7EB' }}>
                   <div 
                     className="h-2 rounded-full transition-all duration-300"
                     style={{ 
-                      width: `${getProgressPercentage()}%`,
+                      width: `${getTotalProgress()}%`,
                       backgroundColor: '#00B5AD'
                     }}
                   ></div>
                 </div>
-                <div className="flex items-center justify-between mt-2 text-xs" style={{ color: '#6F73D2' }}>
-                  <span>{completedLessons.length} of {lessons.length} lessons</span>
-                  <span>{Math.round((completedLessons.length / lessons.length) * courseDetails.curriculum.length)} weeks</span>
+                <div className="flex items-center justify-between text-xs" style={{ color: '#6F73D2' }}>
+                  <span>{completedLessons.length} of {lessons.length} lessons completed</span>
                 </div>
               </div>
 
-              {/* Lessons List */}
-              <div className="space-y-2">
-                {lessons.map((lesson, index) => (
-                  <button
-                    key={lesson.id}
-                    onClick={() => handleLessonClick(lesson)}
-                    className={`w-full text-left p-3 rounded-xl transition-all duration-200 ${
-                      currentLesson?.id === lesson.id ? 'scale-105' : ''
-                    }`}
-                    style={{
-                      backgroundColor: currentLesson?.id === lesson.id 
-                        ? 'rgba(0, 181, 173, 0.1)' 
-                        : 'transparent',
-                      border: currentLesson?.id === lesson.id ? '2px solid #00B5AD' : '2px solid transparent'
-                    }}
-                  >
-                    <div className="flex items-center space-x-3">
-                      <div className="flex-shrink-0">
-                        {completedLessons.includes(lesson.id) ? (
-                          <div 
-                            className="w-8 h-8 rounded-full flex items-center justify-center"
-                            style={{ backgroundColor: '#00B5AD' }}
-                          >
-                            <Check className="h-4 w-4 text-white" />
+              {/* Curriculum with Modules */}
+              <div className="space-y-1">
+                {curriculum.length > 0 ? (
+                  curriculum.map((module: any, moduleIndex: number) => {
+                    const moduleLessons = module.lessons || [];
+                    const moduleProgress = getModuleProgress(module);
+                    const isExpanded = expandedModules.includes(moduleIndex);
+                    
+                    return (
+                      <div key={moduleIndex} className="border-b" style={{ borderColor: '#E5E7EB' }}>
+                        {/* Module Header */}
+                        <button
+                          onClick={() => toggleModule(moduleIndex)}
+                          className="w-full text-left p-3 hover:bg-gray-50 transition-colors"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-3 flex-1">
+                              <ChevronDown 
+                                className={`h-4 w-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                                style={{ color: '#6F73D2' }}
+                              />
+                              <div className="flex-1">
+                                <h4 className="font-semibold text-sm" style={{ color: '#0B1E3F' }}>
+                                  {module.title || module.name || `Module ${moduleIndex + 1}`}
+                                </h4>
+                                <div className="flex items-center space-x-2 mt-1">
+                                  <span className="text-xs" style={{ color: '#6F73D2' }}>
+                                    {moduleLessons.length} lessons
+                                  </span>
+                                  {moduleProgress > 0 && (
+                                    <>
+                                      <span className="text-xs" style={{ color: '#6F73D2' }}>•</span>
+                                      <span className="text-xs font-medium" style={{ color: '#00B5AD' }}>
+                                        {moduleProgress}% complete
+                                      </span>
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
                           </div>
-                        ) : (
-                          <div 
-                            className="w-8 h-8 border-2 rounded-full flex items-center justify-center"
-                            style={{ 
-                              borderColor: '#E5E7EB',
-                              color: '#6F73D2'
-                            }}
-                          >
-                            <span className="text-xs font-semibold">
-                              {index + 1}
-                            </span>
+                        </button>
+
+                        {/* Module Lessons */}
+                        {isExpanded && (
+                          <div className="pl-8 pr-2 pb-2 space-y-1">
+                            {moduleLessons.map((lesson: Lesson, lessonIndex: number) => {
+                              const isActive = currentLesson?.id === lesson.id;
+                              const isCompleted = completedLessons.includes(lesson.id);
+                              
+                              return (
+                                <button
+                                  key={lesson.id}
+                                  onClick={() => handleLessonClick(lesson)}
+                                  className={`w-full text-left p-2.5 rounded-lg transition-all duration-200 ${
+                                    isActive ? 'bg-blue-50' : 'hover:bg-gray-50'
+                                  }`}
+                                  style={{
+                                    borderLeft: isActive ? '3px solid #00B5AD' : '3px solid transparent'
+                                  }}
+                                >
+                                  <div className="flex items-center space-x-3">
+                                    <div className="flex-shrink-0">
+                                      {isCompleted ? (
+                                        <div 
+                                          className="w-6 h-6 rounded-full flex items-center justify-center"
+                                          style={{ backgroundColor: '#00B5AD' }}
+                                        >
+                                          <Check className="h-3 w-3 text-white" />
+                                        </div>
+                                      ) : (
+                                        <div 
+                                          className="w-6 h-6 border rounded-full flex items-center justify-center"
+                                          style={{ 
+                                            borderColor: isActive ? '#00B5AD' : '#E5E7EB',
+                                            color: isActive ? '#00B5AD' : '#6F73D2'
+                                          }}
+                                        >
+                                          <span className="text-xs font-semibold">
+                                            {lessonIndex + 1}
+                                          </span>
+                                        </div>
+                                      )}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <h5 className={`text-sm font-medium truncate ${
+                                        isActive ? 'text-[#00B5AD]' : ''
+                                      }`} style={{ color: isActive ? '#00B5AD' : '#0B1E3F' }}>
+                                        {lesson.title}
+                                      </h5>
+                                      {lesson.videoUrl && (
+                                        <div className="flex items-center space-x-1 mt-0.5">
+                                          <Video className="h-3 w-3" style={{ color: '#6F73D2' }} />
+                                          <span className="text-xs" style={{ color: '#6F73D2' }}>
+                                            Video
+                                          </span>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                </button>
+                              );
+                            })}
                           </div>
                         )}
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="font-semibold truncate" style={{ color: '#0B1E3F' }}>{lesson.title}</h4>
-                        <p className="text-xs truncate" style={{ color: '#6F73D2' }}>
-                          {lesson.content.substring(0, 50)}...
-                        </p>
-                      </div>
-                      <Video className="h-4 w-4 flex-shrink-0" style={{ color: '#6F73D2' }} />
-                    </div>
-                  </button>
-                ))}
+                    );
+                  })
+                ) : (
+                  // Fallback: Flat lessons list if no curriculum structure
+                  <div className="space-y-1">
+                    {lessons.map((lesson, index) => {
+                      const isActive = currentLesson?.id === lesson.id;
+                      const isCompleted = completedLessons.includes(lesson.id);
+                      
+                      return (
+                        <button
+                          key={lesson.id}
+                          onClick={() => handleLessonClick(lesson)}
+                          className={`w-full text-left p-3 rounded-lg transition-all duration-200 ${
+                            isActive ? 'bg-blue-50' : 'hover:bg-gray-50'
+                          }`}
+                          style={{
+                            borderLeft: isActive ? '3px solid #00B5AD' : '3px solid transparent'
+                          }}
+                        >
+                          <div className="flex items-center space-x-3">
+                            <div className="flex-shrink-0">
+                              {isCompleted ? (
+                                <div 
+                                  className="w-8 h-8 rounded-full flex items-center justify-center"
+                                  style={{ backgroundColor: '#00B5AD' }}
+                                >
+                                  <Check className="h-4 w-4 text-white" />
+                                </div>
+                              ) : (
+                                <div 
+                                  className="w-8 h-8 border-2 rounded-full flex items-center justify-center"
+                                  style={{ 
+                                    borderColor: isActive ? '#00B5AD' : '#E5E7EB',
+                                    color: isActive ? '#00B5AD' : '#6F73D2'
+                                  }}
+                                >
+                                  <span className="text-xs font-semibold">
+                                    {index + 1}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h4 className={`font-semibold truncate ${
+                                isActive ? 'text-[#00B5AD]' : ''
+                              }`} style={{ color: isActive ? '#00B5AD' : '#0B1E3F' }}>
+                                {lesson.title}
+                              </h4>
+                              <p className="text-xs truncate mt-0.5" style={{ color: '#6F73D2' }}>
+                                {lesson.content.substring(0, 40)}...
+                              </p>
+                            </div>
+                            <Video className="h-4 w-4 flex-shrink-0" style={{ color: '#6F73D2' }} />
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </div>
           </div>
+        )}
+
+        {/* Sidebar Toggle Button (when hidden) */}
+        {!showSidebar && (
+          <button
+            onClick={() => setShowSidebar(true)}
+            className="hidden lg:block fixed right-4 top-1/2 -translate-y-1/2 z-30 p-3 bg-white rounded-l-lg shadow-lg border border-r-0"
+            style={{ borderColor: '#E5E7EB' }}
+          >
+            <List className="h-5 w-5" style={{ color: '#00B5AD' }} />
+          </button>
         )}
 
         {/* Mobile Lesson List Bottom Sheet */}
@@ -488,7 +644,7 @@ export const CourseLearningPage: React.FC = () => {
               </div>
               <div className="flex items-center justify-between mt-2 text-xs" style={{ color: '#6F73D2' }}>
                 <span>{completedLessons.length} of {lessons.length} lessons</span>
-                <span>{Math.round((completedLessons.length / lessons.length) * courseDetails.curriculum.length)} weeks</span>
+                <span>{curriculum.length > 0 ? Math.round((completedLessons.length / lessons.length) * curriculum.length) : 0} modules</span>
               </div>
             </div>
 

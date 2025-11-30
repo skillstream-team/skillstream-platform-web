@@ -9,7 +9,9 @@ import {
   Plus
 } from 'lucide-react';
 import { apiService } from '../../services/api';
+import { useAuthStore } from '../../store/auth';
 import { User as UserType } from '../../types';
+import { getInitials } from '../../lib/utils';
 
 interface VideoCallPopupProps {
   isOpen: boolean;
@@ -31,6 +33,7 @@ export const VideoCallPopup: React.FC<VideoCallPopupProps> = ({
   onStartCall,
   buttonRef
 }) => {
+  const { user } = useAuthStore();
   const [users, setUsers] = useState<UserType[]>([]);
   const [recentContacts, setRecentContacts] = useState<RecentContact[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -82,8 +85,12 @@ export const VideoCallPopup: React.FC<VideoCallPopupProps> = ({
   const loadRecentContacts = async () => {
     try {
       setIsLoading(true);
-      // TODO: Replace with real API call
-      setRecentContacts([]); // Show empty state if API fails or not implemented
+      if (!user?.id) {
+        setRecentContacts([]);
+        return;
+      }
+      const contacts = await apiService.getRecentVideoContacts(user.id);
+      setRecentContacts(contacts as RecentContact[]);
     } catch (error) {
       console.error('Error loading recent contacts:', error);
       setRecentContacts([]);
@@ -199,7 +206,7 @@ export const VideoCallPopup: React.FC<VideoCallPopupProps> = ({
                         />
                       ) : (
                         <span className="text-xs font-medium text-gray-600 dark:text-gray-300">
-                          {contact.user.name.charAt(0).toUpperCase()}
+                          {getInitials(contact.user.name)}
                         </span>
                       )}
                     </div>

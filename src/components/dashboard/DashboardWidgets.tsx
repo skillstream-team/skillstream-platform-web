@@ -589,6 +589,13 @@ export const DashboardWidgets: React.FC<DashboardWidgetsProps> = ({ className = 
                 <span className="font-medium">View Analytics</span>
               </Link>
               <Link
+                to="/students/progress"
+                className="flex items-center p-3 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
+              >
+                <Users className="h-5 w-5 mr-3" />
+                <span className="font-medium">Student Progress</span>
+              </Link>
+              <Link
                 to="/people"
                 className="flex items-center p-3 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors"
               >

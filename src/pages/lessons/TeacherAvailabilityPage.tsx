@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, Clock, Plus, Edit2, Trash2, Save, X } from 'lucide-react';
-import { BackButton } from '../../components/common/BackButton';
 import { useAuthStore } from '../../store/auth';
+import {
+  getTeacherAvailability,
+  saveTeacherAvailability,
+  deleteTeacherAvailability
+} from '../../services/api';
 
 interface TimeSlot {
   id: string;
@@ -42,10 +46,10 @@ export const TeacherAvailabilityPage: React.FC = () => {
 
   const loadAvailability = async () => {
     try {
-      // TODO: Replace with actual API call
-      // const data = await apiService.getTeacherAvailability(user?.id);
-      // setAvailability(data.blocks);
-      // setRecurringSlots(data.recurringSlots);
+      if (!user?.id) return;
+      const data = await getTeacherAvailability(user.id);
+      setAvailability((data.blocks || []) as AvailabilityBlock[]);
+      setRecurringSlots((data.recurringSlots || []) as TimeSlot[]);
     } catch (error) {
       console.error('Error loading availability:', error);
     }
@@ -53,8 +57,8 @@ export const TeacherAvailabilityPage: React.FC = () => {
 
   const saveAvailability = async (block: AvailabilityBlock) => {
     try {
-      // TODO: Replace with actual API call
-      // await apiService.saveTeacherAvailability(user?.id, block);
+      if (!user?.id) return;
+      await saveTeacherAvailability(user.id, block);
       
       if (editingBlock) {
         setAvailability(prev => prev.map(b => b.id === block.id ? block : b));
@@ -80,8 +84,8 @@ export const TeacherAvailabilityPage: React.FC = () => {
     if (!confirm('Are you sure you want to delete this availability block?')) return;
     
     try {
-      // TODO: Replace with actual API call
-      // await apiService.deleteTeacherAvailability(user?.id, id);
+      if (!user?.id) return;
+      await deleteTeacherAvailability(user.id, id);
       setAvailability(prev => prev.filter(b => b.id !== id));
     } catch (error) {
       console.error('Error deleting availability:', error);
@@ -136,38 +140,38 @@ export const TeacherAvailabilityPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="mb-8 border-b border-gray-200 dark:border-gray-700 pb-6">
-          <BackButton showHome />
-          <div className="mt-4 flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-semibold text-gray-900 dark:text-white mb-2">
-                My Availability
-              </h1>
-              <p className="text-gray-600 dark:text-gray-400 text-sm">
-                Set when you're available for students to book lessons
-              </p>
-            </div>
-            <button
-              onClick={() => {
-                setEditingBlock(null);
-                setNewBlock({
-                  date: '',
-                  startTime: '',
-                  endTime: '',
-                  isRecurring: false,
-                  recurringDays: []
-                });
-                setShowAddModal(true);
-              }}
-              className="flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 transition-colors"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Add Availability
-            </button>
+      {/* Hero Section */}
+      <div className="courses-header">
+        <div className="courses-header-content">
+          <div className="courses-header-text">
+            <h1 className="courses-header-title">
+              My Availability
+            </h1>
+            <p className="courses-header-subtitle">
+              Set when you're available for students to book lessons
+            </p>
           </div>
+          <button
+            onClick={() => {
+              setEditingBlock(null);
+              setNewBlock({
+                date: '',
+                startTime: '',
+                endTime: '',
+                isRecurring: false,
+                recurringDays: []
+              });
+              setShowAddModal(true);
+            }}
+            className="courses-create-button"
+          >
+            <Plus className="courses-create-button-icon" />
+            Add Availability
+          </button>
         </div>
+      </div>
+
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
         {/* Availability Blocks */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

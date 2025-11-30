@@ -12,7 +12,7 @@ export const LoginPage: React.FC = () => {
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const [shake, setShake] = useState(false);
   
-  const { login, isLoading, error, clearError } = useAuthStore();
+  const { login, loginWithOAuth, isLoading, error, clearError } = useAuthStore();
   const navigate = useNavigate();
 
   const validateForm = () => {
@@ -305,7 +305,9 @@ export const LoginPage: React.FC = () => {
             <div className="mt-6 grid grid-cols-2 gap-4">
               <button
                 type="button"
-                className="flex items-center justify-center px-4 py-3 border-2 rounded-xl font-medium transition-all duration-200 hover:shadow-md hover:-translate-y-0.5"
+                onClick={() => loginWithOAuth('google')}
+                disabled={isLoading}
+                className="flex items-center justify-center px-4 py-3 border-2 rounded-xl font-medium transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{ 
                   borderColor: '#E5E7EB',
                   color: '#0B1E3F',
@@ -322,7 +324,9 @@ export const LoginPage: React.FC = () => {
               </button>
               <button
                 type="button"
-                className="flex items-center justify-center px-4 py-3 border-2 rounded-xl font-medium transition-all duration-200 hover:shadow-md hover:-translate-y-0.5"
+                onClick={() => loginWithOAuth('linkedin')}
+                disabled={isLoading}
+                className="flex items-center justify-center px-4 py-3 border-2 rounded-xl font-medium transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{ 
                   borderColor: '#E5E7EB',
                   color: '#0B1E3F',
