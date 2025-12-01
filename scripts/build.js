@@ -10,7 +10,7 @@ if (!fs.existsSync(distDir)) {
 }
 
 // Process CSS with PostCSS (Tailwind)
-const cssSource = path.join(__dirname, '../src/index.css');
+const cssSource = path.join(__dirname, '../src/styles/index.css');
 const cssDest = path.join(distDir, 'bundle.css');
 
 (async () => {

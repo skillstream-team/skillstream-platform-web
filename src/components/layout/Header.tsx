@@ -35,11 +35,10 @@ export const Header: React.FC = () => {
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const [showVideoCallPopup, setShowVideoCallPopup] = useState(false);
   const [showVideoCall, setShowVideoCall] = useState(false);
   const [currentCall, setCurrentCall] = useState<{ userId: string; userName: string } | null>(null);
-  const [showNotifications, setShowNotifications] = useState(false);
-  const [showMessagingPopup, setShowMessagingPopup] = useState(false);
+  // Single state to track which popup is open (only one at a time)
+  const [activePopup, setActivePopup] = useState<'notifications' | 'messages' | 'videoCall' | null>(null);
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
   const [unreadMessageCount, setUnreadMessageCount] = useState(0);
   const videoCallButtonRef = useRef<HTMLButtonElement>(null);
@@ -290,10 +289,13 @@ export const Header: React.FC = () => {
                   <Tooltip content={`Notifications${unreadNotificationCount > 0 ? ` (${unreadNotificationCount} unread)` : ''}`}>
                     <button
                       ref={notificationButtonRef}
-                      onClick={() => setShowNotifications(!showNotifications)}
+                      onClick={() => {
+                        // Close other popups and toggle notifications
+                        setActivePopup(activePopup === 'notifications' ? null : 'notifications');
+                      }}
                       className="p-2.5 rounded-xl transition-all duration-200 hover:scale-110 relative button-press"
                       style={{ 
-                        backgroundColor: showNotifications ? 'rgba(0, 181, 173, 0.1)' : 'transparent'
+                        backgroundColor: activePopup === 'notifications' ? 'rgba(0, 181, 173, 0.1)' : 'transparent'
                       }}
                       aria-label={`Notifications${unreadNotificationCount > 0 ? `, ${unreadNotificationCount} unread` : ''}`}
                     >
@@ -309,11 +311,11 @@ export const Header: React.FC = () => {
                     </button>
                   </Tooltip>
                   
-                  {showNotifications && (
+                  {activePopup === 'notifications' && (
                     <NotificationPopup 
-                      isOpen={showNotifications}
+                      isOpen={true}
                       onClose={() => {
-                        setShowNotifications(false);
+                        setActivePopup(null);
                         if (user) {
                           getUnreadNotificationCount().then(count => setUnreadNotificationCount(count || 0));
                         }
@@ -328,10 +330,13 @@ export const Header: React.FC = () => {
                   <Tooltip content={`Messages${unreadMessageCount > 0 ? ` (${unreadMessageCount} unread)` : ''}`}>
                     <button
                       ref={messagingButtonRef}
-                      onClick={() => setShowMessagingPopup(!showMessagingPopup)}
+                      onClick={() => {
+                        // Close other popups and toggle messages
+                        setActivePopup(activePopup === 'messages' ? null : 'messages');
+                      }}
                       className="p-2.5 rounded-xl transition-all duration-200 hover:scale-110 relative button-press"
                       style={{ 
-                        backgroundColor: showMessagingPopup ? 'rgba(0, 181, 173, 0.1)' : 'transparent'
+                        backgroundColor: activePopup === 'messages' ? 'rgba(0, 181, 173, 0.1)' : 'transparent'
                       }}
                       aria-label={`Messages${unreadMessageCount > 0 ? `, ${unreadMessageCount} unread` : ''}`}
                     >
@@ -347,11 +352,11 @@ export const Header: React.FC = () => {
                     </button>
                   </Tooltip>
                   
-                  {showMessagingPopup && (
+                  {activePopup === 'messages' && (
                     <MessagingPopup 
-                      isOpen={showMessagingPopup}
+                      isOpen={true}
                       onClose={() => {
-                        setShowMessagingPopup(false);
+                        setActivePopup(null);
                         if (user) {
                           getConversations({ limit: 100 }).then(result => {
                             const totalUnread = result.data.reduce((sum, conv) => sum + (conv.unreadCount || 0), 0);
@@ -370,10 +375,13 @@ export const Header: React.FC = () => {
                   <Tooltip content="Start Video Call">
                     <button
                       ref={videoCallButtonRef}
-                      onClick={() => setShowVideoCallPopup(!showVideoCallPopup)}
+                      onClick={() => {
+                        // Close other popups and toggle video call
+                        setActivePopup(activePopup === 'videoCall' ? null : 'videoCall');
+                      }}
                       className="p-2.5 rounded-xl transition-all duration-200 hover:scale-110 button-press"
                       style={{ 
-                        backgroundColor: showVideoCallPopup ? 'rgba(0, 181, 173, 0.1)' : 'transparent'
+                        backgroundColor: activePopup === 'videoCall' ? 'rgba(0, 181, 173, 0.1)' : 'transparent'
                       }}
                       aria-label="Start Video Call"
                     >
@@ -381,10 +389,10 @@ export const Header: React.FC = () => {
                     </button>
                   </Tooltip>
                   
-                  {showVideoCallPopup && (
+                  {activePopup === 'videoCall' && (
                     <VideoCallPopup 
-                      isOpen={showVideoCallPopup}
-                      onClose={() => setShowVideoCallPopup(false)}
+                      isOpen={true}
+                      onClose={() => setActivePopup(null)}
                       onStartCall={handleStartVideoCall}
                       buttonRef={videoCallButtonRef}
                     />

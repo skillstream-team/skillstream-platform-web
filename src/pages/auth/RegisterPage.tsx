@@ -5,7 +5,8 @@ import { useAuthStore } from '../../store/auth';
 import { PasswordStrengthMeter } from '../../components/auth/PasswordStrengthMeter';
 import { ThemeToggle } from '../../components/auth/ThemeToggle';
 
-type Role = 'TEACHER' | 'EXPERT' | 'STUDENT' | 'ORGANIZATION';
+// Registration roles are limited to just STUDENT and TEACHER
+type Role = 'TEACHER' | 'STUDENT';
 
 export const RegisterPage: React.FC = () => {
   const [step, setStep] = useState(1);
@@ -86,18 +87,13 @@ export const RegisterPage: React.FC = () => {
   const validateStep3 = () => {
     const newErrors: Record<string, string> = {};
     
-    if (formData.role === 'TEACHER' || formData.role === 'EXPERT') {
+    // Only teachers have additional professional details for now
+    if (formData.role === 'TEACHER') {
       if (!formData.expertise.trim()) {
-        newErrors.expertise = 'Expertise area is required';
+        newErrors.expertise = 'Area of expertise is required';
       }
       if (!formData.yearsExperience) {
         newErrors.yearsExperience = 'Years of experience is required';
-      }
-    }
-    
-    if (formData.role === 'ORGANIZATION') {
-      if (!formData.organization.trim()) {
-        newErrors.organization = 'Organization name is required';
       }
     }
 
@@ -160,11 +156,10 @@ export const RegisterPage: React.FC = () => {
     }
   };
 
+  // Only two roles are available during sign up: Student and Teacher
   const roles = [
     { id: 'TEACHER' as Role, label: 'Teacher', icon: GraduationCap, description: 'Share your knowledge and teach students' },
-    { id: 'EXPERT' as Role, label: 'Expert', icon: Briefcase, description: 'Offer specialized expertise and consulting' },
-    { id: 'STUDENT' as Role, label: 'Student', icon: BookOpen, description: 'Learn from top educators and experts' },
-    { id: 'ORGANIZATION' as Role, label: 'Organization', icon: Building2, description: 'Train your team with our platform' },
+    { id: 'STUDENT' as Role, label: 'Student', icon: BookOpen, description: 'Learn from top educators and experts' }
   ];
 
   return (
@@ -624,7 +619,7 @@ export const RegisterPage: React.FC = () => {
               </div>
 
               <div className="space-y-5">
-                {(formData.role === 'TEACHER' || formData.role === 'EXPERT') && (
+                {formData.role === 'TEACHER' && (
                   <>
                     <div className="relative">
                       <label htmlFor="expertise" className="block text-sm font-semibold mb-2" style={{ color: '#0B1E3F' }}>
@@ -673,31 +668,6 @@ export const RegisterPage: React.FC = () => {
                       )}
                     </div>
                   </>
-                )}
-
-                {formData.role === 'ORGANIZATION' && (
-                  <div className="relative">
-                    <label htmlFor="organization" className="block text-sm font-semibold mb-2" style={{ color: '#0B1E3F' }}>
-                      Organization Name
-                    </label>
-                    <input
-                      id="organization"
-                      name="organization"
-                      type="text"
-                      value={formData.organization}
-                      onChange={handleInputChange}
-                      placeholder="Enter your organization name"
-                      className={`block w-full px-4 py-4 border-2 rounded-xl transition-all duration-200 ${
-                        errors.organization 
-                          ? 'border-red-300 focus:border-red-400 focus:ring-4 focus:ring-red-100' 
-                          : 'border-gray-200 focus:border-[#00B5AD] focus:ring-4 focus:ring-[#00B5AD]/20'
-                      } bg-white dark:bg-gray-800 text-[#0B1E3F] dark:text-white focus:outline-none`}
-                      style={{ fontSize: '16px' }}
-                    />
-                    {errors.organization && (
-                      <p className="mt-2 text-sm" style={{ color: '#dc2626' }}>{errors.organization}</p>
-                    )}
-                  </div>
                 )}
 
                 <div className="relative">

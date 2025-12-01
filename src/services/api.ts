@@ -1016,18 +1016,41 @@ export async function createCourse(data: { title: string; description?: string; 
   // Backend: POST /api/courses/course
   // Ensure token is explicitly included in headers
   const token = localStorage.getItem('token');
-  const config: any = { 
-    withCredentials: true 
-  };
   
-  if (token) {
-    config.headers = {
-      'Authorization': `Bearer ${token}`
-    };
+  if (!token) {
+    const error: any = new Error('No authentication token found. Please log in again.');
+    error.response = { status: 401 };
+    throw error;
   }
   
-  const response = await axios.post(`${API_BASE_URL}/courses/course`, data, config);
-  return response.data;
+  const config: any = { 
+    withCredentials: true,
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    }
+  };
+  
+  console.log('Creating course API call:', {
+    url: `${API_BASE_URL}/courses/course`,
+    hasToken: !!token,
+    tokenPreview: token.substring(0, 20) + '...',
+    payload: data
+  });
+  
+  try {
+    const response = await axios.post(`${API_BASE_URL}/courses/course`, data, config);
+    return response.data;
+  } catch (error: any) {
+    console.error('createCourse API error:', {
+      status: error?.response?.status,
+      statusText: error?.response?.statusText,
+      data: error?.response?.data,
+      message: error?.message,
+      url: `${API_BASE_URL}/courses/course`
+    });
+    throw error;
+  }
 }
 
 export async function duplicateCourse(courseId: string): Promise<Course> {

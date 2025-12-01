@@ -27,7 +27,7 @@ import {
 } from '@heroicons/react/24/solid';
 import { getUserPreferences, updateUserPreferences } from '../services/api';
 import { getInitials } from '../lib/utils';
-import './ProfilePage.css';
+import '../styles/ProfilePage.css';
 
 interface FormDataType {
   name: string;

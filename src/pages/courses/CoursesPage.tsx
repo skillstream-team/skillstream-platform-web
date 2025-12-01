@@ -43,8 +43,10 @@ export const CoursesPage: React.FC = () => {
     title: '',
     description: '',
     category: '',
-    price: undefined as number | undefined,
-    isPaid: false,
+    // Additional metadata to make course creation more complete
+    level: '' as '' | 'Beginner' | 'Intermediate' | 'Advanced',
+    duration: '',
+    status: 'draft' as 'draft' | 'published',
     imageUrl: '' as string | undefined,
     imageFile: null as File | null
   });
@@ -65,6 +67,9 @@ export const CoursesPage: React.FC = () => {
   const { showSuccess, showError } = useNotification();
   const { addAction, undo, canUndo, getLastAction } = useUndo();
   
+  // Use a per-user storage key so drafts are isolated per teacher
+  const draftStorageKey = user?.id ? `course-draft:${user.id}` : undefined;
+  
   // Auto-save for course creation
   const { loadDraft, clearDraft } = useAutoSave({
     data: newCourse,
@@ -74,7 +79,8 @@ export const CoursesPage: React.FC = () => {
       setTimeout(() => setDraftSaved(false), 3000);
     },
     interval: 30000,
-    storageKey: showCreateModal ? 'course-draft' : undefined,
+    // Only save drafts for the currently logged-in teacher
+    storageKey: showCreateModal ? draftStorageKey : undefined,
     enabled: showCreateModal && (newCourse.title.trim().length > 0 || newCourse.description.trim().length > 0),
     debounceMs: 2000
   });
@@ -82,10 +88,14 @@ export const CoursesPage: React.FC = () => {
   // Load draft on modal open
   useEffect(() => {
     if (showCreateModal) {
+      console.log('Create course modal opened, showCreateModal =', showCreateModal);
       const draft = loadDraft();
       if (draft) {
+        console.log('Draft found, restoring...', draft);
         // Auto-restore draft without blocking confirmation
         setNewCourse(draft);
+      } else {
+        console.log('No draft found, starting fresh');
       }
     } else {
       clearDraft();
@@ -287,7 +297,8 @@ export const CoursesPage: React.FC = () => {
       const payload: any = {
         title: newCourse.title.trim(),
         description: description.trim() || undefined, // Make it undefined if empty
-        price: newCourse.isPaid ? (newCourse.price || 0) : 0,
+        // For now all courses are created as free on the platform
+        price: 0,
         order: courses.length,
         createdBy: userId,
         instructorId: userId
@@ -298,10 +309,21 @@ export const CoursesPage: React.FC = () => {
         payload.imageUrl = newCourse.imageUrl;
       }
       
-      // Note: category is not in the API signature, but we'll try to send it
-      // The backend may accept it or ignore it
+      // Note: these fields are not formally in the API signature, but the backend
+      // may accept or ignore them. We send them to better capture course metadata.
       if (newCourse.category) {
         payload.category = newCourse.category;
+      }
+      if (newCourse.level) {
+        payload.level = newCourse.level;
+      }
+      if (newCourse.duration) {
+        payload.duration = newCourse.duration;
+      }
+      if (newCourse.status) {
+        payload.status = newCourse.status;
+        // Keep isPublished in sync with status if backend uses it
+        payload.isPublished = newCourse.status === 'published';
       }
 
       console.log('Creating course with payload:', payload);
@@ -314,8 +336,9 @@ export const CoursesPage: React.FC = () => {
           title: '', 
           description: '', 
           category: '', 
-          price: undefined, 
-          isPaid: false,
+          level: '',
+          duration: '',
+          status: 'draft',
           imageUrl: undefined,
           imageFile: null
         });
@@ -332,24 +355,47 @@ export const CoursesPage: React.FC = () => {
       console.error('Error creating course:', error);
       console.error('Error response:', error?.response);
       console.error('Error data:', error?.response?.data);
+      console.error('Error status:', error?.response?.status);
+      console.error('User info:', { id: user?.id, role: user?.role, email: user?.email });
+      console.error('Token exists:', !!localStorage.getItem('token'));
+      console.error('Payload sent:', payload);
       
-      let errorMessage = 'Failed to create course. Please check your connection and try again.';
+      let errorMessage = 'Failed to create course. Please try again.';
+      let errorTitle = 'Failed to Create Course';
       
-      if (error?.response?.status === 403 || error?.response?.status === 401) {
-        errorMessage = 'Insufficient permissions. Please ensure you are logged in as a teacher and your account has the necessary permissions.';
-        // Suggest logging out and back in
-        if (error?.response?.status === 401) {
-          errorMessage += ' Your session may have expired. Please try logging out and logging back in.';
-        }
+      if (error?.response?.status === 403) {
+        errorTitle = 'Permission Denied';
+        errorMessage = 'You do not have permission to create courses.\n\n' +
+          'Possible reasons:\n' +
+          '• Your account role is not set to TEACHER on the backend\n' +
+          '• Your session token may be invalid or expired\n\n' +
+          'Please try:\n' +
+          '1. Log out completely\n' +
+          '2. Log back in with a TEACHER account\n' +
+          '3. If the issue persists, contact support';
+      } else if (error?.response?.status === 401) {
+        errorTitle = 'Authentication Required';
+        errorMessage = 'Your session has expired or is invalid. Please log out and log back in.';
+      } else if (error?.response?.status === 400) {
+        errorTitle = 'Invalid Data';
+        errorMessage = error?.response?.data?.message || 'Invalid course data. Please check all fields and try again.';
       } else if (error?.response?.data?.message) {
         errorMessage = error.response.data.message;
       } else if (error?.response?.data?.error) {
         errorMessage = error.response.data.error;
       } else if (error?.message) {
         errorMessage = error.message;
+      } else if (error?.response?.status === 500) {
+        errorTitle = 'Server Error';
+        errorMessage = 'Server error. Please try again later.';
+      } else if (!error?.response) {
+        errorTitle = 'Network Error';
+        errorMessage = 'Network error. Please check your connection and try again.';
       }
       
-      showError('Failed to Create Course', errorMessage);
+      showError(errorTitle, errorMessage);
+      
+      // Keep modal open so user can see the error and try again
     }
   };
 
@@ -625,8 +671,14 @@ export const CoursesPage: React.FC = () => {
               </Tooltip>
               <Tooltip content="Create a new course">
                 <button
-                  onClick={() => setShowCreateModal(true)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Create Course button clicked, opening modal...');
+                    setShowCreateModal(true);
+                  }}
                   className="courses-create-button button-press hover-lift"
+                  type="button"
                 >
                   <Plus className="courses-create-button-icon" />
                   Create Course
@@ -1521,39 +1573,32 @@ export const CoursesPage: React.FC = () => {
         </>
       )}
 
-      {/* Create Course Modal */}
+      {/* Create Course Modal - simplified, no decorative shapes, focused on core fields */}
       {showCreateModal && (
-        <div 
-          className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-0 sm:p-4"
-          style={{ backgroundColor: 'rgba(11, 30, 63, 0.6)', backdropFilter: 'blur(8px)' }}
+        <div
+          // Soft, non-distracting backdrop (not fully black) that still hides background shapes
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/75"
           onClick={(e) => {
-            // Close modal when clicking backdrop
             if (e.target === e.currentTarget) {
               setShowCreateModal(false);
               clearDraft();
             }
           }}
         >
-          <div 
-            className="rounded-t-2xl sm:rounded-2xl p-4 sm:p-6 lg:p-8 w-full max-w-lg border-2 mt-0 sm:mt-auto mb-0 sm:mb-auto max-h-[95vh] sm:max-h-[90vh] flex flex-col relative bg-white"
-            style={{
-              borderColor: '#E5E7EB',
-              boxShadow: '0 25px 70px rgba(11, 30, 63, 0.4)',
-              pointerEvents: 'auto',
-              zIndex: 100,
-              overflow: 'visible'
-            }}
+          <div
+            className="w-full max-w-2xl bg-white rounded-2xl shadow-xl border border-gray-200 max-h-[90vh] flex flex-col relative z-[10000]"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between mb-4 sm:mb-6 flex-shrink-0">
+            {/* Header */}
+            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
               <div>
-                <h2 className="text-xl sm:text-2xl font-bold" style={{ color: '#0B1E3F' }}>
-                  Create New Course
-                </h2>
+                <h2 className="text-xl font-semibold text-gray-900">Create a new course</h2>
+                <p className="text-sm text-gray-500">
+                  Add the essential details for your course. You can build out modules and lessons after this step.
+                </p>
                 {draftSaved && (
-                  <p className="text-sm text-green-600 dark:text-green-400 mt-1 flex items-center">
-                    <span className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></span>
-                    Draft saved
+                  <p className="text-xs text-green-600 mt-1">
+                    Draft saved locally
                   </p>
                 )}
               </div>
@@ -1562,39 +1607,134 @@ export const CoursesPage: React.FC = () => {
                   setShowCreateModal(false);
                   clearDraft();
                 }}
-                className="p-2 rounded-xl transition-all duration-200 hover:scale-110 min-w-[44px] min-h-[44px] flex items-center justify-center touch-manipulation"
-                style={{ color: '#6F73D2' }}
+                className="p-2 rounded-full text-gray-500 hover:bg-gray-100"
+                aria-label="Close"
               >
-                <X className="h-6 w-6" />
+                <X className="h-5 w-5" />
               </button>
             </div>
-            
-            <div className="space-y-4 sm:space-y-5 overflow-y-auto flex-1 pr-1 sm:pr-0" style={{ pointerEvents: 'auto', WebkitOverflowScrolling: 'touch', overflowX: 'visible' }}>
-              {/* Course Image Upload */}
+
+            {/* Body */}
+            <div className="px-6 py-5 space-y-5 overflow-y-auto flex-1">
+              {/* Title */}
               <div>
-                <label className="block text-sm font-semibold mb-2" style={{ color: '#0B1E3F' }}>
-                  Course Banner Image
+                <label className="block text-sm font-medium text-gray-900 mb-1.5">
+                  Course title<span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={newCourse.title}
+                  onChange={(e) => setNewCourse(prev => ({ ...prev, title: e.target.value }))}
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="e.g. Complete JavaScript Bootcamp"
+                />
+              </div>
+
+              {/* Description */}
+              <div>
+                <label className="block text-sm font-medium text-gray-900 mb-1.5">
+                  Description
+                </label>
+                <div className="border border-gray-300 rounded-lg">
+                  <RichTextEditor
+                    value={newCourse.description}
+                    onChange={(value) => setNewCourse(prev => ({ ...prev, description: value }))}
+                    placeholder="Describe what students will learn, course structure, and any key highlights."
+                    height="150px"
+                  />
+                </div>
+              </div>
+
+              {/* Category & Level */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-900 mb-1.5">
+                    Category
+                  </label>
+                  <select
+                    value={newCourse.category}
+                    onChange={(e) => setNewCourse(prev => ({ ...prev, category: e.target.value }))}
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                  >
+                    <option value="">Select category</option>
+                    <option value="programming">Programming</option>
+                    <option value="web-development">Web Development</option>
+                    <option value="data-science">Data Science</option>
+                    <option value="design">Design</option>
+                    <option value="business">Business</option>
+                    <option value="marketing">Marketing</option>
+                    <option value="photography">Photography</option>
+                    <option value="music">Music</option>
+                    <option value="language">Language</option>
+                    <option value="science">Science</option>
+                    <option value="mathematics">Mathematics</option>
+                    <option value="health">Health & Fitness</option>
+                    <option value="personal-development">Personal Development</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-900 mb-1.5">
+                    Level
+                  </label>
+                  <div className="flex gap-2">
+                    {['Beginner', 'Intermediate', 'Advanced'].map(level => (
+                      <button
+                        key={level}
+                        type="button"
+                        onClick={() => setNewCourse(prev => ({ ...prev, level: level as 'Beginner' | 'Intermediate' | 'Advanced' }))}
+                        className={`flex-1 rounded-lg border px-2 py-1.5 text-xs font-medium ${
+                          newCourse.level === level
+                            ? 'bg-blue-600 text-white border-blue-600'
+                            : 'bg-white text-gray-800 border-gray-300 hover:border-blue-400'
+                        }`}
+                      >
+                        {level}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Duration */}
+              <div>
+                <label className="block text-sm font-medium text-gray-900 mb-1.5">
+                  Estimated duration
+                </label>
+                <input
+                  type="text"
+                  value={newCourse.duration}
+                  onChange={(e) => setNewCourse(prev => ({ ...prev, duration: e.target.value }))}
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="e.g. 4 weeks, 10 hours total"
+                />
+              </div>
+
+              {/* Banner image (simple, optional) */}
+              <div>
+                <label className="block text-sm font-medium text-gray-900 mb-1.5">
+                  Banner image (optional)
                 </label>
                 {newCourse.imageUrl ? (
                   <div className="relative">
-                    <img 
-                      src={newCourse.imageUrl} 
-                      alt="Course banner" 
-                      className="w-full h-32 sm:h-40 lg:h-48 object-cover rounded-xl border-2"
-                      style={{ borderColor: '#E5E7EB' }}
+                    <img
+                      src={newCourse.imageUrl}
+                      alt="Course banner"
+                      className="w-full h-32 object-cover rounded-lg border border-gray-300"
                     />
                     <button
+                      type="button"
                       onClick={handleRemoveImage}
-                      className="absolute top-2 right-2 p-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                      className="absolute top-2 right-2 rounded-full bg-white/90 border border-gray-300 p-1 text-xs text-red-600 hover:bg-red-50"
                     >
-                      <Trash2 className="h-4 w-4" />
+                      Remove
                     </button>
                   </div>
                 ) : (
                   <div
                     onClick={() => imageInputRef.current?.click()}
-                    className="w-full h-32 sm:h-40 lg:h-48 border-2 border-dashed rounded-xl flex flex-col items-center justify-center cursor-pointer transition-all duration-200 hover:border-[#00B5AD] hover:bg-[rgba(0,181,173,0.05)]"
-                    style={{ borderColor: '#E5E7EB' }}
+                    className="w-full h-28 border border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center text-xs text-gray-500 cursor-pointer hover:border-blue-400 hover:bg-gray-50"
                   >
                     <input
                       ref={imageInputRef}
@@ -1604,222 +1744,72 @@ export const CoursesPage: React.FC = () => {
                       className="hidden"
                     />
                     {uploadingImage ? (
-                      <div className="text-center">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#00B5AD] mx-auto mb-2"></div>
-                        <p className="text-sm" style={{ color: '#6F73D2' }}>Uploading...</p>
-                      </div>
+                      <span>Uploading...</span>
                     ) : (
                       <>
-                        <ImageIcon className="h-12 w-12 mb-2" style={{ color: '#6F73D2' }} />
-                        <p className="text-sm font-medium" style={{ color: '#0B1E3F' }}>
-                          Click to upload banner image
-                        </p>
-                        <p className="text-xs mt-1" style={{ color: '#6F73D2' }}>
-                          Recommended: 1200x675px (Max 5MB)
-                        </p>
+                        <span>Click to upload an image</span>
+                        <span className="mt-1 text-[11px] text-gray-400">Recommended 1200×675, max 5MB</span>
                       </>
                     )}
                   </div>
                 )}
               </div>
 
+              {/* Status */}
               <div>
-                <label className="block text-sm font-semibold mb-2" style={{ color: '#0B1E3F' }}>
-                  Course Title
+                <label className="block text-sm font-medium text-gray-900 mb-1.5">
+                  Status
                 </label>
-                <input
-                  type="text"
-                  value={newCourse.title}
-                  onChange={(e) => setNewCourse(prev => ({ ...prev, title: e.target.value }))}
-                  className="w-full px-4 py-3 border-2 rounded-xl focus:outline-none transition-all duration-200"
-                  style={{
-                    borderColor: '#E5E7EB',
-                    backgroundColor: 'white',
-                    color: '#0B1E3F',
-                    fontSize: '16px',
-                    pointerEvents: 'auto'
-                  }}
-                  onFocus={(e) => {
-                    e.currentTarget.style.borderColor = '#00B5AD';
-                    e.currentTarget.style.boxShadow = '0 0 0 4px rgba(0, 181, 173, 0.1)';
-                  }}
-                  onBlur={(e) => {
-                    e.currentTarget.style.borderColor = '#E5E7EB';
-                    e.currentTarget.style.boxShadow = 'none';
-                  }}
-                  placeholder="Enter course title"
-                  autoFocus={false}
-                />
-              </div>
-              
-              <div style={{ position: 'relative', zIndex: 200, pointerEvents: 'auto' }}>
-                <label className="block text-sm font-semibold mb-2" style={{ color: '#0B1E3F' }}>
-                  Description
-                </label>
-                <div 
-                  className="border-2 rounded-xl" 
-                  style={{ 
-                    borderColor: '#E5E7EB', 
-                    pointerEvents: 'auto', 
-                    position: 'relative', 
-                    zIndex: 200, 
-                    overflow: 'visible',
-                    backgroundColor: 'white'
-                  }}
-                  onMouseDown={(e) => e.stopPropagation()}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <RichTextEditor
-                    value={newCourse.description}
-                    onChange={(value) => setNewCourse(prev => ({ ...prev, description: value }))}
-                    placeholder="Enter course description (supports rich text formatting)"
-                    height="150px"
-                  />
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setNewCourse(prev => ({ ...prev, status: 'draft' }))}
+                    className={`flex-1 rounded-lg border px-3 py-2 text-xs font-medium ${
+                      newCourse.status === 'draft'
+                        ? 'bg-gray-900 text-white border-gray-900'
+                        : 'bg-white text-gray-800 border-gray-300 hover:border-gray-500'
+                    }`}
+                  >
+                    Draft
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setNewCourse(prev => ({ ...prev, status: 'published' }))}
+                    className={`flex-1 rounded-lg border px-3 py-2 text-xs font-medium ${
+                      newCourse.status === 'published'
+                        ? 'bg-blue-600 text-white border-blue-600'
+                        : 'bg-white text-gray-800 border-gray-300 hover:border-blue-400'
+                    }`}
+                  >
+                    Publish
+                  </button>
                 </div>
+                <p className="mt-1 text-[11px] text-gray-400">
+                  You can always change this later from the course settings.
+                </p>
               </div>
-              
-              <div style={{ position: 'relative', zIndex: 200 }}>
-                <label className="block text-sm font-semibold mb-2" style={{ color: '#0B1E3F' }}>
-                  Category
-                </label>
-                <select
-                  value={newCourse.category}
-                  onChange={(e) => setNewCourse(prev => ({ ...prev, category: e.target.value }))}
-                  className="w-full px-4 py-3 border-2 rounded-xl focus:outline-none transition-all duration-200 touch-manipulation"
-                  style={{
-                    borderColor: '#E5E7EB',
-                    backgroundColor: 'white',
-                    color: '#0B1E3F',
-                    fontSize: '16px',
-                    pointerEvents: 'auto',
-                    position: 'relative',
-                    zIndex: 200,
-                    WebkitAppearance: 'menulist',
-                    MozAppearance: 'menulist'
-                  }}
-                  onFocus={(e) => {
-                    e.currentTarget.style.borderColor = '#00B5AD';
-                    e.currentTarget.style.boxShadow = '0 0 0 4px rgba(0, 181, 173, 0.1)';
-                  }}
-                  onBlur={(e) => {
-                    e.currentTarget.style.borderColor = '#E5E7EB';
-                    e.currentTarget.style.boxShadow = 'none';
-                  }}
-                >
-                  <option value="">Select category</option>
-                  <option value="programming">Programming</option>
-                  <option value="web-development">Web Development</option>
-                  <option value="data-science">Data Science</option>
-                  <option value="design">Design</option>
-                  <option value="business">Business</option>
-                  <option value="marketing">Marketing</option>
-                  <option value="photography">Photography</option>
-                  <option value="music">Music</option>
-                  <option value="language">Language</option>
-                  <option value="science">Science</option>
-                  <option value="mathematics">Mathematics</option>
-                  <option value="health">Health & Fitness</option>
-                  <option value="personal-development">Personal Development</option>
-                  <option value="other">Other</option>
-                </select>
-              </div>
-              
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  id="isPaid"
-                  checked={newCourse.isPaid}
-                  onChange={(e) => setNewCourse(prev => ({ ...prev, isPaid: e.target.checked }))}
-                  className="h-4 w-4 rounded border-2"
-                  style={{ 
-                    accentColor: '#00B5AD',
-                    borderColor: '#E5E7EB'
-                  }}
-                />
-                <label htmlFor="isPaid" className="ml-3 text-sm font-medium" style={{ color: '#0B1E3F' }}>
-                  Paid Course
-                </label>
-              </div>
-              
-              {newCourse.isPaid && (
-                <div>
-                  <label className="block text-sm font-semibold mb-2" style={{ color: '#0B1E3F' }}>
-                    Price (USD)
-                  </label>
-                  <input
-                    type="number"
-                    value={newCourse.price || ''}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      const numValue = value === '' ? undefined : parseFloat(value);
-                      setNewCourse(prev => ({ ...prev, price: numValue }));
-                    }}
-                    className="w-full px-4 py-3 border-2 rounded-xl focus:outline-none transition-all duration-200"
-                    style={{
-                      borderColor: '#E5E7EB',
-                      backgroundColor: 'white',
-                      color: '#0B1E3F',
-                      fontSize: '16px'
-                    }}
-                    onFocus={(e) => {
-                      e.currentTarget.style.borderColor = '#00B5AD';
-                      e.currentTarget.style.boxShadow = '0 0 0 4px rgba(0, 181, 173, 0.1)';
-                    }}
-                    onBlur={(e) => {
-                      e.currentTarget.style.borderColor = '#E5E7EB';
-                      e.currentTarget.style.boxShadow = 'none';
-                    }}
-                    placeholder="Enter price (e.g., 99.99)"
-                    min="0"
-                    step="0.01"
-                    disabled={false}
-                    readOnly={false}
-                  />
-                  {newCourse.price && newCourse.price > 0 && (
-                    <div className="mt-2 text-sm font-medium" style={{ color: '#00B5AD' }}>
-                      You will earn ${(newCourse.price * 0.7).toFixed(2)} per student
-                    </div>
-                  )}
-                </div>
-              )}
             </div>
-            
-            <div className="flex flex-col sm:flex-row gap-3 mt-6 sm:mt-8 pt-4 border-t flex-shrink-0" style={{ borderColor: '#E5E7EB' }}>
+
+            {/* Footer */}
+            <div className="px-6 py-4 border-t border-gray-200 flex flex-col sm:flex-row gap-3 justify-end">
               <button
+                type="button"
                 onClick={() => {
                   setShowCreateModal(false);
                   clearDraft();
                 }}
-                className="w-full sm:flex-1 px-6 py-3 min-h-[44px] border-2 rounded-xl font-semibold transition-all duration-200 hover:shadow-md touch-manipulation active:scale-95"
-                style={{ 
-                  borderColor: '#E5E7EB',
-                  color: '#0B1E3F',
-                  backgroundColor: 'white'
-                }}
+                className="w-full sm:w-auto rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
               >
                 Cancel
               </button>
               <button
+                type="button"
                 onClick={handleCreateCourse}
                 disabled={!newCourse.title.trim() || uploadingImage}
-                className="w-full sm:flex-1 px-6 py-3 min-h-[44px] text-white rounded-xl font-semibold transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 touch-manipulation active:scale-95"
-                style={{ 
-                  backgroundColor: '#00B5AD',
-                  boxShadow: '0 4px 14px rgba(0, 181, 173, 0.3)'
-                }}
-                onMouseEnter={(e) => {
-                  if (!e.currentTarget.disabled) {
-                    e.currentTarget.style.backgroundColor = '#00968d';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!e.currentTarget.disabled) {
-                    e.currentTarget.style.backgroundColor = '#00B5AD';
-                  }
-                }}
+                className="w-full sm:w-auto inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <Save className="h-4 w-4 mr-2 inline" />
-                {uploadingImage ? 'Uploading...' : 'Create Course'}
+                <Save className="h-4 w-4 mr-2" />
+                {uploadingImage ? 'Uploading...' : 'Create course'}
               </button>
             </div>
           </div>
