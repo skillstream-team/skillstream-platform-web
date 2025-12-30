@@ -1,0 +1,6 @@
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background with rounded corners matching logo color -->
+  <rect width="32" height="32" rx="6" fill="hsl(221, 83%, 53%)"/>
+  <!-- SS text in white, bold -->
+  <text x="16" y="22" font-family="system-ui, -apple-system, sans-serif" font-size="18" font-weight="700" fill="white" text-anchor="middle" dominant-baseline="middle" letter-spacing="-0.5">SS</text>
+</svg>
