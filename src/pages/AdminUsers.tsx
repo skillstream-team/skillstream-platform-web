@@ -197,7 +197,8 @@ export function AdminUsers() {
     }
   }
 
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString: string | undefined) => {
+    if (!dateString) return 'N/A'
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
@@ -318,7 +319,7 @@ export function AdminUsers() {
                           <TableCell>
                             <div className="flex items-center gap-3">
                               <Avatar className="h-10 w-10">
-                                <AvatarImage src={user.avatarUrl} />
+                                <AvatarImage src={(user as any).avatarUrl || user.avatar} />
                                 <AvatarFallback>
                                   {user.firstName?.[0] || user.username?.[0] || 'U'}
                                 </AvatarFallback>
@@ -342,7 +343,7 @@ export function AdminUsers() {
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center gap-2">
-                              {user.isActive !== false ? (
+                              {(user as any).isActive !== false ? (
                                 <>
                                   <CheckCircle2 className="h-4 w-4 text-green-600" />
                                   <span className="text-sm">Active</span>
@@ -397,9 +398,9 @@ export function AdminUsers() {
                                 )}
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem
-                                  onClick={() => handleUpdateUser(user, { isActive: !user.isActive })}
+                                  onClick={() => handleUpdateUser(user, { isActive: !(user as any).isActive })}
                                 >
-                                  {user.isActive !== false ? (
+                                  {(user as any).isActive !== false ? (
                                     <>
                                       <UserX className="h-4 w-4 mr-2" />
                                       Deactivate
@@ -434,7 +435,7 @@ export function AdminUsers() {
                   {pagination.totalPages > 1 && (
                     <div className="mt-4 flex justify-center">
                       <Pagination
-                        currentPage={pagination.page}
+                        page={pagination.page}
                         totalPages={pagination.totalPages}
                         onPageChange={(page) => setPagination(prev => ({ ...prev, page }))}
                       />

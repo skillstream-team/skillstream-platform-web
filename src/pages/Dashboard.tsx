@@ -28,6 +28,7 @@ import { Course } from "@/api/types"
 import { Button } from "@/components/ui/button"
 import { TeacherEarningsAPI, EarningsStats } from "@/api/teacher-earnings.api"
 import { useNavigate } from "react-router-dom"
+import { getCurrentUser } from "@/api/auth-utils"
 import { useSystemSettings } from "@/contexts/SystemSettingsContext"
 
 interface UpcomingLesson {
@@ -70,7 +71,7 @@ export function Dashboard() {
         })
         
         // Get quickLessons from response
-        const quickLessons = response.data?.quickLessons || []
+        const quickLessons = (response as any).data?.quickLessons || []
         
         // Sort by scheduledAt and take the next 5
         const sorted = quickLessons
@@ -99,7 +100,7 @@ export function Dashboard() {
         setCoursesLoading(true)
         // Fetch courses sorted by creation date or another metric
         // You can adjust the sorting logic based on what "top performing" means
-        const response = await CoursesAPI.getCourses({
+        const response: any = await CoursesAPI.getCourses({
           limit: 5,
           sortBy: 'createdAt',
           sortOrder: 'desc'
@@ -122,7 +123,8 @@ export function Dashboard() {
     const fetchEarningsStats = async () => {
       try {
         setEarningsLoading(true)
-        const stats = await TeacherEarningsAPI.getEarningsStats()
+        const currentUser = getCurrentUser()
+        const stats = await TeacherEarningsAPI.getEarningsSummary(currentUser?.id || '')
         setEarningsStats(stats)
       } catch (error: any) {
         console.error('Failed to fetch earnings stats:', error)

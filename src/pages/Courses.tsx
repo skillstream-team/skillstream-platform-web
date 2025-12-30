@@ -87,7 +87,6 @@ export function Courses() {
     hasNext: false,
     hasPrev: false,
   })
-  const location = useLocation()
   const isFetching = useRef(false)
 
   // Use improved refresh hook with deduplication

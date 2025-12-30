@@ -298,7 +298,7 @@ export function AdminReports() {
                           <TableCell>
                             <div className="flex items-center gap-2">
                               <Avatar className="h-8 w-8">
-                                <AvatarImage src={report.reportedBy.avatarUrl} />
+                                <AvatarImage src={(report.reportedBy as any).avatarUrl || report.reportedBy.avatar} />
                                 <AvatarFallback>
                                   {report.reportedBy.firstName?.[0] || report.reportedBy.username?.[0] || 'U'}
                                 </AvatarFallback>
@@ -374,7 +374,7 @@ export function AdminReports() {
                   {pagination.totalPages > 1 && (
                     <div className="mt-4 flex justify-center">
                       <Pagination
-                        currentPage={pagination.page}
+                        page={pagination.page}
                         totalPages={pagination.totalPages}
                         onPageChange={(page) => setPagination(prev => ({ ...prev, page }))}
                       />

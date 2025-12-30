@@ -1124,11 +1124,12 @@ export const AdminAPI = {
             const response = await apiClient.instance.get(`/admin/banners/${bannerId}`);
             const data = unwrapResponse(response.data);
             // Map backend response (image/link) to frontend format (imageUrl/linkUrl)
-            if (data && typeof data === 'object') {
+            if (data && typeof data === 'object' && data !== null) {
+                const dataObj = data as any;
                 return {
-                    ...data,
-                    imageUrl: data.image,
-                    linkUrl: data.link,
+                    ...dataObj,
+                    imageUrl: dataObj.image,
+                    linkUrl: dataObj.link,
                 };
             }
             return data;
@@ -1171,11 +1172,12 @@ export const AdminAPI = {
             const response = await apiClient.instance.post('/admin/banners', backendPayload);
             const data = unwrapResponse(response.data);
             // Map backend response (image/link) to frontend format (imageUrl/linkUrl)
-            if (data && typeof data === 'object') {
+            if (data && typeof data === 'object' && data !== null) {
+                const dataObj = data as any;
                 return {
-                    ...data,
-                    imageUrl: data.image,
-                    linkUrl: data.link,
+                    ...dataObj,
+                    imageUrl: dataObj.image,
+                    linkUrl: dataObj.link,
                 };
             }
             return data;
@@ -1217,11 +1219,12 @@ export const AdminAPI = {
             const response = await apiClient.instance.put(`/admin/banners/${bannerId}`, backendPayload);
             const data = unwrapResponse(response.data);
             // Map backend response (image/link) to frontend format (imageUrl/linkUrl)
-            if (data && typeof data === 'object') {
+            if (data && typeof data === 'object' && data !== null) {
+                const dataObj = data as any;
                 return {
-                    ...data,
-                    imageUrl: data.image,
-                    linkUrl: data.link,
+                    ...dataObj,
+                    imageUrl: dataObj.image,
+                    linkUrl: dataObj.link,
                 };
             }
             return data;

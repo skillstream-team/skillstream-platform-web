@@ -204,8 +204,9 @@ export function MessagesFirebase() {
 
     try {
       setSearchingUsers(true)
-      const results = await UsersAPI.searchUsers(term)
-      setSearchResults(results.filter(u => u.id !== currentUser?.id))
+      const results = await UsersAPI.searchUsers({ q: term })
+      const users = results.data || []
+      setSearchResults(users.filter((u: any) => u.id !== currentUser?.id))
     } catch (error) {
       console.error('Error searching users:', error)
       toast.error('Failed to search users')
@@ -325,7 +326,7 @@ export function MessagesFirebase() {
                                 <AvatarFallback>
                                   {getUserDisplayName(other || conversation)
                                     .split(' ')
-                                    .map(n => n[0])
+                                    .map((n: string) => n[0])
                                     .join('')
                                     .toUpperCase()
                                     .slice(0, 2)}
@@ -368,7 +369,7 @@ export function MessagesFirebase() {
                         <AvatarFallback>
                           {getUserDisplayName(getOtherParticipant(selectedConversation) || selectedConversation)
                             .split(' ')
-                            .map(n => n[0])
+                            .map((n: string) => n[0])
                             .join('')
                             .toUpperCase()
                             .slice(0, 2)}
@@ -485,7 +486,7 @@ export function MessagesFirebase() {
                           <AvatarFallback>
                             {getUserDisplayName(user)
                               .split(' ')
-                              .map(n => n[0])
+                              .map((n: string) => n[0])
                               .join('')
                               .toUpperCase()
                               .slice(0, 2)}

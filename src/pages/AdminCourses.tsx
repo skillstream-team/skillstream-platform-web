@@ -298,7 +298,7 @@ export function AdminCourses() {
                       {pagination.totalPages > 1 && (
                         <div className="mt-4 flex justify-center">
                           <Pagination
-                            currentPage={pagination.page}
+                            page={pagination.page}
                             totalPages={pagination.totalPages}
                             onPageChange={(page) => setPagination(prev => ({ ...prev, page }))}
                           />

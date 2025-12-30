@@ -73,7 +73,7 @@ import {
 } from "lucide-react"
 import { useEffect, useState, useRef } from "react"
 import { useNavigate } from "react-router-dom"
-import { CategoriesAPI, Category } from "@/api/categories.api"
+import { CategoriesAPI } from "@/api/categories.api"
 import { toast } from "sonner"
 import { useErrorDisplay } from "@/hooks/useErrorDisplay"
 import { Pagination } from "@/components/ui/pagination"
@@ -83,7 +83,7 @@ import { useRefreshOnNavigation } from "@/hooks/useRefreshOnNavigation"
 export function AdminCategories() {
   const navigate = useNavigate()
   const { showError, showSuccess } = useErrorDisplay()
-  const [categories, setCategories] = useState<Category[]>([])
+  const [categories, setCategories] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
   const [pagination, setPagination] = useState<PaginationType>({
@@ -96,15 +96,15 @@ export function AdminCategories() {
   })
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-  const [editingCategory, setEditingCategory] = useState<Category | null>(null)
-  const [deletingCategory, setDeletingCategory] = useState<Category | null>(null)
+  const [editingCategory, setEditingCategory] = useState<any | null>(null)
+  const [deletingCategory, setDeletingCategory] = useState<any | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [formData, setFormData] = useState({
     name: "",
     description: "",
     parentId: "",
   })
-  const [parentCategories, setParentCategories] = useState<Category[]>([])
+  const [parentCategories, setParentCategories] = useState<any[]>([])
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   // Fetch categories when page changes (but not when searchQuery changes - that's handled separately)
@@ -170,7 +170,7 @@ export function AdminCategories() {
       console.log('Categories API response:', response)
       
       // Handle different response structures
-      let categoriesList: Category[] = []
+      let categoriesList: any[] = []
       if (Array.isArray(response)) {
         // If response is directly an array
         categoriesList = response
@@ -260,7 +260,7 @@ export function AdminCategories() {
     setIsDialogOpen(true)
   }
 
-  const handleEdit = (category: Category) => {
+  const handleEdit = (category: any) => {
     setEditingCategory(category)
     setFormData({
       name: category.name,
@@ -270,7 +270,7 @@ export function AdminCategories() {
     setIsDialogOpen(true)
   }
 
-  const handleDelete = (category: Category) => {
+  const handleDelete = (category: any) => {
     setDeletingCategory(category)
     setIsDeleteDialogOpen(true)
   }

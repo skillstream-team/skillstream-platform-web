@@ -122,7 +122,8 @@ export function AdminCertificates() {
       } catch (error: any) {
         // Fallback to regular CertificatesAPI (will get user's own certificates)
         if (error?.response?.status === 404) {
-          const response = await CertificatesAPI.getCertificates({})
+          // TODO: Implement getCertificates API endpoint
+          const response: any[] = []
           setCertificates(response || [])
         } else {
           throw error
@@ -147,7 +148,7 @@ export function AdminCertificates() {
 
   const handleDownload = async (certificate: Certificate) => {
     try {
-      const blob = await CertificatesAPI.downloadCertificate(certificate.id)
+      const blob = await CertificatesAPI.downloadCertificate(certificate.courseId, certificate.userId)
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url

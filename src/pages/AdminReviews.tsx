@@ -70,13 +70,13 @@ import {
 } from "lucide-react"
 import { useEffect, useState } from "react"
 import { AdminAPI } from "@/api/admin.api"
-import { ReviewsAPI, Review } from "@/api/reviews.api"
+import { ReviewsAPI } from "@/api/reviews.api"
 import { toast } from "sonner"
 import { Pagination } from "@/components/ui/pagination"
 import { Pagination as PaginationType } from "@/api/types"
 
 export function AdminReviews() {
-  const [reviews, setReviews] = useState<Review[]>([])
+  const [reviews, setReviews] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
   const [ratingFilter, setRatingFilter] = useState<string>("all")
@@ -90,7 +90,7 @@ export function AdminReviews() {
     hasPrev: false,
   })
   const [isModerateDialogOpen, setIsModerateDialogOpen] = useState(false)
-  const [selectedReview, setSelectedReview] = useState<Review | null>(null)
+  const [selectedReview, setSelectedReview] = useState<any | null>(null)
   const [moderationAction, setModerationAction] = useState<'approve' | 'reject' | 'hide' | 'delete'>('approve')
   const [moderationReason, setModerationReason] = useState("")
   const [isProcessing, setIsProcessing] = useState(false)
@@ -117,7 +117,7 @@ export function AdminReviews() {
         const response = await AdminAPI.getAllReviews(params)
         let filteredReviews = response.reviews || []
         if (searchQuery) {
-          filteredReviews = filteredReviews.filter((review: Review) =>
+          filteredReviews = filteredReviews.filter((review: any) =>
             review.comment?.toLowerCase().includes(searchQuery.toLowerCase()) ||
             review.user?.email?.toLowerCase().includes(searchQuery.toLowerCase())
           )
@@ -130,12 +130,12 @@ export function AdminReviews() {
           const response = await ReviewsAPI.getReviews({ page: pagination.page, limit: pagination.limit })
           let filteredReviews = response.reviews || []
           if (searchQuery) {
-            filteredReviews = filteredReviews.filter((review: Review) =>
+            filteredReviews = filteredReviews.filter((review: any) =>
               review.comment?.toLowerCase().includes(searchQuery.toLowerCase())
             )
           }
           if (ratingFilter !== "all") {
-            filteredReviews = filteredReviews.filter((review: Review) => review.rating === parseInt(ratingFilter))
+            filteredReviews = filteredReviews.filter((review: any) => review.rating === parseInt(ratingFilter))
           }
           setReviews(filteredReviews)
           if (response.pagination) {
@@ -154,7 +154,7 @@ export function AdminReviews() {
     }
   }
 
-  const handleModerate = (review: Review, action: 'approve' | 'reject' | 'hide' | 'delete') => {
+  const handleModerate = (review: any, action: 'approve' | 'reject' | 'hide' | 'delete') => {
     setSelectedReview(review)
     setModerationAction(action)
     setModerationReason("")

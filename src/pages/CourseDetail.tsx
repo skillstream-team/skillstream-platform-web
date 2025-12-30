@@ -39,7 +39,8 @@ import {
   Edit,
   Share2,
   Copy,
-  ExternalLink
+  ExternalLink,
+  Lock
 } from "lucide-react"
 import { useEffect, useState, useRef } from "react"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -273,7 +274,7 @@ export function CourseDetail() {
 
   const handleShareToTwitter = () => {
     const url = window.location.href
-    const text = `Check out this course: ${course.title}`
+    const text = `Check out this course: ${course?.title || ''}`
     const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`
     window.open(twitterUrl, '_blank', 'width=550,height=420')
   }
@@ -473,15 +474,15 @@ export function CourseDetail() {
                 ) : (
                   <>
                     {/* Find first preview lesson */}
-                    {course.modules && course.modules.some(m => m.lessons?.some((l: Lesson) => l.isPreview)) && (
+                    {(course as any).modules && (course as any).modules.some((m: any) => m.lessons?.some((l: Lesson) => l.isPreview)) && (
                       <Button 
                         className="w-full mb-2" 
                         size="lg"
                         variant="outline"
                         onClick={() => {
                           // Find first preview lesson
-                          for (const module of course.modules || []) {
-                            const previewLesson = module.lessons?.find((l: Lesson) => l.isPreview)
+                          for (const module of (course as any).modules || []) {
+                            const previewLesson = (module as any).lessons?.find((l: Lesson) => l.isPreview)
                             if (previewLesson) {
                               navigate(`/courses/${course.id}/learn/${previewLesson.id}?preview=true`)
                               return
@@ -630,9 +631,9 @@ export function CourseDetail() {
                                   {module.description}
                                 </div>
                               )}
-                              {module.lessons && (
+                              {(module as any).lessons && (
                                 <div className="text-xs text-muted-foreground mt-1">
-                                  {module.lessons.length} {module.lessons.length === 1 ? 'lesson' : 'lessons'}
+                                  {(module as any).lessons.length} {(module as any).lessons.length === 1 ? 'lesson' : 'lessons'}
                                 </div>
                               )}
                             </div>
@@ -641,7 +642,7 @@ export function CourseDetail() {
                       </CollapsibleTrigger>
                       <CollapsibleContent>
                         <div className="ml-12 mt-2 space-y-2 pl-4 border-l-2">
-                          {module.lessons?.map((lesson: Lesson, lessonIndex: number) => (
+                          {(module as any).lessons?.map((lesson: Lesson) => (
                             <div 
                               key={lesson.id}
                               className={`flex items-center gap-3 p-3 rounded-lg ${lesson.isPreview || isEnrolled ? 'hover:bg-muted/50 cursor-pointer' : 'opacity-60'}`}

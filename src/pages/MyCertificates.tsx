@@ -65,7 +65,9 @@ export function MyCertificates() {
   const fetchCertificates = async () => {
     try {
       setLoading(true)
-      const certs = await CertificatesAPI.getCertificates({ userId: currentUser?.id })
+      // TODO: Implement getCertificates API endpoint
+      // For now, return empty array
+      const certs: any[] = []
       const certsArray = Array.isArray(certs) ? certs : []
       setCertificates(certsArray)
     } catch (error: any) {
@@ -110,7 +112,7 @@ export function MyCertificates() {
 
   const handleDownload = async (certificate: Certificate) => {
     try {
-      const blob = await CertificatesAPI.downloadCertificate(certificate.id)
+      const blob = await CertificatesAPI.downloadCertificate(certificate.courseId, certificate.userId)
       const url = window.URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = url

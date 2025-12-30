@@ -245,25 +245,25 @@ export function Enrollments() {
   const sortedCourses = Object.values(filteredEnrollmentsByCourse).sort((a, b) => {
     switch (sortBy) {
       case "course":
-        return a.course.title.localeCompare(b.course.title)
+        return (a as any).course.title.localeCompare((b as any).course.title)
       case "enrollments":
-        return b.enrollments.length - a.enrollments.length
+        return (b as any).enrollments.length - (a as any).enrollments.length
       case "revenue":
-        const revenueA = a.enrollments
-          .filter(e => e.payment?.status === "completed")
-          .reduce((sum, e) => sum + (e.payment?.amount || 0), 0)
-        const revenueB = b.enrollments
-          .filter(e => e.payment?.status === "completed")
-          .reduce((sum, e) => sum + (e.payment?.amount || 0), 0)
+        const revenueA = (a as any).enrollments
+          .filter((e: any) => e.payment?.status === "completed")
+          .reduce((sum: number, e: any) => sum + (e.payment?.amount || 0), 0)
+        const revenueB = (b as any).enrollments
+          .filter((e: any) => e.payment?.status === "completed")
+          .reduce((sum: number, e: any) => sum + (e.payment?.amount || 0), 0)
         return revenueB - revenueA
       default:
-        return b.enrollments.length - a.enrollments.length
+        return (b as any).enrollments.length - (a as any).enrollments.length
     }
   })
 
   // Sort students within each course
-  sortedCourses.forEach(courseGroup => {
-    courseGroup.enrollments.sort((a, b) => {
+  sortedCourses.forEach((courseGroup: any) => {
+    courseGroup.enrollments.sort((a: any, b: any) => {
       switch (sortBy) {
         case "recent":
           return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
@@ -479,20 +479,20 @@ export function Enrollments() {
           ) : (
             <div className="space-y-6">
               {sortedCourses.map((courseGroup) => {
-                const courseRevenue = courseGroup.enrollments
-                  .filter(e => e.payment?.status === "completed")
-                  .reduce((sum, e) => sum + (e.payment?.amount || 0), 0)
-                const completedPayments = courseGroup.enrollments.filter(e => e.payment?.status === "completed").length
+                const courseRevenue = (courseGroup as any).enrollments
+                  .filter((e: any) => e.payment?.status === "completed")
+                  .reduce((sum: number, e: any) => sum + (e.payment?.amount || 0), 0)
+                const completedPayments = (courseGroup as any).enrollments.filter((e: any) => e.payment?.status === "completed").length
 
                 return (
-                  <Card key={courseGroup.course.id} className="hover:shadow-md transition-shadow">
+                  <Card key={(courseGroup as any).course.id} className="hover:shadow-md transition-shadow">
                     <CardHeader>
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <div className="flex items-center gap-3 mb-2">
-                            <h2 className="text-xl font-bold">{courseGroup.course.title}</h2>
+                            <h2 className="text-xl font-bold">{(courseGroup as any).course.title}</h2>
                             <Badge variant="outline">
-                              {courseGroup.enrollments.length} {courseGroup.enrollments.length === 1 ? "student" : "students"}
+                              {(courseGroup as any).enrollments.length} {(courseGroup as any).enrollments.length === 1 ? "student" : "students"}
                             </Badge>
                           </div>
                           <div className="flex items-center gap-4 text-sm text-muted-foreground">
@@ -502,19 +502,19 @@ export function Enrollments() {
                             </div>
                             <div className="flex items-center gap-1">
                               <BookOpen className="h-4 w-4 text-amber-600" />
-                              <span>{formatCurrency(courseGroup.course.price)} per enrollment</span>
+                              <span>{formatCurrency((courseGroup as any).course.price)} per enrollment</span>
                             </div>
                           </div>
                         </div>
                         <div className="flex gap-2">
                           <Button variant="outline" size="sm" asChild>
-                            <Link to={`/courses/${courseGroup.course.id}/grading`}>
+                            <Link to={`/courses/${(courseGroup as any).course.id}/grading`}>
                               <BookOpen className="h-4 w-4 mr-2 text-blue-600" />
                               Grading Book
                             </Link>
                           </Button>
                           <Button variant="outline" size="sm" asChild>
-                            <Link to={`/courses/${courseGroup.course.id}/activity`}>
+                            <Link to={`/courses/${(courseGroup as any).course.id}/activity`}>
                               <TrendingUp className="h-4 w-4 mr-2 text-green-600" />
                               Course Activity
                             </Link>
@@ -525,7 +525,7 @@ export function Enrollments() {
                     <CardContent>
                       <Separator className="mb-4" />
                       <div className="space-y-3">
-                        {courseGroup.enrollments.map((enrollment) => (
+                        {(courseGroup as any).enrollments.map((enrollment: any) => (
                           <div
                             key={enrollment.id}
                             className="flex items-center justify-between gap-4 p-3 rounded-lg border hover:bg-muted/50 transition-colors"

@@ -130,7 +130,7 @@ class PushNotificationService {
         
         subscription = await this.swRegistration.pushManager.subscribe({
           userVisibleOnly: true,
-          applicationServerKey: applicationServerKey
+          applicationServerKey: applicationServerKey as BufferSource
         });
       }
 

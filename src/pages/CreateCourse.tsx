@@ -39,7 +39,7 @@ import {
 import { useState, useEffect, useRef } from "react"
 import { getCurrentUser } from "@/api/auth-utils"
 import { CoursesAPI } from "@/api/courses.api"
-import { CategoriesAPI, Category } from "@/api/categories.api"
+import { CategoriesAPI } from "@/api/categories.api"
 import { toast } from "sonner"
 import { useSystemSettings } from "@/contexts/SystemSettingsContext"
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -82,7 +82,7 @@ export function CreateCourse() {
   const [objectiveInput, setObjectiveInput] = useState("")
   const [requirementInput, setRequirementInput] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [categories, setCategories] = useState<Category[]>([])
+  const [categories, setCategories] = useState<any[]>([])
   const [loadingCategories, setLoadingCategories] = useState(true)
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null)
   const [thumbnailPreview, setThumbnailPreview] = useState<string>("")

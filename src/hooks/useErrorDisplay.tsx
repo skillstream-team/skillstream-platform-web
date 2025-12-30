@@ -22,30 +22,26 @@ export function useErrorDisplay() {
       showBannerError(message, title, options?.type || "error")
     } else {
       // Fallback to toast if banner is explicitly disabled
-      toast.error(message, {
-        title: title || "Error",
+      toast.error(title ? `${title}: ${message}` : message, {
         duration: 5000,
       })
     }
   }
 
   const showSuccess = (message: string, title?: string) => {
-    toast.success(message, {
-      title: title || "Success",
+    toast.success(title ? `${title}: ${message}` : message, {
       duration: 3000,
     })
   }
 
   const showWarning = (message: string, title?: string) => {
-    toast.warning(message, {
-      title: title || "Warning",
+    toast.warning(title ? `${title}: ${message}` : message, {
       duration: 4000,
     })
   }
 
   const showInfo = (message: string, title?: string) => {
-    toast.info(message, {
-      title: title || "Info",
+    toast.info(title ? `${title}: ${message}` : message, {
       duration: 4000,
     })
   }

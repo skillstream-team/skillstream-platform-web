@@ -40,6 +40,7 @@ import {
 } from "@/components/ui/select"
 import { EnrollmentsAPI } from "@/api/enrollments.api"
 import { ProgressAPI } from "@/api/progress.api"
+import { Progress } from "@/components/ui/progress"
 
 interface StudyGoal {
   id: string

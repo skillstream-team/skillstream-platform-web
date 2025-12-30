@@ -23,8 +23,7 @@ export function showError(
   // If useBanner is true or not specified, we'll use the error context
   // For now, we'll use toast but with better styling
   // The ErrorContext will be used when components are updated
-  toast.error(message, {
-    title: title || "Error",
+  toast.error(title ? `${title}: ${message}` : message, {
     duration: options?.duration || 5000,
     position: "top-center",
   })
@@ -34,8 +33,7 @@ export function showError(
  * Display success message (keep using toast for success)
  */
 export function showSuccess(message: string, title?: string) {
-  toast.success(message, {
-    title: title || "Success",
+  toast.success(title ? `${title}: ${message}` : message, {
     duration: 3000,
     position: "top-center",
   })
@@ -45,8 +43,7 @@ export function showSuccess(message: string, title?: string) {
  * Display warning message
  */
 export function showWarning(message: string, title?: string) {
-  toast.warning(message, {
-    title: title || "Warning",
+  toast.warning(title ? `${title}: ${message}` : message, {
     duration: 4000,
     position: "top-center",
   })
@@ -56,8 +53,7 @@ export function showWarning(message: string, title?: string) {
  * Display info message
  */
 export function showInfo(message: string, title?: string) {
-  toast.info(message, {
-    title: title || "Info",
+  toast.info(title ? `${title}: ${message}` : message, {
     duration: 4000,
     position: "top-center",
   })

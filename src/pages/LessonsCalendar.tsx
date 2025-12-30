@@ -66,7 +66,7 @@ export function LessonsCalendar() {
         })
       ])
 
-      setLessons(lessonsResponse.data?.quickLessons || [])
+      setLessons((lessonsResponse as any).data?.quickLessons || [])
       setEvents(eventsResponse.events || [])
     } catch (error: any) {
       console.error('Failed to fetch calendar data:', error)

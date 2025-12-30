@@ -89,7 +89,7 @@ export function Announcements() {
   })
 
   useEffect(() => {
-    if (!hasFetched.current || !courseId) return
+    if (!courseId) return
     fetchData()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pagination.page])

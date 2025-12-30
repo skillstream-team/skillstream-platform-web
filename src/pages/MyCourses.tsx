@@ -59,7 +59,6 @@ interface CourseWithProgress extends Course {
 
 export function MyCourses() {
   const navigate = useNavigate()
-  const location = useLocation()
   const [searchParams, setSearchParams] = useSearchParams()
   const currentTab = searchParams.get('tab') || 'all'
   const currentUser = getCurrentUser()

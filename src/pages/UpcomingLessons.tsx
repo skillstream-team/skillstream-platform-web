@@ -97,7 +97,7 @@ export function UpcomingLessons() {
         role,
         status: 'upcoming'
       })
-      const quickLessons = response.data?.quickLessons || []
+      const quickLessons = (response as any).data?.quickLessons || []
       setLessons(quickLessons)
     } catch (error: any) {
       console.error('Failed to fetch lessons:', error)

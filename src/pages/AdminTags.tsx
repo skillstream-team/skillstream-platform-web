@@ -64,14 +64,14 @@ import {
   Loader2
 } from "lucide-react"
 import { useEffect, useState } from "react"
-import { TagsAPI, Tag } from "@/api/tags.api"
+import { TagsAPI } from "@/api/tags.api"
 import { toast } from "sonner"
 import { Pagination } from "@/components/ui/pagination"
 import { Pagination as PaginationType } from "@/api/types"
 import { useRefreshOnNavigation } from "@/hooks/useRefreshOnNavigation"
 
 export function AdminTags() {
-  const [tags, setTags] = useState<Tag[]>([])
+  const [tags, setTags] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
   const [pagination, setPagination] = useState<PaginationType>({
@@ -84,8 +84,8 @@ export function AdminTags() {
   })
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-  const [editingTag, setEditingTag] = useState<Tag | null>(null)
-  const [deletingTag, setDeletingTag] = useState<Tag | null>(null)
+  const [editingTag, setEditingTag] = useState<any | null>(null)
+  const [deletingTag, setDeletingTag] = useState<any | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [tagName, setTagName] = useState("")
 
@@ -137,13 +137,13 @@ export function AdminTags() {
     setIsDialogOpen(true)
   }
 
-  const handleEdit = (tag: Tag) => {
+  const handleEdit = (tag: any) => {
     setEditingTag(tag)
     setTagName(tag.name)
     setIsDialogOpen(true)
   }
 
-  const handleDelete = (tag: Tag) => {
+  const handleDelete = (tag: any) => {
     setDeletingTag(tag)
     setIsDeleteDialogOpen(true)
   }

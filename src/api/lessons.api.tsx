@@ -115,20 +115,5 @@ export const LessonsAPI = {
             throw new Error(getErrorMessage(error));
         }
     },
-
-    updateLesson: async (id: string, payload: Partial<Lesson>) => {
-        if (!isTeacher()) {
-            throw new Error('Only teachers can update lessons');
-        }
-        try {
-            const response = await apiClient.instance.put<Lesson>(
-                `/lessons/${id}`,
-                payload
-            );
-            return unwrapResponse<Lesson>(response.data);
-        } catch (error: any) {
-            throw new Error(getErrorMessage(error));
-        }
-    },
 };
 

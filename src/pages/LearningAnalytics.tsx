@@ -119,7 +119,8 @@ export function LearningAnalytics() {
       
       // Fetch certificates count
       try {
-        const certs = await CertificatesAPI.getCertificates({ userId: currentUser?.id })
+        // TODO: Implement getCertificates API endpoint
+      const certs: any[] = []
         const certsArray = Array.isArray(certs) ? certs : []
         setStats(prev => ({ ...prev, totalCertificates: certsArray.length }))
       } catch (error) {

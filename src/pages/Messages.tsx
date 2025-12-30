@@ -443,7 +443,7 @@ export function Messages() {
         limit: 10
       })
       // Filter out current user
-      const filtered = (response.data || []).filter(user => user.id !== currentUser?.id)
+      const filtered = (response.data || []).filter((user: any) => user.id !== currentUser?.id)
       setSearchResults(filtered)
     } catch (error: any) {
       console.error('Failed to search users:', error?.response?.data?.error || error?.message)
@@ -753,7 +753,7 @@ export function Messages() {
                     const lastMessage = conversation.lastMessage
                     const initials = participantName
                       .split(' ')
-                      .map(n => n[0])
+                      .map((n: string) => n[0])
                       .join('')
                       .toUpperCase()
                       .slice(0, 2)
@@ -817,7 +817,7 @@ export function Messages() {
                       <AvatarFallback>
                         {getParticipantName(selectedConversation)
                           .split(' ')
-                          .map(n => n[0])
+                          .map((n: string) => n[0])
                           .join('')
                           .toUpperCase()
                           .slice(0, 2)}
@@ -1019,7 +1019,7 @@ export function Messages() {
                             <AvatarFallback>
                               {getUserDisplayName(user)
                                 .split(' ')
-                                .map(n => n[0])
+                                .map((n: string) => n[0])
                                 .join('')
                                 .toUpperCase()
                                 .slice(0, 2)}

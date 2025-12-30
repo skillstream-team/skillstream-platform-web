@@ -373,7 +373,7 @@ export function AdminBundles() {
                   {pagination.totalPages > 1 && (
                     <div className="mt-4">
                       <Pagination
-                        currentPage={pagination.page}
+                        page={pagination.page}
                         totalPages={pagination.totalPages}
                         onPageChange={(page) => setPagination(prev => ({ ...prev, page }))}
                       />

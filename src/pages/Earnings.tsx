@@ -48,6 +48,8 @@ import {
 import { useEffect, useState, useRef } from "react"
 import { TeacherEarningsAPI, Earnings as EarningRecord, EarningsStats } from "@/api/teacher-earnings.api"
 import { Pagination as PaginationType } from "@/api/types"
+import { toast } from "sonner"
+import { getCurrentUser } from "@/api/auth-utils"
 import { Pagination } from "@/components/ui/pagination"
 import { useSystemSettings } from "@/contexts/SystemSettingsContext"
 import { Info } from "lucide-react"
@@ -85,7 +87,8 @@ export function Earnings() {
   const fetchEarningsStats = async () => {
     try {
       setEarningsLoading(true)
-      const stats = await TeacherEarningsAPI.getEarningsStats()
+      const currentUser = getCurrentUser()
+      const stats = await TeacherEarningsAPI.getEarningsSummary(currentUser?.id || '')
       setEarningsStats(stats)
     } catch (error: any) {
       console.error('Failed to fetch earnings stats:', error)
@@ -107,7 +110,9 @@ export function Earnings() {
       if (statusFilter !== 'all') {
         params.status = statusFilter
       }
-      const response = await TeacherEarningsAPI.getEarnings(params)
+      // TODO: Implement getEarnings API endpoint - using getMonthlyEarnings as fallback
+      const currentUser = getCurrentUser()
+      const response = await TeacherEarningsAPI.getMonthlyEarnings(currentUser?.id || '', {})
       setEarnings(response.earnings || [])
       setPagination(response.pagination)
     } catch (error: any) {
@@ -234,7 +239,12 @@ export function Earnings() {
     }
 
     try {
-      await TeacherEarningsAPI.requestPayout()
+      const currentUser = getCurrentUser()
+      if (!currentUser?.id) {
+        toast.error('User not found')
+        return
+      }
+      await TeacherEarningsAPI.requestPayout(currentUser.id)
       toast.success('Payout request submitted successfully')
       fetchEarningsStats()
       fetchEarnings()

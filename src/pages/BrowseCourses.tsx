@@ -36,7 +36,7 @@ import { Input } from "@/components/ui/input"
 import { useNavigate } from "react-router-dom"
 import { CoursesAPI } from "@/api/courses.api"
 import { WishlistAPI } from "@/api/wishlist.api"
-import { CategoriesAPI, Category } from "@/api/categories.api"
+import { CategoriesAPI } from "@/api/categories.api"
 import { Course, Pagination as PaginationType } from "@/api/types"
 import { Pagination } from "@/components/ui/pagination"
 import {
@@ -50,7 +50,7 @@ export function BrowseCourses() {
   const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
   const [courses, setCourses] = useState<Course[]>([])
-  const [categories, setCategories] = useState<Category[]>([])
+  const [categories, setCategories] = useState<any[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const [difficultyFilter, setDifficultyFilter] = useState<string>('all')

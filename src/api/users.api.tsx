@@ -183,14 +183,17 @@ export const UsersAPI = {
                 }
                 // If response is directly an array (legacy format)
                 if (Array.isArray(data)) {
-                    return { success: true, data, count: data.length };
+                    const dataArray = data as any[];
+                    return { success: true, data: dataArray, count: dataArray.length };
                 }
                 // If response has users property (alternative format)
-                if ('users' in data && Array.isArray((data as any).users)) {
+                const dataObj = data as any;
+                if (dataObj && typeof dataObj === 'object' && 'users' in dataObj && Array.isArray(dataObj.users)) {
+                    const usersArray = dataObj.users;
                     return { 
                         success: true, 
-                        data: (data as any).users, 
-                        count: (data as any).users.length 
+                        data: usersArray, 
+                        count: Array.isArray(usersArray) ? usersArray.length : 0
                     };
                 }
             }
