@@ -179,21 +179,27 @@ export function Dashboard() {
     }
   }
 
-  const formatCurrency = (amount: number) => {
+  const formatCurrency = (amount: number | null | undefined) => {
+    const safeAmount = amount ?? 0
+    if (isNaN(safeAmount)) return '$0.00'
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
-    }).format(amount)
+    }).format(safeAmount)
   }
 
-  const calculatePercentageChange = (current: number, previous: number): number => {
-    if (previous === 0) return current > 0 ? 100 : 0
-    return ((current - previous) / previous) * 100
+  const calculatePercentageChange = (current: number | null | undefined, previous: number | null | undefined): number => {
+    const safeCurrent = current ?? 0
+    const safePrevious = previous ?? 0
+    if (isNaN(safeCurrent) || isNaN(safePrevious)) return 0
+    if (safePrevious === 0) return safeCurrent > 0 ? 100 : 0
+    return ((safeCurrent - safePrevious) / safePrevious) * 100
   }
 
   const formatPercentage = (value: number) => {
+    if (isNaN(value)) return '0.0%'
     const sign = value >= 0 ? '+' : ''
     return `${sign}${value.toFixed(1)}%`
   }
