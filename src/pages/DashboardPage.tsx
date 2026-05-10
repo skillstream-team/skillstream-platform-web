@@ -1,589 +1,375 @@
-import React, { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { 
-  Calendar, 
-  Video, 
-  Clock, 
-  Users, 
-  Plus,
-  BookOpen,
-  TrendingUp,
-  ArrowRight,
-  DollarSign,
-  GraduationCap
-} from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { ArrowRight, CheckCheck, Sparkles, Video } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { NextStepsPanel } from '../components/hub/NextStepsPanel';
+import { getTeacherAiSuggestions } from '../data/teacherHub';
+import { askAiTutor, fetchAiInsights, fetchAiSummary, RuleInsight } from '../lib/aiAssistant';
+import { getSessionCachedValue } from '../lib/sessionCache';
+import { formatHubDateTime } from '../lib/utils';
 import { useAuthStore } from '../store/auth';
-import { getPersonalCalendar, getTeacherStats, getEarningsReport } from '../services/api';
-import { CalendarEvent } from '../types';
-
-interface UpcomingLesson {
-  id: string;
-  title: string;
-  teacherName: string;
-  scheduledAt: string;
-  duration: number;
-  studentCount: number;
-  type: 'live' | 'recorded';
-  joinLink?: string;
-}
+import { usePreferencesStore } from '../store/preferences';
+import { useTeacherHubStore } from '../store/teacherHub';
 
 export const DashboardPage: React.FC = () => {
-  const { user } = useAuthStore();
-  const navigate = useNavigate();
-  const isTeacher = user?.role === 'TEACHER';
-  
-  const [upcomingLessons, setUpcomingLessons] = useState<UpcomingLesson[]>([]);
-  const [upcomingEvents, setUpcomingEvents] = useState<CalendarEvent[]>([]);
-  const [upcomingDeadlines, setUpcomingDeadlines] = useState<CalendarEvent[]>([]);
-  const [stats, setStats] = useState({
-    totalLessons: 0,
-    totalStudents: 0,
-    upcomingToday: 0,
-    earnings: 0,
-    enrollments: 0,
-    completionRate: 0,
-    revenue: 0
-  });
-  const [loading, setLoading] = useState(true);
+  const user = useAuthStore((state) => state.user);
+  const isStudent = user?.role === 'STUDENT';
+  const allClasses = useTeacherHubStore((state) => state.classes);
+  const students = useTeacherHubStore((state) => state.students);
+  const tasks = useTeacherHubStore((state) => state.tasks);
+  const revision = useTeacherHubStore((state) => state.revision);
+  const aiHelperEnabled = usePreferencesStore((state) => state.preferences.aiHelper);
+  const currentStudent = students.find((entry) => entry.email.toLowerCase() === (user?.email || '').toLowerCase());
+  const classes = useMemo(
+    () =>
+      isStudent
+        ? currentStudent
+          ? allClasses.filter((entry) => entry.students.some((student) => student.id === currentStudent.id))
+          : []
+        : allClasses,
+    [allClasses, currentStudent, isStudent]
+  );
+  const [aiInsights, setAiInsights] = useState<RuleInsight[]>([]);
+  const [aiSummary, setAiSummary] = useState('');
+  const [aiSummaryBullets, setAiSummaryBullets] = useState<string[]>([]);
+  const [aiTutorReply, setAiTutorReply] = useState('');
+  const [aiTutorTips, setAiTutorTips] = useState<string[]>([]);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState('');
+
+  const fallbackAiSuggestions = useMemo(() => {
+    if (isStudent) {
+      const progress = currentStudent?.progress || 0;
+      if (progress < 70) return ['Focus on one weak topic this week and ask one question after class.'];
+      return ['Keep your weekly recap routine consistent to maintain progress.'];
+    }
+    return getTeacherAiSuggestions({
+      classesCount: classes.length,
+      attentionCount: classes.flatMap((entry) => entry.students).filter((entry) => entry.needsAttention).length,
+    });
+  }, [classes, currentStudent?.progress, isStudent]);
 
   useEffect(() => {
-    loadDashboardData();
-  }, []);
-
-  const loadDashboardData = async () => {
-    try {
-      setLoading(true);
-      
-      // Load calendar events and deadlines
-      try {
-        const personal = await getPersonalCalendar();
-        const events = personal.events || [];
-        setUpcomingEvents(events.slice(0, 5));
-        
-        // Filter deadlines (assignments, quizzes with due dates)
-        const deadlines = events.filter(e => {
-          return (e.type === 'assignment' || e.type === 'quiz') && 
-            e.endTime && 
-            new Date(e.endTime) > new Date();
-        }).sort((a, b) => {
-          const dateA = new Date(a.endTime || '').getTime();
-          const dateB = new Date(b.endTime || '').getTime();
-          return dateA - dateB;
-        }).slice(0, 5);
-        setUpcomingDeadlines(deadlines);
-      } catch (err) {
-        console.error('Error loading calendar events:', err);
-        setUpcomingEvents([]);
-        setUpcomingDeadlines([]);
-      }
-      
-      // Load teacher stats
-      if (isTeacher && user?.id) {
-        try {
-          const [teacherStats, earnings] = await Promise.all([
-            getTeacherStats(user.id),
-            getEarningsReport(user.id).catch(() => ({ totalRevenue: 0, monthlyRevenue: 0 }))
-          ]);
-          
-          setStats({
-            totalLessons: teacherStats.totalLessons || 0,
-            totalStudents: teacherStats.totalStudents || 0,
-            upcomingToday: upcomingEvents.filter(e => {
-              const eventDate = new Date(e.startTime || '');
-              const today = new Date();
-              return eventDate.toDateString() === today.toDateString();
-            }).length,
-            earnings: earnings.totalRevenue || 0,
-            enrollments: teacherStats.totalStudents || 0,
-            completionRate: teacherStats.averageCompletionRate || 0,
-            revenue: earnings.monthlyRevenue || 0
-          });
-        } catch (err) {
-          console.error('Error loading teacher stats:', err);
-          setStats({
-            totalLessons: 0,
-            totalStudents: 0,
-            upcomingToday: 0,
-            earnings: 0,
-            enrollments: 0,
-            completionRate: 0,
-            revenue: 0
-          });
-        }
-      }
-    } catch (error) {
-      console.error('Error loading dashboard:', error);
-      setUpcomingLessons([]);
-      setUpcomingEvents([]);
-      setUpcomingDeadlines([]);
-    } finally {
-      setLoading(false);
+    if (!user || !aiHelperEnabled) {
+      setAiInsights([]);
+      setAiError('');
+      return;
     }
-  };
-
-  const formatTime = (dateString: string) => {
-    try {
-      if (!dateString) return '';
-      const date = new Date(dateString);
-      if (isNaN(date.getTime())) return '';
-      return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-    } catch {
-      return '';
-    }
-  };
-
-  const getNextLesson = () => {
-    return upcomingLessons.length > 0 ? upcomingLessons[0] : null;
-  };
-
-  const nextLesson = getNextLesson();
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/20 to-purple-50/20 dark:from-gray-900 dark:via-gray-900 dark:to-gray-900">
-        <div className="flex items-center justify-center h-screen">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
-        </div>
-      </div>
-    );
-  }
+    let isMounted = true;
+    setAiLoading(true);
+    setAiError('');
+    void fetchAiInsights()
+      .then((insights) => {
+        if (!isMounted) return;
+        setAiInsights(insights);
+      })
+      .catch((error) => {
+        if (!isMounted) return;
+        setAiError(error instanceof Error ? error.message : 'Could not load study assist.');
+      })
+      .finally(() => {
+        if (!isMounted) return;
+        setAiLoading(false);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, [aiHelperEnabled, revision, user]);
+  const allLessons = getSessionCachedValue(
+    `dashboard:all-lessons:${revision}:${user?.role || 'guest'}`,
+    () => classes.flatMap((entry) => entry.lessons),
+    20_000
+  );
+  const todaySchedule = getSessionCachedValue(
+    `dashboard:today:${revision}:${user?.role || 'guest'}`,
+    () =>
+      allLessons
+        .filter((lesson) => lesson.status === 'today')
+        .sort((a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime()),
+    20_000
+  );
+  const activity = getSessionCachedValue(
+    `dashboard:activity:${revision}:${user?.role || 'guest'}`,
+    () =>
+      classes
+        .flatMap((entry) => entry.activity.map((item) => ({ ...item, className: entry.name, classId: entry.id })))
+        .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+        .slice(0, 5),
+    20_000
+  );
+  const stats = isStudent
+    ? [
+        { id: 'classes', label: 'My classes', value: `${classes.length}`, note: 'Active right now' },
+        { id: 'upcoming', label: 'Upcoming lessons', value: `${allLessons.filter((lesson) => lesson.status !== 'completed').length}`, note: 'Next 7 days' },
+        { id: 'progress', label: 'My progress', value: `${currentStudent?.progress || 0}%`, note: 'Across active classes' },
+        { id: 'homework', label: 'Homework done', value: `${currentStudent?.homeworkCompletion || 0}%`, note: 'Latest completion rate' },
+      ]
+    : [
+    { id: 'students', label: 'Total students', value: `${new Set(classes.flatMap((entry) => entry.students.map((student) => student.id))).size}`, note: 'Across all active classes' },
+    { id: 'classes', label: 'Active classes', value: `${classes.length}`, note: 'Running this week' },
+    { id: 'upcoming', label: 'Upcoming lessons', value: `${allLessons.filter((lesson) => lesson.status !== 'completed').length}`, note: 'Next 7 days' },
+    { id: 'tasks', label: 'Pending tasks', value: `${tasks.filter((task) => task.status !== 'done').length}`, note: 'Reviews, messages, payments' },
+  ];
 
   return (
-    <div className="dashboard-page">
-      {/* Welcome Header with Glassmorphism */}
-      <div className="dashboard-welcome">
-        <div className="dashboard-welcome-content">
-          <div className="dashboard-welcome-text">
-            <h1 className="dashboard-welcome-title">
-              Welcome back, {user?.name?.split(' ')[0]}! 👋
-            </h1>
-            <p className="dashboard-welcome-subtitle">
-              {isTeacher 
-                ? 'Ready to inspire your students today?' 
-                : 'Continue your learning journey'}
+    <div className="space-y-6 lg:space-y-8">
+      <section className="rounded-[32px] border border-[color:var(--hub-border)] bg-white p-6 shadow-[0_18px_48px_rgba(15,23,42,0.05)] sm:p-8">
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[color:var(--hub-primary)]">Dashboard</p>
+            <h2 className="mt-2 max-w-3xl text-3xl font-semibold tracking-tight text-[color:var(--hub-text)]">
+              {isStudent ? 'Your learning dashboard.' : 'Run your lesson business from one workspace.'}
+            </h2>
+            <p className="mt-3 max-w-2xl text-sm text-[color:var(--hub-muted)]">
+              {isStudent
+                ? 'Track classes, lessons, and updates in one place.'
+                : 'Classes, students, lessons, and payments in one flow.'}
             </p>
           </div>
-          <div className="dashboard-welcome-icon">
-            {isTeacher ? (
-              <GraduationCap />
+          <div className="flex flex-wrap gap-3">
+            {isStudent ? (
+              <>
+                <Link to="/classes" className="inline-flex items-center gap-2 rounded-full bg-[color:var(--hub-primary)] px-4 py-2.5 text-sm font-semibold text-white">
+                  Open classes
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+                <Link to="/schedule" className="inline-flex items-center gap-2 rounded-full border border-[color:var(--hub-border)] bg-white px-4 py-2.5 text-sm font-semibold text-[color:var(--hub-text)]">
+                  View schedule
+                </Link>
+              </>
             ) : (
-              <BookOpen />
+              <>
+                <Link to="/classes" className="inline-flex items-center gap-2 rounded-full bg-[color:var(--hub-primary)] px-4 py-2.5 text-sm font-semibold text-white">
+                  Create class
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+                <Link to="/schedule" className="inline-flex items-center gap-2 rounded-full border border-[color:var(--hub-border)] bg-white px-4 py-2.5 text-sm font-semibold text-[color:var(--hub-text)]">
+                  Schedule lesson
+                </Link>
+              </>
             )}
           </div>
         </div>
-      </div>
 
-      {/* Hero Section - Next Lesson */}
-      {nextLesson && (
-        <div className="dashboard-next-lesson">
-          <div className="dashboard-next-lesson-content">
-            <div className="dashboard-next-lesson-info">
-              <div className="dashboard-next-lesson-header">
-                <div className="dashboard-next-lesson-icon-wrapper">
-                  <Clock className="dashboard-next-lesson-icon" />
-                </div>
-                <span className="dashboard-next-lesson-time">
-                  {nextLesson.scheduledAt ? `Next lesson: ${formatTime(nextLesson.scheduledAt)}` : 'Upcoming Lesson'}
-                </span>
-              </div>
-              <h2 className="dashboard-next-lesson-title">
-                {nextLesson.title}
-              </h2>
-              <div className="dashboard-next-lesson-meta">
-                {isTeacher ? (
-                  <>
-                    <div className="dashboard-next-lesson-meta-item">
-                      <Users className="dashboard-next-lesson-meta-icon" />
-                      <span>{nextLesson.studentCount} {nextLesson.studentCount === 1 ? 'student' : 'students'}</span>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div className="dashboard-next-lesson-meta-item">
-                      <Users className="dashboard-next-lesson-meta-icon" />
-                      <span>with {nextLesson.teacherName}</span>
-                    </div>
-                  </>
-                )}
-                <div className="dashboard-next-lesson-meta-item">
-                  <Clock className="dashboard-next-lesson-meta-icon" />
-                  <span>{nextLesson.duration} minutes</span>
-                </div>
-              </div>
+        <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          {stats.map((item) => (
+            <div key={item.id} className="rounded-[24px] bg-[color:var(--hub-soft)] p-4">
+              <p className="text-sm font-medium text-[color:var(--hub-muted)]">{item.label}</p>
+              <p className="mt-3 text-3xl font-semibold text-[color:var(--hub-text)]">{item.value}</p>
+              <p className="mt-1 text-sm text-[color:var(--hub-muted)]">{item.note}</p>
             </div>
-            <div className="dashboard-next-lesson-actions">
-              {nextLesson.joinLink && (
-                <button
-                  onClick={() => window.open(nextLesson.joinLink, '_blank')}
-                  className="dashboard-button-primary"
-                >
-                  <Video className="dashboard-button-primary-icon" />
-                  <span>Join Now</span>
-                </button>
-              )}
-              <Link to="/calendar" className="dashboard-button-secondary">
-                View Calendar
-              </Link>
-            </div>
-          </div>
+          ))}
         </div>
-      )}
+      </section>
 
-      {/* Quick Actions */}
-      <div className="dashboard-quick-actions">
-        <h3 className="dashboard-quick-actions-title">
-          Quick Actions
-        </h3>
-        <div className="dashboard-quick-actions-grid">
-          {isTeacher ? (
-            <>
-              <button
-                onClick={() => navigate('/lessons/create')}
-                className="dashboard-quick-action-card dashboard-quick-action-card--teal"
-              >
-                <div className="dashboard-quick-action-header">
-                  <div className="dashboard-quick-action-icon-wrapper dashboard-quick-action-icon-wrapper--teal">
-                    <Plus className="dashboard-quick-action-icon dashboard-quick-action-icon--teal" />
-                  </div>
-                  <div className="dashboard-quick-action-text">
-                    <h4 className="dashboard-quick-action-title">Create Lesson</h4>
-                    <p className="dashboard-quick-action-subtitle">Start a new lesson</p>
-                  </div>
-                </div>
-                <p className="dashboard-quick-action-description">
-                  Set up an extra lesson in minutes
-                </p>
-              </button>
+      {!isStudent ? <NextStepsPanel tasks={tasks} /> : null}
 
-              <Link
-                to="/lessons/availability"
-                className="dashboard-quick-action-card dashboard-quick-action-card--purple"
-              >
-                <div className="dashboard-quick-action-header">
-                  <div className="dashboard-quick-action-icon-wrapper dashboard-quick-action-icon-wrapper--purple">
-                    <Calendar className="dashboard-quick-action-icon dashboard-quick-action-icon--purple" />
-                  </div>
-                  <div className="dashboard-quick-action-text">
-                    <h4 className="dashboard-quick-action-title">Set Availability</h4>
-                    <p className="dashboard-quick-action-subtitle">Manage your schedule</p>
-                  </div>
-                </div>
-                <p className="dashboard-quick-action-description">
-                  Let students book your time
-                </p>
+      <section className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
+        <div className="space-y-6">
+          <section className="rounded-[32px] border border-[color:var(--hub-border)] bg-white p-6 shadow-[0_18px_48px_rgba(15,23,42,0.05)]">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[color:var(--hub-primary)]">Today's Schedule</p>
+                <h3 className="mt-2 text-2xl font-semibold text-[color:var(--hub-text)]">
+                  {isStudent ? 'Classes happening today' : 'Lessons happening today'}
+                </h3>
+              </div>
+              <Link to="/schedule" className="text-sm font-semibold text-[color:var(--hub-primary)]">
+                View calendar
               </Link>
+            </div>
 
-              <Link
-                to="/analytics"
-                className="dashboard-quick-action-card dashboard-quick-action-card--light-purple"
-              >
-                <div className="dashboard-quick-action-header">
-                  <div className="dashboard-quick-action-icon-wrapper dashboard-quick-action-icon-wrapper--light-purple">
-                    <TrendingUp className="dashboard-quick-action-icon dashboard-quick-action-icon--light-purple" />
-                  </div>
-                  <div className="dashboard-quick-action-text">
-                    <h4 className="dashboard-quick-action-title">View Analytics</h4>
-                    <p className="dashboard-quick-action-subtitle">Track performance</p>
-                  </div>
-                </div>
-                <p className="dashboard-quick-action-description">
-                  See your teaching stats
-                </p>
-              </Link>
-            </>
-          ) : (
-            <>
-              <Link
-                to="/lessons/book"
-                className="dashboard-quick-action-card dashboard-quick-action-card--teal"
-              >
-                <div className="dashboard-quick-action-header">
-                  <div className="dashboard-quick-action-icon-wrapper dashboard-quick-action-icon-wrapper--teal">
-                    <BookOpen className="dashboard-quick-action-icon dashboard-quick-action-icon--teal" />
-                  </div>
-                  <div className="dashboard-quick-action-text">
-                    <h4 className="dashboard-quick-action-title">Book a Lesson</h4>
-                    <p className="dashboard-quick-action-subtitle">Find available lessons</p>
-                  </div>
-                </div>
-                <p className="dashboard-quick-action-description">
-                  Browse teachers and book slots
-                </p>
-              </Link>
-
-              <Link
-                to="/courses"
-                className="dashboard-quick-action-card dashboard-quick-action-card--purple"
-              >
-                <div className="dashboard-quick-action-header">
-                  <div className="dashboard-quick-action-icon-wrapper dashboard-quick-action-icon-wrapper--purple">
-                    <Video className="dashboard-quick-action-icon dashboard-quick-action-icon--purple" />
-                  </div>
-                  <div className="dashboard-quick-action-text">
-                    <h4 className="dashboard-quick-action-title">My Lessons</h4>
-                    <p className="dashboard-quick-action-subtitle">View enrolled lessons</p>
-                  </div>
-                </div>
-                <p className="dashboard-quick-action-description">
-                  Access your learning materials
-                </p>
-              </Link>
-
-              <Link
-                to="/calendar"
-                className="dashboard-quick-action-card dashboard-quick-action-card--light-purple"
-              >
-                <div className="dashboard-quick-action-header">
-                  <div className="dashboard-quick-action-icon-wrapper dashboard-quick-action-icon-wrapper--light-purple">
-                    <Calendar className="dashboard-quick-action-icon dashboard-quick-action-icon--light-purple" />
-                  </div>
-                  <div className="dashboard-quick-action-text">
-                    <h4 className="dashboard-quick-action-title">My Schedule</h4>
-                    <p className="dashboard-quick-action-subtitle">View calendar</p>
-                  </div>
-                </div>
-                <p className="dashboard-quick-action-description">
-                  See all your lessons
-                </p>
-              </Link>
-            </>
-          )}
-        </div>
-      </div>
-
-      {/* Stats Grid */}
-      {isTeacher && (
-        <div className="dashboard-stats-grid">
-          <div className="dashboard-stat-card">
-            <div className="dashboard-stat-header">
-              <span className="dashboard-stat-label">Total Lessons</span>
-              <div className="dashboard-stat-icon-wrapper dashboard-stat-icon-wrapper--teal">
-                <Video className="dashboard-stat-icon dashboard-stat-icon--teal" />
-              </div>
-            </div>
-            <p className="dashboard-stat-value">{stats.totalLessons}</p>
-          </div>
-          <div className="dashboard-stat-card">
-            <div className="dashboard-stat-header">
-              <span className="dashboard-stat-label">Total Students</span>
-              <div className="dashboard-stat-icon-wrapper dashboard-stat-icon-wrapper--purple">
-                <Users className="dashboard-stat-icon dashboard-stat-icon--purple" />
-              </div>
-            </div>
-            <p className="dashboard-stat-value">{stats.totalStudents}</p>
-          </div>
-          <div className="dashboard-stat-card">
-            <div className="dashboard-stat-header">
-              <span className="dashboard-stat-label">Today's Lessons</span>
-              <div className="dashboard-stat-icon-wrapper dashboard-stat-icon-wrapper--light-purple">
-                <Clock className="dashboard-stat-icon dashboard-stat-icon--light-purple" />
-              </div>
-            </div>
-            <p className="dashboard-stat-value">{stats.upcomingToday}</p>
-          </div>
-          <div className="dashboard-stat-card">
-            <div className="dashboard-stat-header">
-              <span className="dashboard-stat-label">Enrollments</span>
-              <div className="dashboard-stat-icon-wrapper dashboard-stat-icon-wrapper--purple">
-                <Users className="dashboard-stat-icon dashboard-stat-icon--purple" />
-              </div>
-            </div>
-            <p className="dashboard-stat-value">{stats.enrollments}</p>
-          </div>
-          <div className="dashboard-stat-card">
-            <div className="dashboard-stat-header">
-              <span className="dashboard-stat-label">Completion Rate</span>
-              <div className="dashboard-stat-icon-wrapper dashboard-stat-icon-wrapper--teal">
-                <TrendingUp className="dashboard-stat-icon dashboard-stat-icon--teal" />
-              </div>
-            </div>
-            <p className="dashboard-stat-value">{Math.round(stats.completionRate)}%</p>
-          </div>
-          <div className="dashboard-stat-card">
-            <div className="dashboard-stat-header">
-              <span className="dashboard-stat-label">Monthly Revenue</span>
-              <div className="dashboard-stat-icon-wrapper dashboard-stat-icon-wrapper--teal">
-                <DollarSign className="dashboard-stat-icon dashboard-stat-icon--teal" />
-              </div>
-            </div>
-            <p className="dashboard-stat-value">${stats.revenue.toLocaleString()}</p>
-          </div>
-        </div>
-      )}
-
-      {/* Upcoming Events & Deadlines */}
-      {(upcomingEvents.length > 0 || upcomingDeadlines.length > 0) && (
-        <div className="dashboard-events-section">
-          {upcomingEvents.length > 0 && (
-            <div className="dashboard-events-card">
-              <div className="dashboard-events-header">
-                <h3 className="dashboard-events-title">Upcoming Events</h3>
-                <Link to="/calendar" className="dashboard-events-link">
-                  <span>View All</span>
-                  <ArrowRight className="dashboard-events-link-icon" />
-                </Link>
-              </div>
-              <div className="dashboard-events-list">
-                {upcomingEvents.slice(0, 5).map((event) => (
-                  <div 
-                    key={event.id} 
-                    className="dashboard-event-item"
-                    onClick={() => navigate('/calendar')}
-                  >
-                    <div className="dashboard-event-icon-wrapper">
-                      <Calendar className="dashboard-event-icon" />
-                    </div>
-                    <div className="dashboard-event-content">
-                      <h4 className="dashboard-event-title">{event.title}</h4>
-                      <p className="dashboard-event-meta">
-                        {event.startTime && formatTime(event.startTime)}
-                        {event.endTime && ` - ${formatTime(event.endTime)}`}
+            <div className="mt-5 grid gap-3">
+              {todaySchedule.length > 0 ? (
+                todaySchedule.map((lesson) => (
+                  <div key={lesson.id} className="flex flex-col gap-4 rounded-[24px] border border-[color:var(--hub-border)] p-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <p className="text-sm font-semibold text-[color:var(--hub-text)]">{lesson.title}</p>
+                      <p className="mt-1 text-sm text-[color:var(--hub-muted)]">{lesson.className}</p>
+                      <p className="mt-2 text-xs font-medium uppercase tracking-[0.16em] text-[color:var(--hub-muted)]">
+                        {formatHubDateTime(lesson.scheduledAt)} • {lesson.durationMinutes} min • {lesson.studentCount} students
                       </p>
                     </div>
+                    <Link to={`/class/${lesson.classId}/live/${lesson.id}`} className="inline-flex items-center gap-2 rounded-full bg-[color:var(--hub-primary)] px-4 py-2.5 text-sm font-semibold text-white">
+                      <Video className="h-4 w-4" />
+                      {isStudent ? 'Open class' : 'Join'}
+                    </Link>
+                  </div>
+                ))
+              ) : (
+                <div className="rounded-[24px] bg-[color:var(--hub-soft)] p-5 text-sm text-[color:var(--hub-muted)]">
+                  {isStudent
+                    ? 'No classes today.'
+                    : 'No lessons today. Use this time for planning and feedback.'}
+                </div>
+              )}
+            </div>
+          </section>
+
+          <section className="rounded-[32px] border border-[color:var(--hub-border)] bg-white p-6 shadow-[0_18px_48px_rgba(15,23,42,0.05)]">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[color:var(--hub-primary)]">Recent Activity</p>
+                <h3 className="mt-2 text-2xl font-semibold text-[color:var(--hub-text)]">
+                  {isStudent ? 'Recent class updates' : 'Recent class activity'}
+                </h3>
+              </div>
+              <CheckCheck className="h-5 w-5 text-[color:var(--hub-primary)]" />
+            </div>
+            <div className="mt-5 grid gap-3">
+              {activity.map((item) => (
+                <div key={item.id} className="rounded-[22px] border border-[color:var(--hub-border)] p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-sm font-semibold text-[color:var(--hub-text)]">{item.title}</p>
+                    <span className="text-xs font-medium uppercase tracking-[0.16em] text-[color:var(--hub-muted)]">{item.className}</span>
+                  </div>
+                  <p className="mt-2 text-sm text-[color:var(--hub-muted)]">{item.detail}</p>
+                  <p className="mt-3 text-xs font-medium uppercase tracking-[0.16em] text-[color:var(--hub-muted)]">{formatHubDateTime(item.timestamp)}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+        </div>
+
+        <div className="space-y-6">
+          {isStudent ? (
+            <section className="rounded-[32px] border border-[color:var(--hub-border)] bg-white p-6 shadow-[0_18px_48px_rgba(15,23,42,0.05)]">
+              <div className="flex items-center gap-2 text-[color:var(--hub-primary)]">
+                <Sparkles className="h-5 w-5" />
+                <p className="text-sm font-semibold uppercase tracking-[0.18em]">Study assist</p>
+              </div>
+              <div className="mt-4 grid gap-3">
+                {!aiHelperEnabled ? (
+                  <div className="rounded-[22px] bg-[color:var(--hub-soft)] p-4 text-sm text-[color:var(--hub-muted)]">
+                    Study assist is off. Turn it on in settings.
+                  </div>
+                ) : null}
+                {aiError ? (
+                  <div className="rounded-[22px] border border-[rgba(200,95,73,0.24)] bg-[rgba(200,95,73,0.08)] p-4 text-sm text-[color:var(--edu-danger)]">
+                    {aiError}
+                  </div>
+                ) : null}
+                {aiLoading ? (
+                  <div className="rounded-[22px] bg-[color:var(--hub-soft)] p-4 text-sm text-[color:var(--hub-muted)]">
+                    Refreshing insights...
+                  </div>
+                ) : null}
+                {(aiHelperEnabled && aiInsights.length > 0 ? aiInsights.map((item) => item.text) : fallbackAiSuggestions).map((item) => (
+                  <div key={item} className="rounded-[22px] bg-[color:var(--hub-soft)] p-4 text-sm text-[color:var(--hub-text)]">
+                    {item}
                   </div>
                 ))}
               </div>
-            </div>
-          )}
-
-          {upcomingDeadlines.length > 0 && (
-            <div className="dashboard-events-card">
-              <div className="dashboard-events-header">
-                <h3 className="dashboard-events-title">Upcoming Deadlines</h3>
-                <Link to="/calendar" className="dashboard-events-link">
-                  <span>View All</span>
-                  <ArrowRight className="dashboard-events-link-icon" />
-                </Link>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAiLoading(true);
+                    setAiError('');
+                    void fetchAiInsights()
+                      .then((insights) => setAiInsights(insights))
+                      .catch((error) => setAiError(error instanceof Error ? error.message : 'Could not refresh insights.'))
+                      .finally(() => setAiLoading(false));
+                  }}
+                  className="rounded-full border border-[color:var(--hub-border)] px-3 py-1.5 text-xs font-semibold text-[color:var(--hub-text)]"
+                  disabled={!aiHelperEnabled || aiLoading}
+                >
+                  Refresh
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const classId = classes[0]?.id;
+                    setAiLoading(true);
+                    setAiError('');
+                    void fetchAiSummary(classId)
+                      .then((result) => {
+                        setAiSummary(result.summary);
+                        setAiSummaryBullets(result.bullets);
+                      })
+                      .catch((error) => setAiError(error instanceof Error ? error.message : 'Could not generate summary.'))
+                      .finally(() => setAiLoading(false));
+                  }}
+                  className="rounded-full border border-[color:var(--hub-border)] px-3 py-1.5 text-xs font-semibold text-[color:var(--hub-text)]"
+                  disabled={!aiHelperEnabled || aiLoading}
+                >
+                  Class summary
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const classId = classes[0]?.id;
+                    const prompt = 'How can I improve my progress this week?';
+                    setAiLoading(true);
+                    setAiError('');
+                    void askAiTutor(prompt, classId)
+                      .then((result) => {
+                        setAiTutorReply(result.answer);
+                        setAiTutorTips(result.tips);
+                      })
+                      .catch((error) => setAiError(error instanceof Error ? error.message : 'Could not generate coaching tips.'))
+                      .finally(() => setAiLoading(false));
+                  }}
+                  className="rounded-full border border-[color:var(--hub-border)] px-3 py-1.5 text-xs font-semibold text-[color:var(--hub-text)]"
+                  disabled={!aiHelperEnabled || aiLoading}
+                >
+                  Coach me
+                </button>
               </div>
-              <div className="dashboard-events-list">
-                {upcomingDeadlines.slice(0, 5).map((deadline) => {
-                  const dueDate = new Date(deadline.endTime || '');
-                  const daysUntil = Math.ceil((dueDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
-                  
-                  return (
-                    <div 
-                      key={deadline.id} 
-                      className="dashboard-event-item dashboard-event-item--deadline"
-                      onClick={() => {
-                        if (deadline.type === 'assignment') {
-                          navigate(`/assignments/${deadline.id}`);
-                        } else if (deadline.type === 'quiz') {
-                          navigate(`/quiz/${deadline.id}`);
-                        } else {
-                          navigate('/calendar');
-                        }
-                      }}
-                    >
-                      <div className={`dashboard-event-icon-wrapper dashboard-event-icon-wrapper--${daysUntil <= 3 ? 'urgent' : 'normal'}`}>
-                        <Clock className="dashboard-event-icon" />
-                      </div>
-                      <div className="dashboard-event-content">
-                        <h4 className="dashboard-event-title">{deadline.title}</h4>
-                        <p className="dashboard-event-meta">
-                          Due: {dueDate.toLocaleDateString()} ({daysUntil} {daysUntil === 1 ? 'day' : 'days'} left)
-                        </p>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Upcoming Lessons */}
-      <div className="dashboard-upcoming">
-        <div className="dashboard-upcoming-header">
-          <h3 className="dashboard-upcoming-title">
-            {isTeacher ? 'Upcoming Lessons' : 'My Upcoming Lessons'}
-          </h3>
-          <Link to="/calendar" className="dashboard-upcoming-link">
-            <span>View All</span>
-            <ArrowRight className="dashboard-upcoming-link-icon" />
-          </Link>
-        </div>
-        {upcomingLessons.length === 0 ? (
-          <div className="dashboard-empty-state">
-            <div className="dashboard-empty-state-icon-wrapper">
-              <Calendar className="dashboard-empty-state-icon" />
-            </div>
-            <h4 className="dashboard-empty-state-title">
-              No upcoming lessons
-            </h4>
-            <p className="dashboard-empty-state-text">
-              {isTeacher 
-                ? 'Create your first lesson to get started'
-                : 'Book a lesson to start learning'
-              }
-            </p>
-            {isTeacher ? (
-              <button
-                onClick={() => navigate('/lessons/create')}
-                className="dashboard-empty-state-button"
-              >
-                Create Lesson
-              </button>
-            ) : (
-              <Link to="/lessons/book" className="dashboard-empty-state-button">
-                Book a Lesson
-              </Link>
-            )}
-          </div>
-        ) : (
-          <div className="dashboard-lessons-list">
-            {upcomingLessons.map((lesson) => (
-              <div key={lesson.id} className="dashboard-lesson-card">
-                <div className="dashboard-lesson-content">
-                  <div className="dashboard-lesson-info">
-                    <div className="dashboard-lesson-header">
-                      <h4 className="dashboard-lesson-title">
-                        {lesson.title}
-                      </h4>
-                      {lesson.type === 'live' && (
-                        <span className="dashboard-lesson-badge">
-                          Live
-                        </span>
-                      )}
-                    </div>
-                    <div className="dashboard-lesson-meta">
-                      <div className="dashboard-lesson-meta-item">
-                        <Clock className="dashboard-lesson-meta-icon" />
-                        <span>{formatTime(lesson.scheduledAt)} • {lesson.duration} min</span>
-                      </div>
-                      {isTeacher ? (
-                        <div className="dashboard-lesson-meta-item">
-                          <Users className="dashboard-lesson-meta-icon" />
-                          <span>{lesson.studentCount} {lesson.studentCount === 1 ? 'student' : 'students'}</span>
-                        </div>
-                      ) : (
-                        <span>with {lesson.teacherName}</span>
-                      )}
-                    </div>
-                  </div>
-                  <div className="dashboard-lesson-actions">
-                    {lesson.joinLink && (
-                      <button
-                        onClick={() => window.open(lesson.joinLink, '_blank')}
-                        className="dashboard-button-small dashboard-button-small-primary"
-                      >
-                        <Video className="dashboard-button-small-icon" />
-                        <span>Join</span>
-                      </button>
-                    )}
-                    <Link
-                      to={`/lessons/${lesson.id}`}
-                      className="dashboard-button-small dashboard-button-small-secondary"
-                    >
-                      Details
-                    </Link>
+              {aiSummary ? (
+                <div className="mt-4 rounded-[22px] border border-[color:var(--hub-border)] p-4">
+                  <p className="text-sm font-semibold text-[color:var(--hub-text)]">{aiSummary}</p>
+                  <div className="mt-2 grid gap-1">
+                    {aiSummaryBullets.map((item) => (
+                      <p key={item} className="text-sm text-[color:var(--hub-muted)]">{item}</p>
+                    ))}
                   </div>
                 </div>
+              ) : null}
+              {aiTutorReply ? (
+                <div className="mt-4 rounded-[22px] border border-[color:var(--hub-border)] p-4">
+                  <p className="text-sm font-semibold text-[color:var(--hub-text)]">{aiTutorReply}</p>
+                  <div className="mt-2 grid gap-1">
+                    {aiTutorTips.map((tip) => (
+                      <p key={tip} className="text-sm text-[color:var(--hub-muted)]">{tip}</p>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+            </section>
+          ) : null}
+
+          <section className="rounded-[32px] border border-[color:var(--hub-border)] bg-white p-6 shadow-[0_18px_48px_rgba(15,23,42,0.05)]">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[color:var(--hub-primary)]">
+                  {isStudent ? 'My classes' : 'Active classes'}
+                </p>
+                <p className="mt-2 text-xl font-semibold text-[color:var(--hub-text)]">
+                  {isStudent ? 'Where you are learning now' : 'Your current teaching load'}
+                </p>
               </div>
-            ))}
-          </div>
-        )}
-      </div>
+              <Link to="/classes" className="text-sm font-semibold text-[color:var(--hub-primary)]">
+                Open classes
+              </Link>
+            </div>
+            <div className="mt-4 grid gap-3">
+              {classes.length === 0 ? (
+                <div className="rounded-[22px] bg-[color:var(--hub-soft)] p-4 text-sm text-[color:var(--hub-muted)]">
+                  {isStudent ? 'You are not enrolled in any classes yet.' : 'No classes yet. Create your first class to start.'}
+                </div>
+              ) : classes.map((teacherClass) => (
+                <Link key={teacherClass.id} to={`/class/${teacherClass.id}`} className="rounded-[22px] border border-[color:var(--hub-border)] p-4 transition hover:bg-[color:var(--hub-soft)]">
+                  <p className="text-sm font-semibold text-[color:var(--hub-text)]">{teacherClass.name}</p>
+                  <p className="mt-1 text-sm text-[color:var(--hub-muted)]">{teacherClass.studentCount} students</p>
+                  <p className="mt-2 text-xs font-medium uppercase tracking-[0.16em] text-[color:var(--hub-muted)]">
+                    Next session {formatHubDateTime(teacherClass.nextSessionAt)}
+                  </p>
+                </Link>
+              ))}
+            </div>
+          </section>
+        </div>
+      </section>
     </div>
   );
 };

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { createContext, useCallback, useContext, useMemo, useState, useEffect } from 'react';
 import { X, Bell, CheckCircle, AlertCircle, Info } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
@@ -70,10 +70,12 @@ export const NotificationToast: React.FC<NotificationToastProps> = ({
   return (
     <div
       className={cn(
-        "fixed top-4 right-4 w-80 max-w-sm bg-white rounded-lg shadow-lg border p-4 z-50 transform transition-all duration-300",
+        'w-80 max-w-sm rounded-lg border bg-white p-4 shadow-lg transform transition-all duration-300',
         isVisible ? "translate-x-0 opacity-100" : "translate-x-full opacity-0",
         getStyles()
       )}
+      role="status"
+      aria-live="polite"
     >
       <div className="flex items-start space-x-3">
         <div className="flex-shrink-0">
@@ -104,29 +106,42 @@ interface NotificationManagerProps {
   children: React.ReactNode;
 }
 
+interface NotificationsContextValue {
+  addNotification: (notification: Omit<Notification, 'id'>) => void;
+}
+
+const NotificationsContext = createContext<NotificationsContextValue | null>(null);
+
+export const useNotifications = (): NotificationsContextValue => {
+  const context = useContext(NotificationsContext);
+  if (!context) {
+    throw new Error('useNotifications must be used within NotificationManager');
+  }
+  return context;
+};
+
 export const NotificationManager: React.FC<NotificationManagerProps> = ({ children }) => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
-  const addNotification = (notification: Omit<Notification, 'id'>) => {
-    const id = Date.now().toString();
+  const addNotification = useCallback((notification: Omit<Notification, 'id'>) => {
+    const id = typeof crypto !== 'undefined' && 'randomUUID' in crypto
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
     const newNotification = { ...notification, id };
     setNotifications(prev => [...prev, newNotification]);
-  };
-
-  const removeNotification = (id: string) => {
-    setNotifications(prev => prev.filter(n => n.id !== id));
-  };
-
-  // Expose addNotification globally
-  React.useEffect(() => {
-    (window as any).addNotification = addNotification;
-    return () => {
-      delete (window as any).addNotification;
-    };
   }, []);
 
+  const removeNotification = useCallback((id: string) => {
+    setNotifications(prev => prev.filter(n => n.id !== id));
+  }, []);
+
+  const contextValue = useMemo<NotificationsContextValue>(
+    () => ({ addNotification }),
+    [addNotification]
+  );
+
   return (
-    <>
+    <NotificationsContext.Provider value={contextValue}>
       {children}
       <div className="fixed top-4 right-4 z-50 space-y-2">
         {notifications.map(notification => (
@@ -137,6 +152,6 @@ export const NotificationManager: React.FC<NotificationManagerProps> = ({ childr
           />
         ))}
       </div>
-    </>
+    </NotificationsContext.Provider>
   );
-}; 
+};

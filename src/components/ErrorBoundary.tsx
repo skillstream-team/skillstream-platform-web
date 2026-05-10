@@ -1,6 +1,6 @@
-import React, { Component, ErrorInfo, ReactNode } from 'react';
+import { Component, ErrorInfo, ReactNode } from 'react';
 import { AlertCircle, RefreshCw, Home } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { reportError } from '../lib/errorReporting';
 
 interface Props {
   children: ReactNode;
@@ -32,11 +32,7 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    // Log error to error reporting service
-    console.error('Error caught by boundary:', error, errorInfo);
-    
-    // TODO: Send to error tracking service (e.g., Sentry)
-    // Sentry.captureException(error, { contexts: { react: errorInfo } });
+    reportError(error, { componentStack: errorInfo.componentStack || undefined });
     
     this.setState({
       error,
@@ -59,27 +55,27 @@ export class ErrorBoundary extends Component<Props, State> {
       }
 
       return (
-        <div className="min-h-screen bg-white dark:bg-gray-900 flex items-center justify-center p-4">
+        <div className="min-h-screen flex items-center justify-center bg-[color:var(--hub-bg)] p-4">
           <div className="max-w-md w-full text-center">
             <div className="mb-6">
-              <div className="w-16 h-16 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                <AlertCircle className="h-8 w-8 text-red-600 dark:text-red-400" />
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[rgba(200,95,73,0.12)]">
+                <AlertCircle className="h-8 w-8 text-[color:var(--edu-danger)]" />
               </div>
-              <h1 className="text-2xl font-semibold text-gray-900 dark:text-white mb-2">
+              <h1 className="mb-2 text-2xl font-semibold text-[color:var(--hub-text)]">
                 Something went wrong
               </h1>
-              <p className="text-gray-600 dark:text-gray-400 mb-4">
+              <p className="mb-4 text-[color:var(--hub-muted)]">
                 We're sorry, but something unexpected happened. Please try refreshing the page.
               </p>
             </div>
 
             {process.env.NODE_ENV === 'development' && this.state.error && (
-              <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-left">
-                <p className="text-sm font-mono text-red-600 dark:text-red-400 mb-2">
+              <div className="mb-6 border border-[color:var(--hub-border)] bg-white p-4 text-left">
+                <p className="mb-2 text-sm font-mono text-[color:var(--edu-danger)]">
                   {this.state.error.toString()}
                 </p>
                 {this.state.errorInfo && (
-                  <pre className="text-xs text-gray-600 dark:text-gray-400 overflow-auto max-h-40">
+                  <pre className="max-h-40 overflow-auto text-xs text-[color:var(--hub-muted)]">
                     {this.state.errorInfo.componentStack}
                   </pre>
                 )}
@@ -88,19 +84,28 @@ export class ErrorBoundary extends Component<Props, State> {
 
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <button
-                onClick={this.handleReset}
-                className="flex items-center justify-center px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 transition-colors font-medium"
+                onClick={() => {
+                  this.handleReset();
+                  if (typeof window !== 'undefined') {
+                    window.location.reload();
+                  }
+                }}
+                className="flex items-center justify-center rounded-full bg-[color:var(--hub-primary)] px-4 py-2.5 font-medium text-white transition-colors hover:opacity-95"
               >
                 <RefreshCw className="h-4 w-4 mr-2" />
                 Try Again
               </button>
-              <Link
-                to="/dashboard"
-                className="flex items-center justify-center px-4 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium"
+              <button
+                onClick={() => {
+                  if (typeof window !== 'undefined') {
+                    window.location.assign('/dashboard');
+                  }
+                }}
+                className="flex items-center justify-center rounded-full border border-[color:var(--hub-border)] bg-white px-4 py-2.5 font-medium text-[color:var(--hub-text)] transition-colors hover:bg-[color:var(--hub-soft)]"
               >
                 <Home className="h-4 w-4 mr-2" />
                 Go Home
-              </Link>
+              </button>
             </div>
           </div>
         </div>
@@ -110,4 +115,3 @@ export class ErrorBoundary extends Component<Props, State> {
     return this.props.children;
   }
 }
-

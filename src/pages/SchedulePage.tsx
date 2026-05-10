@@ -1,596 +1,380 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { 
-  Calendar, 
-  Clock, 
-  Video, 
-  Users,
-  Plus,
-  ChevronLeft,
-  ChevronRight,
-  Download,
-  Bell,
-  AlertCircle
-} from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import { CalendarRange, ChevronLeft, ChevronRight, Clock3, Download } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { ActionModal } from '../components/common/ActionModal';
+import { useNotifications } from '../components/notifications/NotificationToast';
+import { downloadIcal } from '../lib/ical';
+import { formatHubDateTime, toDateTimeLocalMin } from '../lib/utils';
 import { useAuthStore } from '../store/auth';
-import { getMyCalendarEvents } from '../services/api';
-import { BottomSheet } from '../components/mobile/BottomSheet';
-import { SwipeableTabs } from '../components/mobile/SwipeableTabs';
-
-interface ScheduleEvent {
-  id: string;
-  title: string;
-  startTime: string;
-  endTime: string;
-  type: 'live_class' | 'deadline' | 'assignment_due' | 'quiz_due' | 'custom';
-  description?: string;
-  location?: string;
-  joinLink?: string;
-}
+import { useSessionUiStore } from '../store/sessionUi';
+import { useTeacherHubStore } from '../store/teacherHub';
 
 export const SchedulePage: React.FC = () => {
-  const { user } = useAuthStore();
-  const [events, setEvents] = useState<ScheduleEvent[]>([]);
-  const [currentDate, setCurrentDate] = useState(new Date());
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [viewMode, setViewMode] = useState<'month' | 'week' | 'list'>('list');
-  const [showAddEvent, setShowAddEvent] = useState(false);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    loadEvents();
-  }, []);
-
-  const loadEvents = async () => {
-    try {
-      setLoading(true);
-      const data = await getMyCalendarEvents({});
-      setEvents(data);
-    } catch (error) {
-      console.error('Error loading events:', error);
-      setEvents([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const getDaysInMonth = (date: Date) => {
-    const year = date.getFullYear();
-    const month = date.getMonth();
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
-    const daysInMonth = lastDay.getDate();
-    const startingDayOfWeek = firstDay.getDay();
-    
-    const days = [];
-    // Add empty cells for days before the first day of the month
-    for (let i = 0; i < startingDayOfWeek; i++) {
-      days.push(null);
-    }
-    // Add days of the month
-    for (let i = 1; i <= daysInMonth; i++) {
-      days.push(new Date(year, month, i));
-    }
-    return days;
-  };
-
-  const getEventsForDate = (date: Date | null) => {
-    if (!date) return [];
-    return events.filter(event => {
-      const eventDate = new Date(event.startTime);
-      return eventDate.toDateString() === date.toDateString();
-    });
-  };
-
-  const getUpcomingEvents = () => {
+  const user = useAuthStore((state) => state.user);
+  const isStudent = user?.role === 'STUDENT';
+  const navigate = useNavigate();
+  const allClasses = useTeacherHubStore((state) => state.classes);
+  const students = useTeacherHubStore((state) => state.students);
+  const currentStudent = students.find((entry) => entry.email.toLowerCase() === (user?.email || '').toLowerCase());
+  const classes = useMemo(
+    () => (isStudent
+      ? currentStudent
+        ? allClasses.filter((entry) => entry.students.some((student) => student.id === currentStudent.id))
+        : []
+      : allClasses),
+    [allClasses, currentStudent, isStudent]
+  );
+  const scheduleLesson = useTeacherHubStore((state) => state.scheduleLesson);
+  const scheduleLessonSeries = useTeacherHubStore((state) => state.scheduleLessonSeries);
+  const rescheduleLesson = useTeacherHubStore((state) => state.rescheduleLesson);
+  const cancelLesson = useTeacherHubStore((state) => state.cancelLesson);
+  const { addNotification } = useNotifications();
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const selectedClassId = useSessionUiStore((state) => state.scheduleSelectedClassId);
+  const setSelectedClassId = useSessionUiStore((state) => state.setScheduleSelectedClassId);
+  const [lessonTitle, setLessonTitle] = useState('');
+  const [lessonDate, setLessonDate] = useState('');
+  const [lessonRepeatWeekly, setLessonRepeatWeekly] = useState(false);
+  const [lessonRepeatCount, setLessonRepeatCount] = useState(1);
+  const [scheduleError, setScheduleError] = useState('');
+  const [isScheduling, setIsScheduling] = useState(false);
+  const [rescheduleTarget, setRescheduleTarget] = useState<{ classId: string; lessonId: string } | null>(null);
+  const [rescheduleDate, setRescheduleDate] = useState('');
+  const [rescheduleError, setRescheduleError] = useState('');
+  const [isRescheduling, setIsRescheduling] = useState(false);
+  const [calendarCursor, setCalendarCursor] = useState(() => {
     const now = new Date();
-    return events
-      .filter(event => new Date(event.startTime) > now)
-      .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())
-      .slice(0, 10);
-  };
-
-  const formatTime = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-  };
-
-  const getTimeUntil = (dateString: string) => {
-    const now = new Date();
-    const eventDate = new Date(dateString);
-    const diff = eventDate.getTime() - now.getTime();
-    const hours = Math.floor(diff / (1000 * 60 * 60));
-    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-    
-    if (hours > 24) {
-      const days = Math.floor(hours / 24);
-      return `${days}d ${hours % 24}h`;
-    } else if (hours > 0) {
-      return `${hours}h ${minutes}m`;
-    } else if (minutes > 0) {
-      return `${minutes}m`;
-    } else {
-      return 'Now';
-    }
-  };
-
-  const getEventTypeColor = (type: string) => {
-    const colors: Record<string, string> = {
-      'live_class': '#00B5AD',
-      'deadline': '#6F73D2',
-      'assignment_due': '#9A8CFF',
-      'quiz_due': '#F59E0B',
-      'custom': '#6F73D2'
-    };
-    return colors[type] || '#6F73D2';
-  };
-
-  const getEventTypeIcon = (type: string) => {
-    switch (type) {
-      case 'live_class':
-        return Video;
-      case 'deadline':
-      case 'assignment_due':
-        return AlertCircle;
-      case 'quiz_due':
-        return Calendar;
-      default:
-        return Clock;
-    }
-  };
-
-  const navigateMonth = (direction: 'prev' | 'next') => {
-    setCurrentDate(prev => {
-      const newDate = new Date(prev);
-      newDate.setMonth(prev.getMonth() + (direction === 'next' ? 1 : -1));
-      return newDate;
-    });
-  };
-
-  const upcomingEvents = getUpcomingEvents();
-  const days = getDaysInMonth(currentDate);
-  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#F4F7FA' }}>
-        <div 
-          className="animate-spin rounded-full h-12 w-12 border-4 border-t-transparent"
-          style={{ borderColor: '#00B5AD' }}
-        ></div>
-      </div>
-    );
-  }
+    return new Date(now.getFullYear(), now.getMonth(), 1);
+  });
+  const calendarYear = calendarCursor.getFullYear();
+  const calendarMonth = calendarCursor.getMonth();
+  const firstDay = new Date(calendarYear, calendarMonth, 1);
+  const daysInMonth = new Date(calendarYear, calendarMonth + 1, 0).getDate();
+  const mondayIndex = (firstDay.getDay() + 6) % 7;
+  const trailingDays = (7 - ((mondayIndex + daysInMonth) % 7 || 7)) % 7;
+  const calendarCells: Array<number | null> = [
+    ...Array.from({ length: mondayIndex }).map(() => null),
+    ...Array.from({ length: daysInMonth }).map((_, index) => index + 1),
+    ...Array.from({ length: trailingDays }).map(() => null),
+  ];
+  const lessons = useMemo(
+    () =>
+      classes
+        .flatMap((entry) => entry.lessons)
+        .filter((lesson) => lesson.status !== 'completed' && lesson.status !== 'cancelled')
+        .sort((a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime()),
+    [classes]
+  );
+  const visibleLessons = useMemo(
+    () =>
+      lessons.filter((lesson) => {
+        const lessonDate = new Date(lesson.scheduledAt);
+        return lessonDate.getFullYear() === calendarYear && lessonDate.getMonth() === calendarMonth;
+      }),
+    [calendarMonth, calendarYear, lessons]
+  );
+  const calendarTitle = new Intl.DateTimeFormat('en-GB', { month: 'long', year: 'numeric' }).format(calendarCursor);
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#F4F7FA' }}>
-      {/* Header */}
-      <div className="mb-6 lg:mb-8">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h1 className="text-2xl lg:text-3xl font-bold mb-2" style={{ color: '#0B1E3F' }}>
-              Schedule
-            </h1>
-            <p className="text-base" style={{ color: '#6F73D2' }}>
-              Manage your upcoming sessions and deadlines
-            </p>
-          </div>
-          <button
-            onClick={() => setShowAddEvent(true)}
-            className="px-4 lg:px-6 py-3 rounded-xl font-semibold text-white transition-all duration-300 active:scale-95"
-            style={{ 
-              backgroundColor: '#00B5AD',
-              boxShadow: '0 4px 14px rgba(0, 181, 173, 0.3)'
-            }}
-          >
-            <Plus className="h-5 w-5 inline mr-2" />
-            <span className="hidden sm:inline">Add Event</span>
-          </button>
-        </div>
-
-        {/* View Mode Toggle - Mobile */}
-        <div className="lg:hidden mb-4">
-          <SwipeableTabs
-            tabs={[
-              { id: 'list', label: 'Upcoming', content: null },
-              { id: 'month', label: 'Month', content: null },
-              { id: 'week', label: 'Week', content: null }
-            ]}
-            defaultTab={viewMode}
-            onTabChange={(tab) => setViewMode(tab as 'month' | 'week' | 'list')}
-          />
-        </div>
-
-        {/* View Mode Toggle - Desktop */}
-        <div className="hidden lg:flex space-x-2 mb-6">
-          {[
-            { id: 'list', label: 'Upcoming' },
-            { id: 'month', label: 'Month View' },
-            { id: 'week', label: 'Week View' }
-          ].map((mode) => (
+    <div className="space-y-6">
+      <section className="rounded-[32px] border border-[color:var(--hub-border)] bg-white p-6 shadow-[0_18px_48px_rgba(15,23,42,0.05)] sm:p-8">
+        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[color:var(--hub-primary)]">Schedule</p>
+        <h2 className="mt-2 text-3xl font-semibold tracking-tight text-[color:var(--hub-text)]">
+          {isStudent ? 'Your lesson calendar.' : 'Plan lessons and avoid conflicts quickly.'}
+        </h2>
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <p className="max-w-2xl text-sm text-[color:var(--hub-muted)]">
+            {isStudent
+              ? 'See upcoming sessions and class timings in one place.'
+              : 'Keep upcoming sessions visible and rescheduling simple.'}
+          </p>
+          {lessons.length > 0 ? (
             <button
-              key={mode.id}
-              onClick={() => setViewMode(mode.id as 'month' | 'week' | 'list')}
-              className={`px-6 py-3 rounded-xl font-semibold transition-all duration-200 ${
-                viewMode === mode.id ? 'scale-105' : ''
-              }`}
-              style={{
-                backgroundColor: viewMode === mode.id ? '#00B5AD' : 'rgba(0, 181, 173, 0.1)',
-                color: viewMode === mode.id ? 'white' : '#0B1E3F',
-                boxShadow: viewMode === mode.id ? '0 4px 14px rgba(0, 181, 173, 0.3)' : 'none'
-              }}
+              type="button"
+              onClick={() => downloadIcal('skillstream-lessons.ics', lessons)}
+              className="ml-auto inline-flex shrink-0 items-center gap-2 rounded-full border border-[color:var(--hub-border)] bg-white px-4 py-2.5 text-sm font-semibold text-[color:var(--hub-text)] transition hover:bg-[color:var(--hub-soft)]"
             >
-              {mode.label}
+              <Download className="h-4 w-4" />
+              Export to Calendar
             </button>
-          ))}
+          ) : null}
         </div>
-      </div>
+      </section>
 
-      {/* List View */}
-      {viewMode === 'list' && (
-        <div className="space-y-4">
-          {upcomingEvents.length > 0 ? (
-            upcomingEvents.map((event) => {
-              const Icon = getEventTypeIcon(event.type);
-              const color = getEventTypeColor(event.type);
-              const isUpcoming = new Date(event.startTime) > new Date();
-              const timeUntil = isUpcoming ? getTimeUntil(event.startTime) : null;
-              
-              return (
-                <div
-                  key={event.id}
-                  className="p-5 lg:p-6 rounded-2xl border-2 transition-all duration-200 active:scale-[0.98]"
-                  style={{
-                    backgroundColor: 'white',
-                    borderColor: isUpcoming && timeUntil === 'Now' ? color : '#E5E7EB',
-                    borderLeftWidth: '4px',
-                    borderLeftColor: color
-                  }}
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-3 mb-3">
-                        <div 
-                          className="w-10 h-10 rounded-xl flex items-center justify-center"
-                          style={{ backgroundColor: `${color}15` }}
-                        >
-                          <Icon className="h-5 w-5" style={{ color }} />
-                        </div>
-                        <div className="flex-1">
-                          <h3 className="text-lg font-bold mb-1" style={{ color: '#0B1E3F' }}>
-                            {event.title}
-                          </h3>
-                          <div className="flex flex-wrap items-center gap-3 text-sm" style={{ color: '#6F73D2' }}>
-                            <div className="flex items-center space-x-1">
-                              <Calendar className="h-4 w-4" />
-                              <span>{new Date(event.startTime).toLocaleDateString()}</span>
-                            </div>
-                            <div className="flex items-center space-x-1">
-                              <Clock className="h-4 w-4" />
-                              <span>{formatTime(event.startTime)} - {formatTime(event.endTime)}</span>
-                            </div>
-                            {event.location && (
-                              <div className="flex items-center space-x-1">
-                                <Users className="h-4 w-4" />
-                                <span>{event.location}</span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                      {event.description && (
-                        <p className="text-sm mb-3" style={{ color: '#6F73D2' }}>
-                          {event.description}
-                        </p>
-                      )}
-                      {timeUntil && isUpcoming && (
-                        <div className="flex items-center space-x-2">
-                          <div 
-                            className="px-3 py-1.5 rounded-full text-xs font-bold"
-                            style={{ 
-                              backgroundColor: timeUntil === 'Now' ? `${color}15` : 'rgba(0, 181, 173, 0.1)',
-                              color: timeUntil === 'Now' ? color : '#00B5AD'
-                            }}
-                          >
-                            {timeUntil === 'Now' ? 'Starting Now' : `In ${timeUntil}`}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                    {event.joinLink && (
-                      <a
-                        href={event.joinLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="ml-4 px-5 py-3 rounded-xl font-semibold text-white transition-all duration-300 active:scale-95 flex-shrink-0"
-                        style={{ 
-                          backgroundColor: '#00B5AD',
-                          boxShadow: '0 4px 14px rgba(0, 181, 173, 0.3)'
-                        }}
-                      >
-                        Join
-                      </a>
-                    )}
-                  </div>
-                </div>
-              );
-            })
-          ) : (
-            <div className="text-center py-16 rounded-2xl border-2" style={{ backgroundColor: 'white', borderColor: '#E5E7EB' }}>
-              <Calendar className="h-16 w-16 mx-auto mb-4" style={{ color: '#6F73D2', opacity: 0.5 }} />
-              <p className="text-xl font-bold mb-2" style={{ color: '#0B1E3F' }}>No upcoming sessions</p>
-              <p className="text-sm mb-6" style={{ color: '#6F73D2' }}>Your scheduled sessions will appear here</p>
+      <section className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
+        <div className="rounded-[32px] border border-[color:var(--hub-border)] bg-white p-6 shadow-[0_18px_48px_rgba(15,23,42,0.05)]">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2 text-[color:var(--hub-primary)]">
+              <CalendarRange className="h-5 w-5" />
+              <p className="text-sm font-semibold uppercase tracking-[0.18em]">Calendar</p>
+            </div>
+            {!isStudent ? (
+              <button type="button" onClick={() => setShowScheduleModal(true)} className="rounded-full bg-[color:var(--hub-primary)] px-4 py-2.5 text-sm font-semibold text-white">
+                Schedule lesson
+              </button>
+            ) : null}
+          </div>
+          <div className="mt-5 rounded-[28px] bg-[linear-gradient(180deg,#eff6ff_0%,#ffffff_100%)] p-5">
+            <div className="mb-3 flex items-center justify-between rounded-2xl bg-white px-3 py-2">
               <button
-                onClick={() => setShowAddEvent(true)}
-                className="inline-flex items-center space-x-2 px-6 py-3 rounded-xl font-semibold text-white"
-                style={{ 
-                  backgroundColor: '#00B5AD',
-                  boxShadow: '0 4px 14px rgba(0, 181, 173, 0.3)'
-                }}
+                type="button"
+                onClick={() => setCalendarCursor((current) => new Date(current.getFullYear(), current.getMonth() - 1, 1))}
+                className="rounded-full border border-[color:var(--hub-border)] p-1.5 text-[color:var(--hub-muted)]"
+                aria-label="Previous month"
               >
-                <Plus className="h-5 w-5" />
-                <span>Add Event</span>
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+              <p className="text-sm font-semibold text-[color:var(--hub-text)]">{calendarTitle}</p>
+              <button
+                type="button"
+                onClick={() => setCalendarCursor((current) => new Date(current.getFullYear(), current.getMonth() + 1, 1))}
+                className="rounded-full border border-[color:var(--hub-border)] p-1.5 text-[color:var(--hub-muted)]"
+                aria-label="Next month"
+              >
+                <ChevronRight className="h-4 w-4" />
               </button>
             </div>
-          )}
-        </div>
-      )}
-
-      {/* Month View */}
-      {viewMode === 'month' && (
-        <div 
-          className="rounded-2xl border-2 p-4 lg:p-6"
-          style={{
-            backgroundColor: 'white',
-            borderColor: '#E5E7EB'
-          }}
-        >
-          {/* Calendar Header */}
-          <div className="flex items-center justify-between mb-6">
-            <button
-              onClick={() => navigateMonth('prev')}
-              className="p-2 rounded-xl transition-all duration-200 active:scale-95"
-              style={{ backgroundColor: 'rgba(0, 181, 173, 0.1)' }}
-            >
-              <ChevronLeft className="h-5 w-5" style={{ color: '#00B5AD' }} />
-            </button>
-            <h2 className="text-xl font-bold" style={{ color: '#0B1E3F' }}>
-              {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
-            </h2>
-            <button
-              onClick={() => navigateMonth('next')}
-              className="p-2 rounded-xl transition-all duration-200 active:scale-95"
-              style={{ backgroundColor: 'rgba(0, 181, 173, 0.1)' }}
-            >
-              <ChevronRight className="h-5 w-5" style={{ color: '#00B5AD' }} />
-            </button>
+            <div className="grid grid-cols-7 gap-2 text-center text-xs font-semibold uppercase tracking-[0.16em] text-[color:var(--hub-muted)]">
+              {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => (
+                <div key={day}>{day}</div>
+              ))}
+            </div>
+            <div className="mt-3 grid grid-cols-7 gap-2">
+              {calendarCells.map((day, index) => {
+                const hasLesson = day
+                  ? lessons.some((lesson) => {
+                      const lessonDate = new Date(lesson.scheduledAt);
+                      return (
+                        lessonDate.getFullYear() === calendarYear
+                        && lessonDate.getMonth() === calendarMonth
+                        && lessonDate.getDate() === day
+                      );
+                    })
+                  : false;
+                return (
+                  <div
+                    key={index}
+                    className={`flex aspect-square items-center justify-center rounded-2xl text-sm ${
+                      day
+                        ? hasLesson
+                          ? 'bg-[color:var(--hub-primary)] font-semibold text-white'
+                          : 'bg-white text-[color:var(--hub-muted)]'
+                        : 'bg-transparent'
+                    }`}
+                  >
+                    {day || ''}
+                  </div>
+                );
+              })}
+            </div>
           </div>
+        </div>
 
-          {/* Calendar Grid */}
-          <div className="grid grid-cols-7 gap-2">
-            {/* Day Headers */}
-            {dayNames.map(day => (
-              <div key={day} className="text-center py-2 text-sm font-semibold" style={{ color: '#6F73D2' }}>
-                {day}
+        <div className="rounded-[32px] border border-[color:var(--hub-border)] bg-white p-6 shadow-[0_18px_48px_rgba(15,23,42,0.05)]">
+          <div className="flex items-center gap-2 text-[color:var(--hub-primary)]">
+            <Clock3 className="h-5 w-5" />
+            <p className="text-sm font-semibold uppercase tracking-[0.18em]">Sessions in {calendarTitle}</p>
+          </div>
+          <div className="mt-5 grid gap-3">
+            {visibleLessons.map((lesson) => (
+              <div key={lesson.id} className="rounded-[24px] border border-[color:var(--hub-border)] p-4">
+                <p className="text-sm font-semibold text-[color:var(--hub-text)]">{lesson.title}</p>
+                <p className="mt-1 text-sm text-[color:var(--hub-muted)]">{lesson.className}</p>
+                <p className="mt-3 text-xs font-medium uppercase tracking-[0.16em] text-[color:var(--hub-muted)]">
+                  {formatHubDateTime(lesson.scheduledAt)} • {lesson.durationMinutes} min
+                </p>
+                {lesson.syncStatus === 'pending' ? (
+                  <p className="mt-2 text-xs font-semibold uppercase tracking-[0.14em] text-[color:var(--hub-primary)]">Saving...</p>
+                ) : null}
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/class/${lesson.classId}/live/${lesson.id}`)}
+                    className="rounded-full bg-[color:var(--hub-primary)] px-4 py-2 text-sm font-semibold text-white"
+                  >
+                    {isStudent ? 'Join lesson' : 'Open live room'}
+                  </button>
+                  {!isStudent ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setRescheduleTarget({ classId: lesson.classId, lessonId: lesson.id });
+                          setRescheduleDate(lesson.scheduledAt.slice(0, 16));
+                        }}
+                        className="rounded-full border border-[color:var(--hub-border)] px-4 py-2 text-sm font-semibold"
+                      >
+                        Quick reschedule
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          void (async () => {
+                            try {
+                              await cancelLesson(lesson.classId, lesson.id);
+                              addNotification({
+                                type: 'success',
+                                title: 'Lesson cancelled',
+                                message: 'Removed from upcoming schedule.',
+                                duration: 2200,
+                              });
+                            } catch (error) {
+                              addNotification({
+                                type: 'error',
+                                title: 'Could not cancel',
+                                message: error instanceof Error ? error.message : 'Please try again.',
+                                duration: 2600,
+                              });
+                            }
+                          })();
+                        }}
+                        className="rounded-full border border-[rgba(200,95,73,0.36)] px-4 py-2 text-sm font-semibold text-[color:var(--edu-danger)]"
+                      >
+                        Cancel
+                      </button>
+                    </>
+                  ) : null}
+                </div>
               </div>
             ))}
-            
-            {/* Calendar Days */}
-            {days.map((date, index) => {
-              const dayEvents = getEventsForDate(date);
-              const isToday = date && date.toDateString() === new Date().toDateString();
-              const isSelected = date && date.toDateString() === selectedDate.toDateString();
-              
-              return (
-                <button
-                  key={index}
-                  onClick={() => date && setSelectedDate(date)}
-                  className={`aspect-square p-2 rounded-xl transition-all duration-200 ${
-                    !date ? 'cursor-default' : 'active:scale-95'
-                  }`}
-                  style={{
-                    backgroundColor: isSelected 
-                      ? 'rgba(0, 181, 173, 0.1)' 
-                      : isToday 
-                        ? 'rgba(0, 181, 173, 0.05)' 
-                        : 'transparent',
-                    border: isToday ? '2px solid #00B5AD' : '2px solid transparent'
-                  }}
-                >
-                  {date && (
-                    <>
-                      <div 
-                        className={`text-sm font-semibold mb-1 ${
-                          isSelected || isToday ? '' : ''
-                        }`}
-                        style={{ 
-                          color: isSelected || isToday ? '#00B5AD' : '#0B1E3F'
-                        }}
-                      >
-                        {date.getDate()}
-                      </div>
-                      {dayEvents.length > 0 && (
-                        <div className="space-y-1">
-                          {dayEvents.slice(0, 2).map(event => (
-                            <div
-                              key={event.id}
-                              className="h-1 rounded-full"
-                              style={{ backgroundColor: getEventTypeColor(event.type) }}
-                            />
-                          ))}
-                          {dayEvents.length > 2 && (
-                            <div className="text-xs font-bold" style={{ color: '#6F73D2' }}>
-                              +{dayEvents.length - 2}
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </>
-                  )}
-                </button>
-              );
-            })}
+            {visibleLessons.length === 0 ? (
+              <div className="rounded-[24px] bg-[color:var(--hub-soft)] p-4 text-sm text-[color:var(--hub-muted)]">
+                No sessions in this month.
+              </div>
+            ) : null}
           </div>
         </div>
-      )}
+      </section>
 
-      {/* Week View - Simplified */}
-      {viewMode === 'week' && (
-        <div 
-          className="rounded-2xl border-2 p-4 lg:p-6"
-          style={{
-            backgroundColor: 'white',
-            borderColor: '#E5E7EB'
+      <ActionModal isOpen={showScheduleModal && !isStudent} title="Schedule lesson" description="Add a lesson to a class and place it on the calendar." onClose={() => setShowScheduleModal(false)}>
+        <form
+          className="grid gap-4"
+          onSubmit={async (event) => {
+            event.preventDefault();
+            if (!selectedClassId || !lessonTitle.trim() || !lessonDate) {
+              setScheduleError('Class, title, and date/time are required.');
+              return;
+            }
+            const lessonTime = new Date(lessonDate).getTime();
+            if (!Number.isFinite(lessonTime) || lessonTime <= Date.now()) {
+              setScheduleError('Lesson date/time must be in the future.');
+              return;
+            }
+            try {
+              setIsScheduling(true);
+              setScheduleError('');
+              if (lessonRepeatWeekly && lessonRepeatCount > 1) {
+                await scheduleLessonSeries({
+                  classId: selectedClassId,
+                  title: lessonTitle.trim(),
+                  firstScheduledAt: new Date(lessonDate).toISOString(),
+                  durationMinutes: 60,
+                  occurrences: lessonRepeatCount,
+                });
+              } else {
+                await scheduleLesson({ classId: selectedClassId, title: lessonTitle.trim(), scheduledAt: new Date(lessonDate).toISOString(), durationMinutes: 60 });
+              }
+              setSelectedClassId('');
+              setLessonTitle('');
+              setLessonDate('');
+              setLessonRepeatWeekly(false);
+              setLessonRepeatCount(1);
+              setShowScheduleModal(false);
+              addNotification({
+                type: 'success',
+                title: 'Lesson scheduled',
+                message: lessonRepeatWeekly && lessonRepeatCount > 1 ? 'Weekly lesson series added to your calendar.' : 'The lesson has been added to your calendar.',
+                duration: 2200,
+              });
+            } catch (error) {
+              setScheduleError(error instanceof Error ? error.message : 'Could not schedule lesson.');
+            } finally {
+              setIsScheduling(false);
+            }
           }}
         >
-          <div className="text-center py-12">
-            <Calendar className="h-16 w-16 mx-auto mb-4" style={{ color: '#6F73D2', opacity: 0.5 }} />
-            <p className="text-lg font-bold mb-2" style={{ color: '#0B1E3F' }}>Week View</p>
-            <p className="text-sm" style={{ color: '#6F73D2' }}>Coming soon</p>
-          </div>
-        </div>
-      )}
-
-      {/* Sticky Add to Calendar Button - Mobile */}
-      <div className="lg:hidden fixed bottom-20 right-4 z-40">
-        <button
-          onClick={() => {
-            // Export calendar
-            const icsContent = events.map(event => {
-              const start = new Date(event.startTime).toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
-              const end = new Date(event.endTime).toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
-              return `BEGIN:VEVENT\nDTSTART:${start}\nDTEND:${end}\nSUMMARY:${event.title}\nEND:VEVENT`;
-            }).join('\n');
-            
-            const blob = new Blob([`BEGIN:VCALENDAR\nVERSION:2.0\n${icsContent}\nEND:VCALENDAR`], { type: 'text/calendar' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'skillstream-calendar.ics';
-            a.click();
-          }}
-          className="w-14 h-14 rounded-full flex items-center justify-center text-white transition-all duration-300 active:scale-95 shadow-lg"
-          style={{ 
-            backgroundColor: '#00B5AD',
-            boxShadow: '0 10px 30px rgba(0, 181, 173, 0.4)'
-          }}
-        >
-          <Download className="h-6 w-6" />
-        </button>
-      </div>
-
-      {/* Add Event Bottom Sheet */}
-      <BottomSheet
-        isOpen={showAddEvent}
-        onClose={() => setShowAddEvent(false)}
-        title="Add Event"
-        maxHeight="80vh"
-      >
-        <div className="p-6 space-y-5">
-          <div>
-            <label className="block text-sm font-semibold mb-2" style={{ color: '#0B1E3F' }}>
-              Event Title
-            </label>
+          {scheduleError ? <p className="text-xs text-[color:var(--edu-danger)]">{scheduleError}</p> : null}
+          <select value={selectedClassId} onChange={(event) => {
+            setSelectedClassId(event.target.value);
+            if (scheduleError) setScheduleError('');
+          }} className="rounded-2xl border border-[color:var(--hub-border)] px-4 py-3 outline-none">
+            <option value="">Select class</option>
+            {classes.map((entry) => (
+              <option key={entry.id} value={entry.id}>{entry.name}</option>
+            ))}
+          </select>
+          <input value={lessonTitle} onChange={(event) => {
+            setLessonTitle(event.target.value);
+            if (scheduleError) setScheduleError('');
+          }} placeholder="Lesson title" className="rounded-2xl border border-[color:var(--hub-border)] px-4 py-3 outline-none" />
+          <input type="datetime-local" value={lessonDate} min={toDateTimeLocalMin()} onChange={(event) => {
+            setLessonDate(event.target.value);
+            if (scheduleError) setScheduleError('');
+          }} className="rounded-2xl border border-[color:var(--hub-border)] px-4 py-3 outline-none" />
+          <label className="flex items-center justify-between rounded-2xl border border-[color:var(--hub-border)] px-4 py-3 text-sm">
+            <span className="font-medium text-[color:var(--hub-text)]">Repeat weekly</span>
             <input
-              type="text"
-              placeholder="Enter event title"
-              className="w-full px-4 py-3 border-2 rounded-xl focus:outline-none transition-all duration-200"
-              style={{
-                borderColor: '#E5E7EB',
-                backgroundColor: 'white',
-                color: '#0B1E3F',
-                fontSize: '16px'
-              }}
-              onFocus={(e) => {
-                e.currentTarget.style.borderColor = '#00B5AD';
-                e.currentTarget.style.boxShadow = '0 0 0 4px rgba(0, 181, 173, 0.1)';
-              }}
-              onBlur={(e) => {
-                e.currentTarget.style.borderColor = '#E5E7EB';
-                e.currentTarget.style.boxShadow = 'none';
-              }}
+              type="checkbox"
+              checked={lessonRepeatWeekly}
+              onChange={(event) => setLessonRepeatWeekly(event.target.checked)}
             />
-          </div>
-          
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-semibold mb-2" style={{ color: '#0B1E3F' }}>
-                Start Time
-              </label>
-              <input
-                type="datetime-local"
-                className="w-full px-4 py-3 border-2 rounded-xl focus:outline-none transition-all duration-200"
-                style={{
-                  borderColor: '#E5E7EB',
-                  backgroundColor: 'white',
-                  color: '#0B1E3F',
-                  fontSize: '16px'
-                }}
-                onFocus={(e) => {
-                  e.currentTarget.style.borderColor = '#00B5AD';
-                  e.currentTarget.style.boxShadow = '0 0 0 4px rgba(0, 181, 173, 0.1)';
-                }}
-                onBlur={(e) => {
-                  e.currentTarget.style.borderColor = '#E5E7EB';
-                  e.currentTarget.style.boxShadow = 'none';
-                }}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-semibold mb-2" style={{ color: '#0B1E3F' }}>
-                End Time
-              </label>
-              <input
-                type="datetime-local"
-                className="w-full px-4 py-3 border-2 rounded-xl focus:outline-none transition-all duration-200"
-                style={{
-                  borderColor: '#E5E7EB',
-                  backgroundColor: 'white',
-                  color: '#0B1E3F',
-                  fontSize: '16px'
-                }}
-                onFocus={(e) => {
-                  e.currentTarget.style.borderColor = '#00B5AD';
-                  e.currentTarget.style.boxShadow = '0 0 0 4px rgba(0, 181, 173, 0.1)';
-                }}
-                onBlur={(e) => {
-                  e.currentTarget.style.borderColor = '#E5E7EB';
-                  e.currentTarget.style.boxShadow = 'none';
-                }}
-              />
-            </div>
-          </div>
+          </label>
+          {lessonRepeatWeekly ? (
+            <input
+              type="number"
+              min={2}
+              max={12}
+              value={lessonRepeatCount}
+              onChange={(event) => setLessonRepeatCount(Math.max(2, Math.min(12, Number(event.target.value) || 2)))}
+              placeholder="Number of weekly sessions"
+              className="rounded-2xl border border-[color:var(--hub-border)] px-4 py-3 outline-none"
+            />
+          ) : null}
+          <button type="submit" disabled={isScheduling} className="rounded-full bg-[color:var(--hub-primary)] px-4 py-3 text-sm font-semibold text-white disabled:opacity-60">{isScheduling ? 'Adding...' : 'Add lesson'}</button>
+        </form>
+      </ActionModal>
 
-          <div className="flex space-x-3 pt-4 border-t" style={{ borderColor: '#E5E7EB' }}>
-            <button
-              onClick={() => setShowAddEvent(false)}
-              className="flex-1 px-6 py-3 rounded-xl font-semibold border-2 transition-all duration-200"
-              style={{ 
-                borderColor: '#E5E7EB',
-                color: '#0B1E3F',
-                backgroundColor: 'white'
-              }}
-            >
-              Cancel
-            </button>
-            <button
-              onClick={() => {
-                // Handle add event
-                setShowAddEvent(false);
-              }}
-              className="flex-1 px-6 py-3 rounded-xl font-semibold text-white transition-all duration-300"
-              style={{ 
-                backgroundColor: '#00B5AD',
-                boxShadow: '0 4px 14px rgba(0, 181, 173, 0.3)'
-              }}
-            >
-              Add Event
-            </button>
-          </div>
-        </div>
-      </BottomSheet>
+      <ActionModal isOpen={!!rescheduleTarget && !isStudent} title="Quick reschedule" description="Move this lesson without leaving the calendar." onClose={() => setRescheduleTarget(null)}>
+        <form
+          className="grid gap-4"
+          onSubmit={async (event) => {
+            event.preventDefault();
+            if (!rescheduleTarget || !rescheduleDate) {
+              setRescheduleError('Select a new date and time.');
+              return;
+            }
+            const nextTime = new Date(rescheduleDate).getTime();
+            if (!Number.isFinite(nextTime) || nextTime <= Date.now()) {
+              setRescheduleError('Rescheduled time must be in the future.');
+              return;
+            }
+            try {
+              setIsRescheduling(true);
+              setRescheduleError('');
+              await rescheduleLesson(rescheduleTarget.classId, rescheduleTarget.lessonId, new Date(rescheduleDate).toISOString());
+              setRescheduleTarget(null);
+              setRescheduleDate('');
+              addNotification({
+                type: 'success',
+                title: 'Lesson moved',
+                message: 'Session time has been updated.',
+                duration: 2200,
+              });
+            } catch (error) {
+              setRescheduleError(error instanceof Error ? error.message : 'Could not reschedule lesson.');
+            } finally {
+              setIsRescheduling(false);
+            }
+          }}
+        >
+          {rescheduleError ? <p className="text-xs text-[color:var(--edu-danger)]">{rescheduleError}</p> : null}
+          <input type="datetime-local" value={rescheduleDate} min={toDateTimeLocalMin()} onChange={(event) => {
+            setRescheduleDate(event.target.value);
+            if (rescheduleError) setRescheduleError('');
+          }} className="rounded-2xl border border-[color:var(--hub-border)] px-4 py-3 outline-none" />
+          <button type="submit" disabled={isRescheduling} className="rounded-full bg-[color:var(--hub-primary)] px-4 py-3 text-sm font-semibold text-white disabled:opacity-60">{isRescheduling ? 'Saving...' : 'Save'}</button>
+        </form>
+      </ActionModal>
     </div>
   );
 };
-

@@ -2,7 +2,6 @@
 import ReactDOM from 'react-dom/client';
 import App from './App';
 
-// Add error handling for initial render
 try {
   const rootElement = document.getElementById('root');
   if (!rootElement) {
@@ -25,4 +24,3 @@ try {
     `;
   }
 }
-

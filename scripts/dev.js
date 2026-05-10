@@ -6,6 +6,25 @@ const fs = require('fs');
 const app = express();
 const PORT = 3000;
 
+const loadEnvFile = (filePath, override = false) => {
+  if (!fs.existsSync(filePath)) return;
+  const content = fs.readFileSync(filePath, 'utf8');
+  content.split('\n').forEach((rawLine) => {
+    const line = rawLine.trim();
+    if (!line || line.startsWith('#')) return;
+    const separatorIndex = line.indexOf('=');
+    if (separatorIndex <= 0) return;
+    const key = line.slice(0, separatorIndex).trim();
+    const value = line.slice(separatorIndex + 1).trim().replace(/^['"]|['"]$/g, '');
+    if (override || process.env[key] === undefined) {
+      process.env[key] = value;
+    }
+  });
+};
+
+loadEnvFile(path.join(__dirname, '../.env'));
+loadEnvFile(path.join(__dirname, '../.env.local'), true);
+
 // Make the script async
 (async () => {
 
@@ -105,10 +124,15 @@ const ctx = await esbuild.context({
     '.css': 'empty', // Ignore CSS imports since we process CSS separately
   },
   define: {
-    'process.env.REACT_APP_API_URL': JSON.stringify(process.env.REACT_APP_API_URL || 'https://skillstream-platform-api.onrender.com/api'),
-    'process.env.REACT_APP_WS_URL': JSON.stringify(process.env.REACT_APP_WS_URL || 'wss://skillstream-platform-api.onrender.com/ws'),
+    'process.env.NODE_ENV': JSON.stringify('development'),
+    'process.env.REACT_APP_API_URL': JSON.stringify(process.env.REACT_APP_API_URL || ''),
+    'process.env.REACT_APP_WS_URL': JSON.stringify(process.env.REACT_APP_WS_URL || ''),
     'process.env.REACT_APP_GOOGLE_CLIENT_ID': JSON.stringify(process.env.REACT_APP_GOOGLE_CLIENT_ID || ''),
     'process.env.REACT_APP_GOOGLE_CLIENT_SECRET': JSON.stringify(process.env.REACT_APP_GOOGLE_CLIENT_SECRET || ''),
+    'process.env.REACT_APP_ENABLE_DEMO_ACCOUNTS': JSON.stringify(process.env.REACT_APP_ENABLE_DEMO_ACCOUNTS || 'true'),
+    'process.env.REACT_APP_DAILY_DEFAULT_DOMAIN': JSON.stringify(process.env.REACT_APP_DAILY_DEFAULT_DOMAIN || ''),
+    'process.env.REACT_APP_SUPABASE_URL': JSON.stringify(process.env.REACT_APP_SUPABASE_URL || ''),
+    'process.env.REACT_APP_SUPABASE_ANON_KEY': JSON.stringify(process.env.REACT_APP_SUPABASE_ANON_KEY || ''),
   },
   sourcemap: true,
 });
@@ -138,4 +162,3 @@ server.on('error', (error) => {
   console.error('Error starting dev server:', error);
   process.exit(1);
 });
-
