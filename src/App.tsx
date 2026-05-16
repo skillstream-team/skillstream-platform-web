@@ -23,6 +23,36 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { AppPageLoader } from './components/common/AppPageLoader';
 import { useTeacherHubStore } from './store/teacherHub';
 import { usePreferencesStore } from './store/preferences';
+import { resolveStudentTheme } from './data/studentThemes';
+import { OrgLayout } from './components/layout/OrgLayout';
+import { OrgDashboardPage } from './pages/org/OrgDashboardPage';
+import { OrgCoursesPage } from './pages/org/OrgCoursesPage';
+import { OrgCourseBuilderPage } from './pages/org/OrgCourseBuilderPage';
+import { OrgLearnersPage } from './pages/org/OrgLearnersPage';
+import { OrgLearnerProfilePage } from './pages/org/OrgLearnerProfilePage';
+import { OrgReportsPage } from './pages/org/OrgReportsPage';
+import { OrgSettingsPage } from './pages/org/OrgSettingsPage';
+import { OrgPathsPage } from './pages/org/OrgPathsPage';
+import { OrgPathDetailPage } from './pages/org/OrgPathDetailPage';
+import { OrgAnnouncementsPage } from './pages/org/OrgAnnouncementsPage';
+import { OrgBillingPage } from './pages/org/OrgBillingPage';
+import { OrgCertificatesPage } from './pages/org/OrgCertificatesPage';
+import { OrgAuditPage } from './pages/org/OrgAuditPage';
+import { LearnPage } from './pages/learn/LearnPage';
+import { CoursePlayerPage } from './pages/learn/CoursePlayerPage';
+import { CertificatesPage } from './pages/learn/CertificatesPage';
+
+type AuthUser = NonNullable<ReturnType<typeof useAuthStore.getState>['user']>;
+const homeRoute = (user: AuthUser | null) => {
+  if (!user) return '/login';
+  if (user.activeOrgId) {
+    const orgRole = user.orgMemberships.find((m) => m.orgId === user.activeOrgId)?.orgRole;
+    if (orgRole === 'admin' || orgRole === 'instructor') return `/org/${user.activeOrgId}/dashboard`;
+    return '/learn';
+  }
+  if (user.role === 'ADMIN') return '/admin';
+  return '/dashboard';
+};
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuthStore();
@@ -31,7 +61,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 
 const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuthStore();
-  return user ? <Navigate to="/dashboard" replace /> : <>{children}</>;
+  return user ? <Navigate to={homeRoute(user)} replace /> : <>{children}</>;
 };
 
 const RoleRoute: React.FC<{ children: React.ReactNode; allow: Array<'TEACHER' | 'STUDENT' | 'ADMIN'> }> = ({ children, allow }) => {
@@ -64,6 +94,7 @@ function App() {
   const isWorkspaceHydrated = useTeacherHubStore((state) => state.isHydrated);
   const isWorkspaceSyncing = useTeacherHubStore((state) => state.isSyncing);
   const loadPreferences = usePreferencesStore((state) => state.loadPreferences);
+  const studentTheme = usePreferencesStore((state) => state.preferences.studentTheme);
   const { theme, getEffectiveTheme } = useThemeStore();
 
   useEffect(() => {
@@ -77,6 +108,16 @@ function App() {
   useEffect(() => {
     void loadPreferences(user?.id);
   }, [loadPreferences, user?.id]);
+
+  useEffect(() => {
+    if (user?.role === 'STUDENT') {
+      const effectiveTheme = getEffectiveTheme();
+      const color = resolveStudentTheme(studentTheme, effectiveTheme);
+      document.documentElement.style.setProperty('--hub-primary', color);
+    } else {
+      document.documentElement.style.removeProperty('--hub-primary');
+    }
+  }, [user?.role, studentTheme, theme, getEffectiveTheme]);
 
   useEffect(() => {
     const effectiveTheme = getEffectiveTheme();
@@ -175,11 +216,11 @@ function App() {
             <Route
               path="/students"
               element={
-                <ProtectedRoute>
+                <RoleRoute allow={['TEACHER', 'ADMIN']}>
                   <Layout>
                     <StudentsPage />
                   </Layout>
-                </ProtectedRoute>
+                </RoleRoute>
               }
             />
             <Route
@@ -243,13 +284,33 @@ function App() {
               }
             />
 
-            <Route path="/" element={<Navigate to={user ? '/dashboard' : '/login'} replace />} />
+            {/* B2B Org Admin Routes */}
+            <Route path="/org/:orgId/dashboard" element={<ProtectedRoute><OrgLayout><OrgDashboardPage /></OrgLayout></ProtectedRoute>} />
+            <Route path="/org/:orgId/courses" element={<ProtectedRoute><OrgLayout><OrgCoursesPage /></OrgLayout></ProtectedRoute>} />
+            <Route path="/org/:orgId/courses/:courseId/build" element={<ProtectedRoute><OrgLayout><OrgCourseBuilderPage /></OrgLayout></ProtectedRoute>} />
+            <Route path="/org/:orgId/paths" element={<ProtectedRoute><OrgLayout><OrgPathsPage /></OrgLayout></ProtectedRoute>} />
+            <Route path="/org/:orgId/paths/:pathId" element={<ProtectedRoute><OrgLayout><OrgPathDetailPage /></OrgLayout></ProtectedRoute>} />
+            <Route path="/org/:orgId/learners" element={<ProtectedRoute><OrgLayout><OrgLearnersPage /></OrgLayout></ProtectedRoute>} />
+            <Route path="/org/:orgId/learners/:userId" element={<ProtectedRoute><OrgLayout><OrgLearnerProfilePage /></OrgLayout></ProtectedRoute>} />
+            <Route path="/org/:orgId/reports" element={<ProtectedRoute><OrgLayout><OrgReportsPage /></OrgLayout></ProtectedRoute>} />
+            <Route path="/org/:orgId/announcements" element={<ProtectedRoute><OrgLayout><OrgAnnouncementsPage /></OrgLayout></ProtectedRoute>} />
+            <Route path="/org/:orgId/settings" element={<ProtectedRoute><OrgLayout><OrgSettingsPage /></OrgLayout></ProtectedRoute>} />
+            <Route path="/org/:orgId/billing" element={<ProtectedRoute><OrgLayout><OrgBillingPage /></OrgLayout></ProtectedRoute>} />
+            <Route path="/org/:orgId/certificates" element={<ProtectedRoute><OrgLayout><OrgCertificatesPage /></OrgLayout></ProtectedRoute>} />
+            <Route path="/org/:orgId/audit" element={<ProtectedRoute><OrgLayout><OrgAuditPage /></OrgLayout></ProtectedRoute>} />
+
+            {/* Learner Portal Routes */}
+            <Route path="/learn" element={<ProtectedRoute><OrgLayout><LearnPage /></OrgLayout></ProtectedRoute>} />
+            <Route path="/learn/course/:courseId" element={<ProtectedRoute><OrgLayout><CoursePlayerPage /></OrgLayout></ProtectedRoute>} />
+            <Route path="/learn/certificates" element={<ProtectedRoute><OrgLayout><CertificatesPage /></OrgLayout></ProtectedRoute>} />
+
+            <Route path="/" element={<Navigate to={homeRoute(user)} replace />} />
             <Route path="/home" element={<Navigate to="/dashboard" replace />} />
             <Route path="/calendar" element={<Navigate to="/schedule" replace />} />
             <Route path="/messages/new" element={<Navigate to="/messages" replace />} />
             <Route path="/messages/:userId" element={<Navigate to="/messages" replace />} />
             <Route path="/profile" element={<Navigate to="/settings" replace />} />
-            <Route path="*" element={<Navigate to={user ? '/dashboard' : '/login'} replace />} />
+            <Route path="*" element={<Navigate to={homeRoute(user)} replace />} />
           </Routes>
         </Router>
       </NotificationManager>

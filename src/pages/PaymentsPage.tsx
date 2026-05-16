@@ -141,8 +141,8 @@ export const PaymentsPage: React.FC = () => {
                     plan.id === activePlan.id
                       ? 'border-[color:var(--hub-primary)] bg-[color:var(--hub-soft)]'
                       : pendingPlan?.id === plan.id
-                      ? 'border-[rgba(37,99,235,0.35)] bg-[rgba(37,99,235,0.06)]'
-                      : 'border-[color:var(--hub-border)] hover:border-[rgba(37,99,235,0.32)]'
+                      ? 'border-[rgba(27,74,128,0.35)] bg-[rgba(27,74,128,0.06)]'
+                      : 'border-[color:var(--hub-border)] hover:border-[rgba(27,74,128,0.32)]'
                   }`}
                 >
                   <div className="flex items-center justify-between gap-3">
@@ -154,7 +154,7 @@ export const PaymentsPage: React.FC = () => {
                       </span>
                     ) : null}
                     {pendingPlan?.id === plan.id ? (
-                      <span className="inline-flex rounded-full border border-[rgba(37,99,235,0.35)] px-2.5 py-1 text-xs font-semibold text-[color:var(--hub-primary)]">
+                      <span className="inline-flex rounded-full border border-[rgba(27,74,128,0.35)] px-2.5 py-1 text-xs font-semibold text-[color:var(--hub-primary)]">
                         Scheduled next month
                       </span>
                     ) : null}

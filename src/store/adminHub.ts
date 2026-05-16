@@ -184,14 +184,6 @@ const buildDemoAdminState = () => {
     ] as TeacherInvite[],
     featureFlags: [
       {
-        id: 'demo-flag-1',
-        name: 'Study assist suggestions',
-        description: 'Show AI study prompts in dashboards.',
-        enabled: true,
-        rollout: 'students',
-        updatedAt: now.toISOString(),
-      },
-      {
         id: 'demo-flag-2',
         name: 'Live office hours',
         description: 'Allow drop-in live sessions for teachers.',

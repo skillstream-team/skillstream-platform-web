@@ -1,12 +1,22 @@
 // User Types
+export interface OrgMembership {
+  orgId: string;
+  orgName: string;
+  orgRole: 'admin' | 'instructor' | 'learner' | 'manager';
+}
+
 export interface User {
   id: string;
   email: string;
   name: string;
   role: 'STUDENT' | 'TEACHER' | 'ADMIN';
   avatar?: string;
+  bio?: string;
+  subjects?: string;
   createdAt: string;
   updatedAt: string;
+  orgMemberships: OrgMembership[];
+  activeOrgId: string | null;
 }
 
 export interface AuthUser extends User {

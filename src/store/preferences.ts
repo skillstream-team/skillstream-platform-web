@@ -1,12 +1,32 @@
 import { create } from 'zustand';
 import { hasSupabaseConfig, supabase } from '../lib/supabase';
 
+const DEMO_PREFS_KEY = 'skillstream_demo_prefs_v1';
+const isDemoId = (userId: string) => userId.startsWith('demo-');
+
+const getStoredDemoPrefs = (userId: string): Partial<WorkspacePreferences> | null => {
+  try {
+    const raw = window.localStorage.getItem(`${DEMO_PREFS_KEY}_${userId}`);
+    return raw ? (JSON.parse(raw) as Partial<WorkspacePreferences>) : null;
+  } catch {
+    return null;
+  }
+};
+
+const persistDemoPrefs = (userId: string, prefs: WorkspacePreferences) => {
+  try {
+    window.localStorage.setItem(`${DEMO_PREFS_KEY}_${userId}`, JSON.stringify(prefs));
+  } catch {
+    // ignore quota errors
+  }
+};
+
 export interface WorkspacePreferences {
   messageAlerts: boolean;
   homeworkAlerts: boolean;
   weeklyReminder: boolean;
-  aiHelper: boolean;
   privateWorkspace: boolean;
+  studentTheme: string;
 }
 
 interface PreferencesState {
@@ -21,16 +41,16 @@ const defaultPreferences: WorkspacePreferences = {
   messageAlerts: true,
   homeworkAlerts: true,
   weeklyReminder: false,
-  aiHelper: true,
   privateWorkspace: true,
+  studentTheme: 'navy',
 };
 
 const toPreferences = (row: any): WorkspacePreferences => ({
   messageAlerts: Boolean(row?.message_alerts),
   homeworkAlerts: Boolean(row?.homework_alerts),
   weeklyReminder: Boolean(row?.weekly_reminder),
-  aiHelper: Boolean(row?.ai_helper),
   privateWorkspace: Boolean(row?.private_workspace),
+  studentTheme: (row?.student_theme as string) || 'navy',
 });
 
 export const usePreferencesStore = create<PreferencesState>((set, get) => ({
@@ -39,7 +59,18 @@ export const usePreferencesStore = create<PreferencesState>((set, get) => ({
   error: null,
 
   loadPreferences: async (userId?: string) => {
-    if (!userId || !hasSupabaseConfig) {
+    if (!userId) {
+      set({ preferences: defaultPreferences, isLoading: false, error: null });
+      return;
+    }
+
+    if (isDemoId(userId)) {
+      const stored = getStoredDemoPrefs(userId);
+      set({ preferences: stored ? { ...defaultPreferences, ...stored } : defaultPreferences, isLoading: false, error: null });
+      return;
+    }
+
+    if (!hasSupabaseConfig) {
       set({ preferences: defaultPreferences, isLoading: false, error: null });
       return;
     }
@@ -47,7 +78,7 @@ export const usePreferencesStore = create<PreferencesState>((set, get) => ({
     set({ isLoading: true, error: null });
     const { data, error } = await supabase
       .from('user_preferences')
-      .select('message_alerts, homework_alerts, weekly_reminder, ai_helper, private_workspace')
+      .select('message_alerts, homework_alerts, weekly_reminder, private_workspace, student_theme')
       .eq('user_id', userId)
       .maybeSingle();
 
@@ -78,9 +109,14 @@ export const usePreferencesStore = create<PreferencesState>((set, get) => ({
     const merged = { ...previous, ...next };
     set({ preferences: merged, error: null });
 
-    if (!userId || !hasSupabaseConfig) {
+    if (!userId) return;
+
+    if (isDemoId(userId)) {
+      persistDemoPrefs(userId, merged);
       return;
     }
+
+    if (!hasSupabaseConfig) return;
 
     const { error } = await supabase
       .from('user_preferences')
@@ -89,8 +125,8 @@ export const usePreferencesStore = create<PreferencesState>((set, get) => ({
         message_alerts: merged.messageAlerts,
         homework_alerts: merged.homeworkAlerts,
         weekly_reminder: merged.weeklyReminder,
-        ai_helper: merged.aiHelper,
         private_workspace: merged.privateWorkspace,
+        student_theme: merged.studentTheme,
       });
 
     if (error) {

@@ -1,0 +1,91 @@
+- generic [ref=e4]:
+  - complementary [ref=e5]:
+    - generic [ref=e6]:
+      - link "SkillStream" [ref=e7] [cursor=pointer]:
+        - /url: /dashboard
+        - paragraph [ref=e10]: SkillStream
+      - navigation [ref=e11]:
+        - link "Dashboard" [ref=e12] [cursor=pointer]:
+          - /url: /dashboard
+          - img [ref=e13]
+          - generic [ref=e16]: Dashboard
+        - link "Classes" [ref=e17] [cursor=pointer]:
+          - /url: /classes
+          - img [ref=e18]
+          - generic [ref=e21]: Classes
+        - link "Students" [ref=e22] [cursor=pointer]:
+          - /url: /students
+          - img [ref=e23]
+          - generic [ref=e28]: Students
+        - link "Schedule" [ref=e29] [cursor=pointer]:
+          - /url: /schedule
+          - img [ref=e30]
+          - generic [ref=e32]: Schedule
+        - link "Messages" [ref=e33] [cursor=pointer]:
+          - /url: /messages
+          - img [ref=e34]
+          - generic [ref=e36]: Messages
+        - link "Payments" [ref=e37] [cursor=pointer]:
+          - /url: /payments
+          - img [ref=e38]
+          - generic [ref=e40]: Payments
+        - link "Admin" [ref=e41] [cursor=pointer]:
+          - /url: /admin
+          - img [ref=e42]
+          - generic [ref=e45]: Admin
+        - link "Settings" [ref=e46] [cursor=pointer]:
+          - /url: /settings
+          - img [ref=e47]
+          - generic [ref=e50]: Settings
+      - generic [ref=e51]:
+        - generic [ref=e52]:
+          - generic [ref=e53]: DA
+          - generic [ref=e54]:
+            - paragraph [ref=e55]: Demo Admin
+            - paragraph [ref=e56]: admin@skillstream.demo
+        - generic [ref=e57]:
+          - button "Toggle theme" [ref=e58] [cursor=pointer]:
+            - img [ref=e59]
+          - button "Sign out" [ref=e61] [cursor=pointer]:
+            - img [ref=e62]
+            - text: Sign out
+  - main [ref=e66]:
+    - generic [ref=e67]:
+      - generic [ref=e68]:
+        - paragraph [ref=e69]: Admin Console
+        - heading "Control the full platform from one workspace." [level=2] [ref=e70]
+        - paragraph [ref=e71]: Monitor people, enforce quality, roll out features, and run operational communication with clear audit trails.
+      - generic [ref=e72]:
+        - button "Overview" [ref=e73] [cursor=pointer]:
+          - img [ref=e74]
+          - text: Overview
+        - button "Teachers & Students" [ref=e76] [cursor=pointer]:
+          - img [ref=e77]
+          - text: Teachers & Students
+        - button "Advanced Reports" [ref=e82] [cursor=pointer]:
+          - img [ref=e83]
+          - text: Advanced Reports
+        - button "Feature Controls" [ref=e88] [cursor=pointer]:
+          - img [ref=e89]
+          - text: Feature Controls
+        - button "Email & Notifications" [ref=e92] [cursor=pointer]:
+          - img [ref=e93]
+          - text: Email & Notifications
+        - button "Operations" [active] [ref=e96] [cursor=pointer]:
+          - img [ref=e97]
+          - text: Operations
+      - generic [ref=e255]:
+        - generic [ref=e256]:
+          - paragraph [ref=e257]: Alert queue
+          - generic [ref=e259]:
+            - generic [ref=e260]:
+              - paragraph [ref=e261]: Low engagement in Algebra Focus Group
+              - generic [ref=e262]: medium
+            - paragraph [ref=e263]: open • 16 May, 19:15
+            - button "Mark resolved" [ref=e264] [cursor=pointer]
+        - generic [ref=e265]:
+          - paragraph [ref=e266]: Audit log
+          - generic [ref=e268]:
+            - paragraph [ref=e269]: Loaded admin workspace
+            - paragraph [ref=e270]: Demo mode
+            - paragraph [ref=e271]: Demo Admin • 16 May, 21:15

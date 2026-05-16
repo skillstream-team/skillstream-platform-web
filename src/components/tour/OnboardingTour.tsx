@@ -207,7 +207,7 @@ export const OnboardingTour: React.FC = () => {
             height: spotRect.height + PAD * 2 + 4,
             borderRadius: 20,
             border: '2px solid var(--hub-primary)',
-            boxShadow: '0 0 0 4px rgba(37,99,235,0.18), 0 0 32px rgba(37,99,235,0.22)',
+            boxShadow: '0 0 0 4px rgba(27,74,128,0.18), 0 0 32px rgba(27,74,128,0.22)',
             zIndex: 9999,
             pointerEvents: 'none',
           }} />
@@ -274,7 +274,7 @@ export const OnboardingTour: React.FC = () => {
             <button
               type="button"
               onClick={() => (isLast ? finish() : setStep((s) => s + 1))}
-              className="rounded-full bg-[color:var(--hub-primary)] px-5 py-2.5 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(37,99,235,0.3)] transition hover:opacity-90"
+              className="rounded-full bg-[color:var(--hub-primary)] px-5 py-2.5 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(27,74,128,0.3)] transition hover:opacity-90"
             >
               {isLast ? 'Get started' : isFirst ? 'Show me around' : 'Next'}
             </button>

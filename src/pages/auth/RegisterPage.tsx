@@ -144,7 +144,7 @@ export const RegisterPage: React.FC = () => {
               className={`rounded-[24px] border p-5 text-left transition-all ${
                 formData.role === role.id
                   ? 'border-[rgba(15,139,131,0.35)] bg-[rgba(15,139,131,0.08)]'
-                  : 'border-[rgba(20,35,43,0.08)] bg-white'
+                  : 'border-[color:var(--edu-border)] bg-white'
               }`}
               onClick={() =>
                 setFormData((current) => ({

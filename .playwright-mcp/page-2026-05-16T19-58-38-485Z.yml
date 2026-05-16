@@ -1,0 +1,203 @@
+- generic [ref=e272]:
+  - complementary [ref=e273]:
+    - generic [ref=e274]:
+      - link "SkillStream" [ref=e275] [cursor=pointer]:
+        - /url: /org/demo-org/dashboard
+        - paragraph [ref=e278]: SkillStream
+      - generic [ref=e281]:
+        - paragraph [ref=e282]: Organisation
+        - paragraph [ref=e283]: Acme Corp
+      - navigation [ref=e284]:
+        - link "Dashboard" [ref=e285] [cursor=pointer]:
+          - /url: /org/demo-org/dashboard
+          - img [ref=e286]
+          - generic [ref=e291]: Dashboard
+        - link "Courses" [ref=e292] [cursor=pointer]:
+          - /url: /org/demo-org/courses
+          - img [ref=e293]
+          - generic [ref=e296]: Courses
+        - link "Learning Paths" [ref=e297] [cursor=pointer]:
+          - /url: /org/demo-org/paths
+          - img [ref=e298]
+          - generic [ref=e302]: Learning Paths
+        - link "Learners" [ref=e303] [cursor=pointer]:
+          - /url: /org/demo-org/learners
+          - img [ref=e304]
+          - generic [ref=e309]: Learners
+        - link "Reports" [ref=e310] [cursor=pointer]:
+          - /url: /org/demo-org/reports
+          - img [ref=e311]
+          - generic [ref=e314]: Reports
+        - link "Certificates" [ref=e315] [cursor=pointer]:
+          - /url: /org/demo-org/certificates
+          - img [ref=e316]
+          - generic [ref=e319]: Certificates
+        - link "Announcements" [ref=e320] [cursor=pointer]:
+          - /url: /org/demo-org/announcements
+          - img [ref=e321]
+          - generic [ref=e324]: Announcements
+        - link "Audit Log" [ref=e325] [cursor=pointer]:
+          - /url: /org/demo-org/audit
+          - img [ref=e326]
+          - generic [ref=e329]: Audit Log
+        - link "Billing" [ref=e330] [cursor=pointer]:
+          - /url: /org/demo-org/billing
+          - img [ref=e331]
+          - generic [ref=e333]: Billing
+        - link "Settings" [ref=e334] [cursor=pointer]:
+          - /url: /org/demo-org/settings
+          - img [ref=e335]
+          - generic [ref=e338]: Settings
+      - generic [ref=e339]:
+        - generic [ref=e340]:
+          - generic [ref=e341]: DO
+          - generic [ref=e342]:
+            - paragraph [ref=e343]: Demo Org Admin
+            - paragraph [ref=e344]: orgadmin@skillstream.demo
+        - generic [ref=e345]:
+          - button "Toggle theme" [ref=e346] [cursor=pointer]:
+            - img [ref=e347]
+          - button "Sign out" [ref=e349] [cursor=pointer]:
+            - img [ref=e350]
+            - text: Sign out
+  - main [ref=e354]:
+    - generic [ref=e355]:
+      - generic [ref=e356]:
+        - paragraph [ref=e357]: Organisation
+        - generic [ref=e358]:
+          - generic [ref=e359]:
+            - heading "Acme Corp" [level=2] [ref=e360]
+            - paragraph [ref=e361]: Welcome back, Demo Org Admin.
+          - button "1 overdue" [ref=e362] [cursor=pointer]:
+            - img [ref=e363]
+            - text: 1 overdue
+      - generic [ref=e365]:
+        - paragraph [ref=e366]: Active Announcements
+        - generic [ref=e367]:
+          - paragraph [ref=e368]:
+            - text: Q2 Compliance Deadline
+            - generic [ref=e369]: — All mandatory compliance courses must be completed by 1 June 2026. Please check …
+          - paragraph [ref=e370]:
+            - text: New Leadership Course Available
+            - generic [ref=e371]: — We've added "Leadership Essentials for New Managers" to the course library. If y…
+      - generic [ref=e372]:
+        - generic [ref=e373]:
+          - img [ref=e375]
+          - paragraph [ref=e380]: "5"
+          - paragraph [ref=e381]: Total learners
+          - paragraph [ref=e382]: 1 instructors/managers
+        - generic [ref=e383]:
+          - img [ref=e385]
+          - paragraph [ref=e388]: "3"
+          - paragraph [ref=e389]: Published courses
+          - paragraph [ref=e390]: 1 active paths
+        - generic [ref=e391]:
+          - img [ref=e393]
+          - paragraph [ref=e396]: 58%
+          - paragraph [ref=e397]: Avg. completion
+          - paragraph [ref=e398]: 2 completions
+        - generic [ref=e399]:
+          - img [ref=e401]
+          - paragraph [ref=e404]: 50%
+          - paragraph [ref=e405]: Compliance rate
+          - paragraph [ref=e406]: 2/4 required
+      - generic [ref=e407]:
+        - generic [ref=e408]:
+          - paragraph [ref=e409]: Course completion
+          - generic [ref=e410]:
+            - generic [ref=e412]:
+              - generic [ref=e413]: Data Privacy & GDPR Essentials
+              - generic [ref=e414]: 1/2
+            - generic [ref=e418]:
+              - generic [ref=e419]: Workplace Safety Fundamentals
+              - generic [ref=e420]: 1/3
+            - generic [ref=e424]:
+              - generic [ref=e425]: Leadership Essentials for New Managers
+              - generic [ref=e426]: 0/1
+        - generic [ref=e428]:
+          - paragraph [ref=e429]: Recent completions
+          - generic [ref=e430]:
+            - generic [ref=e431]:
+              - img [ref=e432]
+              - generic [ref=e435]:
+                - paragraph [ref=e436]: Alex Johnson
+                - paragraph [ref=e437]: Workplace Safety Fundamentals
+              - paragraph [ref=e438]: Mon 20 Apr, 10:00
+            - generic [ref=e439]:
+              - img [ref=e440]
+              - generic [ref=e443]:
+                - paragraph [ref=e444]: Demo Learner
+                - paragraph [ref=e445]: Data Privacy & GDPR Essentials
+              - paragraph [ref=e446]: Wed 1 Apr, 10:00
+      - generic [ref=e447]:
+        - paragraph [ref=e448]: Overdue — action required
+        - generic [ref=e450]:
+          - generic [ref=e451]:
+            - paragraph [ref=e452]: Priya Sharma
+            - paragraph [ref=e453]: Workplace Safety Fundamentals
+          - generic [ref=e454]:
+            - generic [ref=e455]:
+              - paragraph [ref=e456]: Due Fri 1 May, 10:00
+              - paragraph [ref=e457]: 25% done
+            - button "View" [ref=e458] [cursor=pointer]
+      - generic [ref=e459]:
+        - generic [ref=e460]:
+          - img [ref=e461]
+          - paragraph [ref=e467]: Learner Leaderboard
+        - generic [ref=e468]:
+          - generic [ref=e469]:
+            - generic [ref=e470]: "1"
+            - generic [ref=e471]:
+              - paragraph [ref=e472]: Alex Johnson
+              - paragraph [ref=e473]: 1 course completed
+            - generic [ref=e474]:
+              - img [ref=e475]
+              - text: 160 pts
+          - generic [ref=e477]:
+            - generic [ref=e478]: "2"
+            - generic [ref=e479]:
+              - paragraph [ref=e480]: Demo Learner
+              - paragraph [ref=e481]: 1 course completed
+            - generic [ref=e482]:
+              - img [ref=e483]
+              - text: 140 pts
+          - generic [ref=e485]:
+            - generic [ref=e486]: "3"
+            - generic [ref=e487]:
+              - paragraph [ref=e488]: Priya Sharma
+              - paragraph [ref=e489]: 0 courses completed
+            - generic [ref=e490]:
+              - img [ref=e491]
+              - text: 10 pts
+          - generic [ref=e493]:
+            - generic [ref=e494]: "4"
+            - generic [ref=e495]:
+              - paragraph [ref=e496]: Marcus Webb
+              - paragraph [ref=e497]: 0 courses completed
+            - generic [ref=e498]:
+              - img [ref=e499]
+              - text: 0 pts
+          - generic [ref=e501]:
+            - generic [ref=e502]: "5"
+            - generic [ref=e503]:
+              - paragraph [ref=e504]: Sara Kim
+              - paragraph [ref=e505]: 0 courses completed
+            - generic [ref=e506]:
+              - img [ref=e507]
+              - text: 0 pts
+      - generic [ref=e509]:
+        - button "Manage courses 3 total" [ref=e510] [cursor=pointer]:
+          - img [ref=e512]
+          - generic [ref=e515]:
+            - paragraph [ref=e516]: Manage courses
+            - paragraph [ref=e517]: 3 total
+        - button "Learning paths 1 configured" [ref=e518] [cursor=pointer]:
+          - img [ref=e520]
+          - generic [ref=e524]:
+            - paragraph [ref=e525]: Learning paths
+            - paragraph [ref=e526]: 1 configured
+        - button "View reports Completion & compliance" [ref=e527] [cursor=pointer]:
+          - img [ref=e529]
+          - generic [ref=e532]:
+            - paragraph [ref=e533]: View reports
+            - paragraph [ref=e534]: Completion & compliance

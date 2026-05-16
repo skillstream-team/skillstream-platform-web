@@ -1,0 +1,44 @@
+- generic [ref=e4]:
+  - complementary [ref=e5]:
+    - generic [ref=e6]:
+      - link "SkillStream" [ref=e7] [cursor=pointer]:
+        - /url: /learn
+        - paragraph [ref=e10]: SkillStream
+      - generic [ref=e13]:
+        - paragraph [ref=e14]: Organisation
+        - paragraph [ref=e15]: Acme Corp
+      - navigation [ref=e16]:
+        - link "My Learning" [ref=e17] [cursor=pointer]:
+          - /url: /learn
+          - img [ref=e18]
+          - generic [ref=e22]: My Learning
+        - link "Certificates" [ref=e23] [cursor=pointer]:
+          - /url: /learn/certificates
+          - img [ref=e24]
+          - generic [ref=e27]: Certificates
+      - generic [ref=e28]:
+        - generic [ref=e29]:
+          - generic [ref=e30]: DL
+          - generic [ref=e31]:
+            - paragraph [ref=e32]: Demo Learner
+            - paragraph [ref=e33]: learner@skillstream.demo
+        - generic [ref=e34]:
+          - button "Toggle theme" [ref=e35] [cursor=pointer]:
+            - img [ref=e36]
+          - button "Sign out" [ref=e38] [cursor=pointer]:
+            - img [ref=e39]
+            - text: Sign out
+  - main [ref=e43]:
+    - generic [ref=e44]:
+      - generic [ref=e45]:
+        - paragraph [ref=e46]: My Learning
+        - heading "Certificates" [level=2] [ref=e47]
+        - paragraph [ref=e48]: 1 certificate earned
+      - generic [ref=e50]:
+        - img [ref=e52]
+        - heading "Data Privacy & GDPR Essentials" [level=3] [ref=e55]
+        - paragraph [ref=e56]: Acme Corp
+        - paragraph [ref=e57]: Issued Wed 1 Apr, 10:00
+        - button "Download" [active] [ref=e58] [cursor=pointer]:
+          - img [ref=e59]
+          - text: Download

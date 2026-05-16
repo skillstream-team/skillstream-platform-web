@@ -12,7 +12,9 @@
     --hub-border: rgba(15, 23, 42, 0.08);
     --hub-text: #162033;
     --hub-muted: #627086;
-    --hub-primary: #2563eb;
+    --hub-primary: #1b4a80;
+    --hub-accent: #2563eb;
+    --hub-accent-soft: rgba(37, 99, 235, 0.08);
     --hub-success: #059669;
     --hub-warning: #d97706;
     --edu-bg: #f7f7fb;
@@ -41,6 +43,8 @@
     --hub-text: #e6edf3;
     --hub-muted: #8b949e;
     --hub-primary: #4493f8;
+    --hub-accent: #60a5fa;
+    --hub-accent-soft: rgba(96, 165, 250, 0.12);
     --hub-success: #3fb950;
     --hub-warning: #d29922;
     --edu-bg: #0d1117;
@@ -70,7 +74,7 @@
     min-height: 100vh;
     color: var(--hub-text);
     background:
-      radial-gradient(circle at top left, rgba(37, 99, 235, 0.08), transparent 24%),
+      radial-gradient(circle at top left, rgba(27, 74, 128, 0.08), transparent 24%),
       radial-gradient(circle at right 20%, rgba(15, 118, 110, 0.06), transparent 22%),
       linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
     font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
@@ -103,6 +107,20 @@
 
   .dark .bg-white\/80 {
     background-color: rgba(22, 27, 34, 0.8) !important;
+  }
+
+  /* nav hover:bg-white in dark should NOT flash white */
+  .dark .hover\:bg-white:hover {
+    background-color: rgba(255, 255, 255, 0.06) !important;
+  }
+
+  /* All bare inputs/textareas/selects default to dark surface */
+  .dark input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not([type='color']):not([type='submit']):not([type='button']):not([type='image']),
+  .dark textarea,
+  .dark select {
+    background-color: #161b22;
+    color: #e6edf3;
+    color-scheme: dark;
   }
 
   #root {
@@ -344,5 +362,59 @@
 
   .skillstream-wordmark-accent {
     color: var(--edu-primary);
+  }
+
+  /* ── Dark mode overrides for component classes ─────────────────────── */
+
+  .dark .edu-input {
+    background: #161b22;
+    border-color: rgba(255, 255, 255, 0.1);
+    color: var(--edu-text);
+  }
+  .dark .edu-input:focus {
+    border-color: rgba(68, 147, 248, 0.45);
+    box-shadow: 0 0 0 4px rgba(68, 147, 248, 0.1);
+  }
+
+  .dark .edu-hero {
+    background: rgba(22, 27, 34, 0.92);
+    border-color: rgba(68, 147, 248, 0.2);
+  }
+  .dark .edu-hero::after {
+    opacity: 0.06;
+  }
+
+  .dark .edu-card-muted {
+    background: rgba(22, 27, 34, 0.8);
+  }
+
+  .dark .edu-button-secondary {
+    background: rgba(22, 27, 34, 0.8);
+    color: var(--edu-text);
+  }
+  .dark .edu-button-secondary:hover {
+    background: rgba(36, 44, 54, 0.95);
+  }
+
+  .dark .edu-tab {
+    background: rgba(22, 27, 34, 0.7);
+  }
+
+  .dark .edu-topbar {
+    background: rgba(13, 17, 23, 0.94);
+    border-color: rgba(255, 255, 255, 0.07);
+  }
+
+  .dark .edu-progress {
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  .dark .skillstream-mark {
+    background: linear-gradient(180deg, rgba(22, 27, 34, 0.98) 0%, rgba(13, 17, 23, 0.96) 100%);
+    border-color: rgba(68, 147, 248, 0.3);
+    box-shadow: none;
+  }
+  .dark .skillstream-mark::after {
+    background: rgba(68, 147, 248, 0.2);
   }
 }

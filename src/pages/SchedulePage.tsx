@@ -114,8 +114,8 @@ export const SchedulePage: React.FC = () => {
               </button>
             ) : null}
           </div>
-          <div className="mt-5 rounded-[28px] bg-[linear-gradient(180deg,#eff6ff_0%,#ffffff_100%)] p-5">
-            <div className="mb-3 flex items-center justify-between rounded-2xl bg-white px-3 py-2">
+          <div className="mt-5 rounded-[28px] bg-[linear-gradient(180deg,#eff6ff_0%,#ffffff_100%)] dark:bg-[linear-gradient(180deg,#1c2333_0%,#0d1117_100%)] p-5">
+            <div className="mb-3 flex items-center justify-between rounded-2xl bg-white dark:bg-[#0d1117] px-3 py-2">
               <button
                 type="button"
                 onClick={() => setCalendarCursor((current) => new Date(current.getFullYear(), current.getMonth() - 1, 1))}
@@ -157,8 +157,8 @@ export const SchedulePage: React.FC = () => {
                     className={`flex aspect-square items-center justify-center rounded-2xl text-sm ${
                       day
                         ? hasLesson
-                          ? 'bg-[color:var(--hub-primary)] font-semibold text-white'
-                          : 'bg-white text-[color:var(--hub-muted)]'
+                          ? 'bg-[color:var(--hub-accent)] font-semibold text-white'
+                          : 'bg-white dark:bg-[#1c2333] text-[color:var(--hub-muted)]'
                         : 'bg-transparent'
                     }`}
                   >

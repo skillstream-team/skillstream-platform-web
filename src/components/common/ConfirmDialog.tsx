@@ -79,7 +79,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
       ? 'bg-[rgba(220,38,38,0.08)] text-red-600 border-[rgba(220,38,38,0.2)]'
       : type === 'warning'
       ? 'bg-[rgba(217,119,6,0.08)] text-amber-600 border-[rgba(217,119,6,0.2)]'
-      : 'bg-[rgba(37,99,235,0.08)] text-[color:var(--hub-primary)] border-[rgba(37,99,235,0.2)]';
+      : 'bg-[rgba(27,74,128,0.08)] text-[color:var(--hub-primary)] border-[rgba(27,74,128,0.2)]';
 
   const confirmClass =
     type === 'danger'

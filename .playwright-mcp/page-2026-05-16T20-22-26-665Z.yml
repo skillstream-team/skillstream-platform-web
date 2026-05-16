@@ -1,0 +1,83 @@
+- generic [ref=e4]:
+  - complementary [ref=e5]:
+    - generic [ref=e6]:
+      - link "SkillStream" [ref=e7] [cursor=pointer]:
+        - /url: /dashboard
+        - paragraph [ref=e10]: SkillStream
+      - navigation [ref=e11]:
+        - link "Dashboard" [ref=e12] [cursor=pointer]:
+          - /url: /dashboard
+          - img [ref=e13]
+          - generic [ref=e16]: Dashboard
+        - link "Classes" [ref=e17] [cursor=pointer]:
+          - /url: /classes
+          - img [ref=e18]
+          - generic [ref=e21]: Classes
+        - link "Students" [ref=e22] [cursor=pointer]:
+          - /url: /students
+          - img [ref=e23]
+          - generic [ref=e28]: Students
+        - link "Schedule" [ref=e29] [cursor=pointer]:
+          - /url: /schedule
+          - img [ref=e30]
+          - generic [ref=e32]: Schedule
+        - link "Messages" [ref=e33] [cursor=pointer]:
+          - /url: /messages
+          - img [ref=e34]
+          - generic [ref=e36]: Messages
+        - link "Payments" [ref=e37] [cursor=pointer]:
+          - /url: /payments
+          - img [ref=e38]
+          - generic [ref=e40]: Payments
+        - link "Settings" [ref=e41] [cursor=pointer]:
+          - /url: /settings
+          - img [ref=e42]
+          - generic [ref=e45]: Settings
+      - generic [ref=e46]:
+        - generic [ref=e47]:
+          - generic [ref=e48]: DT
+          - generic [ref=e49]:
+            - paragraph [ref=e50]: Demo Teacher
+            - paragraph [ref=e51]: teacher@skillstream.demo
+        - generic [ref=e52]:
+          - button "Toggle theme" [ref=e53] [cursor=pointer]:
+            - img [ref=e54]
+          - button "Sign out" [ref=e56] [cursor=pointer]:
+            - img [ref=e57]
+            - text: Sign out
+  - main [ref=e61]:
+    - generic [ref=e62]:
+      - generic [ref=e63]:
+        - paragraph [ref=e64]: Students
+        - heading "See every student across every class." [level=2] [ref=e65]
+        - paragraph [ref=e66]: Search progress, homework completion, and last activity.
+        - generic [ref=e67]:
+          - img
+          - textbox "Search students or classes" [ref=e68]
+      - table [ref=e71]:
+        - rowgroup [ref=e72]:
+          - row "Student Progress Homework Last activity Classes" [ref=e73]:
+            - columnheader "Student" [ref=e74]
+            - columnheader "Progress" [ref=e75]
+            - columnheader "Homework" [ref=e76]
+            - columnheader "Last activity" [ref=e77]
+            - columnheader "Classes" [ref=e78]
+        - rowgroup [ref=e79]:
+          - row "Demo Student student@skillstream.demo 72% 68% complete 16 May, 19:52 Algebra Focus Group" [ref=e80]:
+            - cell "Demo Student student@skillstream.demo" [ref=e81]:
+              - link "Demo Student" [ref=e82] [cursor=pointer]:
+                - /url: /students/demo-student
+              - paragraph [ref=e83]: student@skillstream.demo
+            - cell "72%" [ref=e84]
+            - cell "68% complete" [ref=e85]
+            - cell "16 May, 19:52" [ref=e86]
+            - cell "Algebra Focus Group" [ref=e87]
+          - row "Ava Thompson ava.thompson@example.com 84% 91% complete 16 May, 20:22 Algebra Focus Group" [ref=e88]:
+            - cell "Ava Thompson ava.thompson@example.com" [ref=e89]:
+              - link "Ava Thompson" [ref=e90] [cursor=pointer]:
+                - /url: /students/demo-learner-2
+              - paragraph [ref=e91]: ava.thompson@example.com
+            - cell "84%" [ref=e92]
+            - cell "91% complete" [ref=e93]
+            - cell "16 May, 20:22" [ref=e94]
+            - cell "Algebra Focus Group" [ref=e95]

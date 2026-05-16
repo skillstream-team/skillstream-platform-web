@@ -32,6 +32,10 @@ interface AuthActions {
   clearNotice: () => void;
   setLoading: (loading: boolean) => void;
   updateUser: (userData: Partial<User>) => Promise<void>;
+  updateEmail: (newEmail: string) => Promise<void>;
+  changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
+  uploadAvatar: (file: File) => Promise<void>;
+  setActiveOrgId: (orgId: string) => void;
 }
 
 type AuthStore = AuthState & AuthActions;
@@ -42,6 +46,8 @@ type ProfileRow = {
   full_name: string;
   role: 'teacher' | 'student' | 'admin';
   avatar_url: string | null;
+  bio: string | null;
+  subjects: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -89,14 +95,38 @@ const toAuthUser = (profile: ProfileRow): User => ({
   name: profile.full_name || profile.email.split('@')[0],
   role: mapRole(profile.role),
   avatar: profile.avatar_url || undefined,
+  bio: profile.bio || undefined,
+  subjects: profile.subjects || undefined,
   createdAt: profile.created_at,
   updatedAt: profile.updated_at,
+  orgMemberships: [],
+  activeOrgId: null,
 });
+
+type OrgMemberRow = {
+  org_id: string;
+  org_role: string;
+  organizations: { name: string };
+};
+
+const loadOrgMemberships = async (userId: string): Promise<User['orgMemberships']> => {
+  const { data } = await supabase
+    .from('org_members')
+    .select('org_id, org_role, organizations(name)')
+    .eq('user_id', userId);
+
+  if (!data) return [];
+  return (data as unknown as OrgMemberRow[]).map((row) => ({
+    orgId: row.org_id,
+    orgName: (row.organizations as { name: string })?.name || '',
+    orgRole: row.org_role as User['orgMemberships'][number]['orgRole'],
+  }));
+};
 
 const loadProfile = async (userId: string): Promise<ProfileRow> => {
   const { data, error } = await supabase
     .from('profiles')
-    .select('id, email, full_name, role, avatar_url, created_at, updated_at')
+    .select('id, email, full_name, role, avatar_url, bio, subjects, created_at, updated_at')
     .eq('id', userId)
     .single();
 
@@ -137,6 +167,8 @@ const DEMO_USERS: Record<string, User> = {
     role: 'TEACHER',
     createdAt: '2026-01-01T09:00:00.000Z',
     updatedAt: '2026-01-01T09:00:00.000Z',
+    orgMemberships: [],
+    activeOrgId: null,
   },
   'student@skillstream.demo': {
     id: 'demo-student',
@@ -145,6 +177,8 @@ const DEMO_USERS: Record<string, User> = {
     role: 'STUDENT',
     createdAt: '2026-01-01T09:00:00.000Z',
     updatedAt: '2026-01-01T09:00:00.000Z',
+    orgMemberships: [],
+    activeOrgId: null,
   },
   'admin@skillstream.demo': {
     id: 'demo-admin',
@@ -153,6 +187,28 @@ const DEMO_USERS: Record<string, User> = {
     role: 'ADMIN',
     createdAt: '2026-01-01T09:00:00.000Z',
     updatedAt: '2026-01-01T09:00:00.000Z',
+    orgMemberships: [],
+    activeOrgId: null,
+  },
+  'orgadmin@skillstream.demo': {
+    id: 'demo-orgadmin',
+    email: 'orgadmin@skillstream.demo',
+    name: 'Demo Org Admin',
+    role: 'TEACHER',
+    createdAt: '2026-01-01T09:00:00.000Z',
+    updatedAt: '2026-01-01T09:00:00.000Z',
+    orgMemberships: [{ orgId: 'demo-org', orgName: 'Acme Corp', orgRole: 'admin' }],
+    activeOrgId: 'demo-org',
+  },
+  'learner@skillstream.demo': {
+    id: 'demo-learner',
+    email: 'learner@skillstream.demo',
+    name: 'Demo Learner',
+    role: 'STUDENT',
+    createdAt: '2026-01-01T09:00:00.000Z',
+    updatedAt: '2026-01-01T09:00:00.000Z',
+    orgMemberships: [{ orgId: 'demo-org', orgName: 'Acme Corp', orgRole: 'learner' }],
+    activeOrgId: 'demo-org',
   },
 };
 
@@ -243,8 +299,10 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
             fullName: (session.user.user_metadata?.full_name as string | undefined) || undefined,
             role: (session.user.user_metadata?.role as 'student' | 'teacher' | 'admin' | undefined) || undefined,
           });
+          const orgMemberships = await loadOrgMemberships(profile.id);
+          const baseUser = toAuthUser(profile);
           set({
-            user: toAuthUser(profile),
+            user: { ...baseUser, orgMemberships, activeOrgId: orgMemberships[0]?.orgId || null },
             token: session.access_token,
             isAuthenticated: true,
             isLoading: false,
@@ -283,8 +341,10 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         fullName: (data.session.user.user_metadata?.full_name as string | undefined) || undefined,
         role: (data.session.user.user_metadata?.role as 'student' | 'teacher' | 'admin' | undefined) || undefined,
       });
+      const orgMemberships = await loadOrgMemberships(profile.id);
+      const baseUser = toAuthUser(profile);
       set({
-        user: toAuthUser(profile),
+        user: { ...baseUser, orgMemberships, activeOrgId: orgMemberships[0]?.orgId || null },
         token: data.session.access_token,
         isAuthenticated: true,
         isLoading: false,
@@ -337,8 +397,10 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         fullName: (data.user.user_metadata?.full_name as string | undefined) || (data.user.email || email.trim()).split('@')[0],
         role: (data.user.user_metadata?.role as 'student' | 'teacher' | 'admin' | undefined) || undefined,
       });
+      const orgMemberships = await loadOrgMemberships(profile.id);
+      const baseUser = toAuthUser(profile);
       set({
-        user: toAuthUser(profile),
+        user: { ...baseUser, orgMemberships, activeOrgId: orgMemberships[0]?.orgId || null },
         token: data.session.access_token,
         isAuthenticated: true,
         isLoading: false,
@@ -494,13 +556,21 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 
   setLoading: (loading: boolean) => set({ isLoading: loading }),
 
+  setActiveOrgId: (orgId: string) => {
+    const user = get().user;
+    if (!user) return;
+    set({ user: { ...user, activeOrgId: orgId } });
+  },
+
   updateUser: async (userData: Partial<User>) => {
     const current = get().user;
     if (!current) return;
 
     const updatedName = typeof userData.name === 'string' ? userData.name.trim() : null;
     const updatedAvatar = typeof userData.avatar === 'string' ? userData.avatar : null;
-    if (!updatedName && !updatedAvatar) return;
+    const hasBio = 'bio' in userData;
+    const hasSubjects = 'subjects' in userData;
+    if (!updatedName && !updatedAvatar && !hasBio && !hasSubjects) return;
 
     const isDemo = Boolean(current.id.startsWith('demo-') || current.email.endsWith('@skillstream.demo'));
     if (isDemo) {
@@ -508,6 +578,8 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         ...current,
         ...(updatedName ? { name: updatedName } : {}),
         ...(updatedAvatar ? { avatar: updatedAvatar } : {}),
+        ...(hasBio ? { bio: userData.bio || undefined } : {}),
+        ...(hasSubjects ? { subjects: userData.subjects || undefined } : {}),
       };
       persistDemoUser(next);
       set({ user: next, error: null });
@@ -519,6 +591,8 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     const payload: Record<string, unknown> = {};
     if (updatedName) payload.full_name = updatedName;
     if (updatedAvatar) payload.avatar_url = updatedAvatar;
+    if (hasBio) payload.bio = userData.bio ?? null;
+    if (hasSubjects) payload.subjects = userData.subjects ?? null;
 
     const { error } = await supabase
       .from('profiles')
@@ -532,9 +606,74 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     }
 
     const refreshed = await loadProfile(current.id);
-    set({
-      user: toAuthUser(refreshed),
-      error: null,
+    set({ user: toAuthUser(refreshed), error: null });
+  },
+
+  updateEmail: async (newEmail: string) => {
+    const current = get().user;
+    if (!current) return;
+    const trimmed = newEmail.trim().toLowerCase();
+    if (!trimmed || !trimmed.includes('@')) throw new Error('Enter a valid email address.');
+
+    const isDemo = Boolean(current.id.startsWith('demo-') || current.email.endsWith('@skillstream.demo'));
+    if (isDemo) {
+      const next: User = { ...current, email: trimmed };
+      persistDemoUser(next);
+      set({ user: next, error: null });
+      return;
+    }
+
+    ensureSupabaseConfig();
+    const { error } = await supabase.auth.updateUser({ email: trimmed });
+    if (error) throw new Error(formatError(error, 'Could not update email.'));
+  },
+
+  uploadAvatar: async (file: File) => {
+    const current = get().user;
+    if (!current) return;
+
+    const isDemo = Boolean(current.id.startsWith('demo-') || current.email.endsWith('@skillstream.demo'));
+    if (isDemo) {
+      throw new Error('Profile photo upload requires a live Supabase connection. Demo accounts cannot upload photos.');
+    }
+
+    ensureSupabaseConfig();
+
+    const MAX_BYTES = 2 * 1024 * 1024;
+    if (file.size > MAX_BYTES) throw new Error('Photo must be smaller than 2 MB.');
+    if (!file.type.startsWith('image/')) throw new Error('File must be an image.');
+
+    const { error: uploadError } = await supabase.storage
+      .from('avatars')
+      .upload(current.id, file, { upsert: true, contentType: file.type });
+
+    if (uploadError) throw new Error(formatError(uploadError, 'Could not upload photo.'));
+
+    const { data } = supabase.storage.from('avatars').getPublicUrl(current.id);
+    const avatarUrl = `${data.publicUrl}?t=${Date.now()}`;
+
+    await get().updateUser({ avatar: avatarUrl });
+  },
+
+  changePassword: async (currentPassword: string, newPassword: string) => {
+    const current = get().user;
+    if (!current) return;
+    const passwordError = validatePassword(newPassword.trim());
+    if (passwordError) throw new Error(passwordError);
+
+    const isDemo = Boolean(current.id.startsWith('demo-') || current.email.endsWith('@skillstream.demo'));
+    if (isDemo) {
+      if (currentPassword.trim() !== DEMO_PASSWORD) throw new Error('Current password is incorrect.');
+      return;
+    }
+
+    ensureSupabaseConfig();
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: current.email,
+      password: currentPassword.trim(),
     });
+    if (signInError) throw new Error('Current password is incorrect.');
+    const { error } = await supabase.auth.updateUser({ password: newPassword.trim() });
+    if (error) throw new Error(formatError(error, 'Could not update password.'));
   },
 }));

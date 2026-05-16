@@ -1,0 +1,69 @@
+- generic [ref=e192]:
+  - button "Toggle theme" [ref=e193] [cursor=pointer]:
+    - img [ref=e194]
+  - generic [ref=e196]:
+    - generic [ref=e197]:
+      - generic [ref=e198]:
+        - link "SkillStream Education platform" [ref=e199] [cursor=pointer]:
+          - /url: /login
+          - generic [ref=e200]:
+            - generic [ref=e201]:
+              - generic [ref=e202]: S
+              - generic [ref=e203]: S
+            - generic [ref=e204]:
+              - paragraph [ref=e205]: SkillStream
+              - paragraph [ref=e206]: Education platform
+        - generic [ref=e207]:
+          - generic [ref=e208]: SkillStream
+          - heading "Teach, learn, and connect in one focused learning platform." [level=1] [ref=e209]
+      - generic [ref=e210]:
+        - generic [ref=e211]:
+          - img [ref=e212]
+          - heading "Courses" [level=3] [ref=e215]
+          - paragraph [ref=e216]: Build and access structured learning paths.
+        - generic [ref=e217]:
+          - img [ref=e218]
+          - heading "Live" [level=3] [ref=e221]
+          - paragraph [ref=e222]: Run sessions and replay them when needed.
+        - generic [ref=e223]:
+          - img [ref=e224]
+          - heading "Practice" [level=3] [ref=e226]
+          - paragraph [ref=e227]: Track progress and focus where it matters.
+        - generic [ref=e228]:
+          - img [ref=e229]
+          - heading "Community" [level=3] [ref=e232]
+          - paragraph [ref=e233]: Keep learners and teachers in sync.
+    - generic [ref=e235]:
+      - generic [ref=e236]:
+        - heading "Welcome back" [level=2] [ref=e237]
+        - paragraph [ref=e238]: Sign in to your SkillStream workspace.
+      - generic [ref=e239]:
+        - generic [ref=e240]:
+          - text: Email
+          - generic [ref=e241]:
+            - img
+            - textbox "you@example.com" [active] [ref=e242]
+        - generic [ref=e243]:
+          - generic [ref=e244]:
+            - generic [ref=e245]: Password
+            - link "Forgot password?" [ref=e246] [cursor=pointer]:
+              - /url: /forgot-password
+          - generic [ref=e247]:
+            - img
+            - textbox "Enter your password" [ref=e248]
+            - button "Show password" [ref=e249] [cursor=pointer]:
+              - img [ref=e250]
+        - button "Sign in" [ref=e253] [cursor=pointer]:
+          - generic [ref=e254]: Sign in
+          - img [ref=e255]
+        - generic [ref=e257]:
+          - button "Continue with Google" [ref=e258] [cursor=pointer]:
+            - img [ref=e259]
+            - text: Continue with Google
+          - button "Continue with Apple" [ref=e264] [cursor=pointer]:
+            - img [ref=e265]
+            - text: Continue with Apple
+      - generic [ref=e268]:
+        - paragraph [ref=e269]: New to SkillStream?
+        - link "Create account" [ref=e270] [cursor=pointer]:
+          - /url: /register

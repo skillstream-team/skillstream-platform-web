@@ -268,7 +268,7 @@ export const ClassPage: React.FC = () => {
         <section className="grid gap-4 lg:grid-cols-2">
           {teacherClass.lessons.map((lesson) => (
             <div key={lesson.id} className="rounded-[28px] border border-[color:var(--hub-border)] bg-white p-6 shadow-[0_18px_48px_rgba(15,23,42,0.05)]">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[color:var(--hub-primary)]">
+              <p className={`text-xs font-semibold uppercase tracking-[0.18em] ${lesson.status === 'today' ? 'text-[color:var(--hub-accent)]' : 'text-[color:var(--hub-primary)]'}`}>
                 {lesson.status === 'cancelled' ? 'Cancelled session' : lesson.status === 'completed' ? 'Past session' : lesson.status === 'today' ? 'Today' : 'Upcoming session'}
               </p>
               <h3 className="mt-3 text-xl font-semibold">{lesson.title}</h3>

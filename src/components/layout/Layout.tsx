@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { BookOpen, CalendarDays, CreditCard, Home, LogOut, MessageSquare, Monitor, Moon, MoreHorizontal, RotateCcw, Settings, ShieldCheck, Sun, Users, X } from 'lucide-react';
+import { BookOpen, CalendarDays, CreditCard, Home, LogOut, MessageSquare, Monitor, Moon, MoreHorizontal, RotateCcw, Settings, ShieldCheck, Sun, UserCircle, Users, X } from 'lucide-react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { SkillStreamLogo } from '../branding/SkillStreamLogo';
 import { OnboardingTour } from '../tour/OnboardingTour';
@@ -14,17 +14,6 @@ interface LayoutProps {
   className?: string;
 }
 
-const navItems = [
-  { to: '/dashboard', label: 'Dashboard', icon: Home },
-  { to: '/classes', label: 'Classes', icon: BookOpen },
-  { to: '/students', label: 'Students', icon: Users },
-  { to: '/schedule', label: 'Schedule', icon: CalendarDays },
-  { to: '/messages', label: 'Messages', icon: MessageSquare },
-  { to: '/payments', label: 'Payments', icon: CreditCard },
-  { to: '/admin', label: 'Admin', icon: ShieldCheck },
-  { to: '/settings', label: 'Settings', icon: Settings },
-];
-
 export const Layout: React.FC<LayoutProps> = ({ children, className }) => {
   useRealtimeMessages();
   const { user, logout } = useAuthStore();
@@ -35,11 +24,34 @@ export const Layout: React.FC<LayoutProps> = ({ children, className }) => {
   const undoLastAction = useTeacherHubStore((state) => state.undoLastAction);
   const isStudent = user?.role === 'STUDENT';
   const isTeacher = user?.role === 'TEACHER';
-  const visibleNavItems = navItems.filter((item) => {
-    if (isStudent) return item.to !== '/payments' && item.to !== '/admin';
-    if (isTeacher) return item.to !== '/admin';
-    return true;
-  });
+  const studentSelf = useTeacherHubStore((state) =>
+    isStudent ? state.students.find((s) => s.email.toLowerCase() === (user?.email || '').toLowerCase()) : undefined
+  );
+
+  const visibleNavItems = useMemo(() => {
+    if (isStudent) {
+      return [
+        { to: '/dashboard', label: 'Dashboard', icon: Home },
+        { to: '/classes', label: 'My Classes', icon: BookOpen },
+        { to: '/schedule', label: 'Schedule', icon: CalendarDays },
+        { to: '/messages', label: 'Messages', icon: MessageSquare },
+        ...(studentSelf ? [{ to: `/students/${studentSelf.id}`, label: 'My Profile', icon: UserCircle }] : []),
+        { to: '/settings', label: 'Settings', icon: Settings },
+      ];
+    }
+    const teacherAdminItems = [
+      { to: '/dashboard', label: 'Dashboard', icon: Home },
+      { to: '/classes', label: 'Classes', icon: BookOpen },
+      { to: '/students', label: 'Students', icon: Users },
+      { to: '/schedule', label: 'Schedule', icon: CalendarDays },
+      { to: '/messages', label: 'Messages', icon: MessageSquare },
+      { to: '/payments', label: 'Payments', icon: CreditCard },
+      { to: '/admin', label: 'Admin', icon: ShieldCheck },
+      { to: '/settings', label: 'Settings', icon: Settings },
+    ];
+    if (isTeacher) return teacherAdminItems.filter((item) => item.to !== '/admin');
+    return teacherAdminItems;
+  }, [isStudent, isTeacher, studentSelf, user?.email]);
   const [showMobileMore, setShowMobileMore] = useState(false);
   const { mobilePrimaryItems, mobileOverflowItems } = useMemo(() => {
     if (visibleNavItems.length <= 5) {
@@ -76,7 +88,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, className }) => {
                   className={({ isActive }) =>
                     `flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold transition ${
                       isActive
-                        ? 'bg-[color:var(--hub-primary)] text-white shadow-[0_12px_24px_rgba(37,99,235,0.24)]'
+                        ? 'bg-[color:var(--hub-primary)] text-white shadow-[0_12px_24px_rgba(27,74,128,0.24)]'
                         : 'text-[color:var(--hub-muted)] hover:bg-white hover:text-[color:var(--hub-text)]'
                     }`
                   }
@@ -85,6 +97,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, className }) => {
                   <span>{label}</span>
                 </NavLink>
               ))}
+
             </nav>
 
             <div className="mt-auto rounded-[24px] bg-white p-4">
@@ -123,6 +136,10 @@ export const Layout: React.FC<LayoutProps> = ({ children, className }) => {
         </aside>
 
         <div className="flex min-h-screen flex-1 flex-col">
+          <header className="sticky top-0 z-30 flex items-center border-b border-[color:var(--hub-border)] bg-[color:var(--hub-panel)] px-4 py-3 backdrop-blur-xl lg:hidden">
+            <SkillStreamLogo to="/dashboard" hideMark />
+          </header>
+
           {undoItem && !isStudent ? (
             <header className="px-4 pt-4 sm:px-6 lg:px-8 lg:pt-0">
               <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[color:var(--hub-border)] bg-white px-4 py-3">

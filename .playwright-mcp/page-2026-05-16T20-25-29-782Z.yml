@@ -1,0 +1,133 @@
+- generic [ref=e4]:
+  - complementary [ref=e5]:
+    - generic [ref=e335]:
+      - link "SkillStream" [ref=e336] [cursor=pointer]:
+        - /url: /org/demo-org/dashboard
+        - paragraph [ref=e339]: SkillStream
+      - generic [ref=e342]:
+        - paragraph [ref=e343]: Organisation
+        - paragraph [ref=e344]: Acme Corp
+      - navigation [ref=e345]:
+        - link "Dashboard" [ref=e346] [cursor=pointer]:
+          - /url: /org/demo-org/dashboard
+          - img [ref=e347]
+          - generic [ref=e352]: Dashboard
+        - link "Courses" [ref=e353] [cursor=pointer]:
+          - /url: /org/demo-org/courses
+          - img [ref=e354]
+          - generic [ref=e357]: Courses
+        - link "Learning Paths" [ref=e358] [cursor=pointer]:
+          - /url: /org/demo-org/paths
+          - img [ref=e359]
+          - generic [ref=e363]: Learning Paths
+        - link "Learners" [ref=e364] [cursor=pointer]:
+          - /url: /org/demo-org/learners
+          - img [ref=e365]
+          - generic [ref=e370]: Learners
+        - link "Reports" [ref=e371] [cursor=pointer]:
+          - /url: /org/demo-org/reports
+          - img [ref=e372]
+          - generic [ref=e375]: Reports
+        - link "Certificates" [ref=e376] [cursor=pointer]:
+          - /url: /org/demo-org/certificates
+          - img [ref=e377]
+          - generic [ref=e380]: Certificates
+        - link "Announcements" [ref=e381] [cursor=pointer]:
+          - /url: /org/demo-org/announcements
+          - img [ref=e382]
+          - generic [ref=e385]: Announcements
+        - link "Audit Log" [ref=e386] [cursor=pointer]:
+          - /url: /org/demo-org/audit
+          - img [ref=e387]
+          - generic [ref=e390]: Audit Log
+        - link "Billing" [ref=e391] [cursor=pointer]:
+          - /url: /org/demo-org/billing
+          - img [ref=e392]
+          - generic [ref=e394]: Billing
+        - link "Settings" [ref=e395] [cursor=pointer]:
+          - /url: /org/demo-org/settings
+          - img [ref=e396]
+          - generic [ref=e399]: Settings
+      - generic [ref=e400]:
+        - generic [ref=e401]:
+          - generic [ref=e402]: DO
+          - generic [ref=e403]:
+            - paragraph [ref=e404]: Demo Org Admin
+            - paragraph [ref=e405]: orgadmin@skillstream.demo
+        - generic [ref=e406]:
+          - button "Toggle theme" [ref=e407] [cursor=pointer]:
+            - img [ref=e408]
+          - button "Sign out" [ref=e410] [cursor=pointer]:
+            - img [ref=e411]
+            - text: Sign out
+  - main [ref=e86]:
+    - generic [ref=e275]:
+      - generic [ref=e276]:
+        - button "Back to courses" [ref=e277] [cursor=pointer]:
+          - img [ref=e278]
+          - text: Back to courses
+        - generic [ref=e280]:
+          - generic [ref=e281]: Draft
+          - button "Settings" [ref=e282] [cursor=pointer]:
+            - img [ref=e283]
+            - text: Settings
+          - button "Publish" [ref=e286] [cursor=pointer]
+      - generic [ref=e287]:
+        - generic [ref=e288]:
+          - generic [ref=e289]:
+            - paragraph [ref=e290]: Empty State Test Course
+            - button "Add module" [ref=e291] [cursor=pointer]:
+              - img [ref=e292]
+              - text: Add module
+          - generic [ref=e414]:
+            - generic [ref=e415]:
+              - button "Module 1" [ref=e416] [cursor=pointer]:
+                - img [ref=e417]
+                - generic [ref=e419]: Module 1
+              - button [ref=e420] [cursor=pointer]:
+                - img [ref=e421]
+              - button [ref=e423] [cursor=pointer]:
+                - img [ref=e424]
+            - generic [ref=e428]:
+              - button "Text" [ref=e429] [cursor=pointer]:
+                - img [ref=e430]
+                - text: Text
+              - button "Video" [ref=e433] [cursor=pointer]:
+                - img [ref=e434]
+                - text: Video
+              - button "Quiz" [ref=e437] [cursor=pointer]:
+                - img [ref=e438]
+                - text: Quiz
+        - generic [ref=e299]:
+          - paragraph [ref=e301]: Course Settings
+          - generic [ref=e302]:
+            - generic [ref=e303]:
+              - generic [ref=e304]: Category
+              - combobox [ref=e305]:
+                - option "No category" [selected]
+                - option "compliance"
+                - option "leadership"
+                - option "technical"
+                - option "soft skills"
+                - option "onboarding"
+                - option "health safety"
+                - option "other"
+            - generic [ref=e306]:
+              - generic [ref=e307]: Difficulty
+              - combobox [ref=e308]:
+                - option "No difficulty" [selected]
+                - option "Beginner"
+                - option "Intermediate"
+                - option "Advanced"
+            - generic [ref=e309]:
+              - generic [ref=e310]: Estimated duration (minutes)
+              - spinbutton [ref=e311]
+            - generic [ref=e312]:
+              - generic [ref=e313]: Thumbnail URL
+              - textbox "https://..." [ref=e314]
+            - generic [ref=e315]:
+              - generic [ref=e316]: Skills taught
+              - generic [ref=e317]:
+                - textbox "Type skill and press Enter" [ref=e318]
+                - button "Add" [ref=e319] [cursor=pointer]
+            - button "Save settings" [ref=e320] [cursor=pointer]

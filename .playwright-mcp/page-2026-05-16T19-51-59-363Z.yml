@@ -1,0 +1,99 @@
+- generic [ref=e4]:
+  - complementary [ref=e5]:
+    - generic [ref=e6]:
+      - link "SkillStream" [ref=e7] [cursor=pointer]:
+        - /url: /dashboard
+        - paragraph [ref=e10]: SkillStream
+      - navigation [ref=e11]:
+        - link "Dashboard" [ref=e12] [cursor=pointer]:
+          - /url: /dashboard
+          - img [ref=e13]
+          - generic [ref=e16]: Dashboard
+        - link "My Classes" [ref=e17] [cursor=pointer]:
+          - /url: /classes
+          - img [ref=e18]
+          - generic [ref=e21]: My Classes
+        - link "Schedule" [ref=e22] [cursor=pointer]:
+          - /url: /schedule
+          - img [ref=e23]
+          - generic [ref=e25]: Schedule
+        - link "Messages" [ref=e26] [cursor=pointer]:
+          - /url: /messages
+          - img [ref=e27]
+          - generic [ref=e29]: Messages
+        - link "My Profile" [ref=e30] [cursor=pointer]:
+          - /url: /students/demo-student
+          - img [ref=e31]
+          - generic [ref=e35]: My Profile
+        - link "Settings" [ref=e36] [cursor=pointer]:
+          - /url: /settings
+          - img [ref=e37]
+          - generic [ref=e40]: Settings
+      - generic [ref=e41]:
+        - generic [ref=e42]:
+          - generic [ref=e43]: DS
+          - generic [ref=e44]:
+            - paragraph [ref=e45]: Demo Student
+            - paragraph [ref=e46]: student@skillstream.demo
+        - generic [ref=e47]:
+          - button "Toggle theme" [ref=e48] [cursor=pointer]:
+            - img [ref=e49]
+          - button "Sign out" [ref=e51] [cursor=pointer]:
+            - img [ref=e52]
+            - text: Sign out
+  - main [ref=e56]:
+    - generic [ref=e57]:
+      - generic [ref=e58]:
+        - generic [ref=e59]:
+          - generic [ref=e60]:
+            - paragraph [ref=e61]: Class Detail
+            - heading "Algebra Focus Group" [level=2] [ref=e62]
+            - paragraph [ref=e63]: Extra lessons for tricky algebra topics.
+          - generic [ref=e64]:
+            - generic [ref=e65]:
+              - paragraph [ref=e66]: Students
+              - paragraph [ref=e67]: 2 enrolled
+            - generic [ref=e68]:
+              - paragraph [ref=e69]: Next session
+              - paragraph [ref=e70]: Sat 16 May, 22:51
+            - generic [ref=e71]:
+              - paragraph [ref=e72]: Invite code
+              - paragraph [ref=e73]: CLS-DEMO101
+        - generic [ref=e75]:
+          - img [ref=e76]
+          - text: "Invite code: CLS-DEMO101"
+      - generic [ref=e78]:
+        - button "Students" [ref=e79] [cursor=pointer]
+        - button "Lessons" [ref=e80] [cursor=pointer]
+        - button "Homework / Assignments" [ref=e81] [cursor=pointer]
+        - button "Resources" [ref=e82] [cursor=pointer]
+        - button "Progress Tracking" [active] [ref=e83] [cursor=pointer]
+        - button "Messages" [ref=e84] [cursor=pointer]
+      - generic [ref=e144]:
+        - generic [ref=e145]:
+          - paragraph [ref=e146]: Class performance
+          - generic [ref=e148]:
+            - generic [ref=e150]:
+              - generic [ref=e151]:
+                - heading "Quadratics" [level=4] [ref=e152]
+                - paragraph [ref=e153]: Revisit completing the square.
+              - generic [ref=e154]: 62%
+            - generic [ref=e158]:
+              - generic [ref=e159]:
+                - heading "Factorization" [level=4] [ref=e160]
+                - paragraph [ref=e161]: Good baseline.
+              - generic [ref=e162]: 78%
+            - generic [ref=e166]:
+              - generic [ref=e167]:
+                - heading "Word problems" [level=4] [ref=e168]
+                - paragraph [ref=e169]: Needs guided walkthroughs.
+              - generic [ref=e170]: 58%
+        - generic [ref=e173]:
+          - generic [ref=e174]:
+            - paragraph [ref=e175]: Students needing attention
+            - generic [ref=e177]:
+              - paragraph [ref=e178]: Demo Student
+              - paragraph [ref=e179]: Needs support with word problems.
+          - generic [ref=e180]:
+            - paragraph [ref=e181]: Quick intervention idea
+            - generic [ref=e182]: Run a 10-minute diagnostic at the start of the next lesson, then split follow-up questions by weak topic.

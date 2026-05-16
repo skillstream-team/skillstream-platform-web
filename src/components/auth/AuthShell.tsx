@@ -21,7 +21,7 @@ export function AuthShell({
   showAside?: boolean;
 }) {
   return (
-    <div className="min-h-screen bg-[linear-gradient(180deg,#fafafe_0%,#f4f5fb_100%)] px-4 py-6 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-[linear-gradient(180deg,#fafafe_0%,#f4f5fb_100%)] dark:bg-[linear-gradient(180deg,#0d1117_0%,#010409_100%)] px-4 py-6 sm:px-6 lg:px-8">
       <ThemeToggle />
       <div className={`mx-auto grid max-w-6xl gap-6 ${showAside ? 'lg:grid-cols-2' : ''}`}>
         <div className={`edu-hero hidden lg:flex lg:flex-col lg:justify-between ${showAside ? '' : 'lg:hidden'}`}>
@@ -69,7 +69,7 @@ export function AuthShell({
 
             {children}
 
-            {footer ? <div className="mt-8 border-t border-[rgba(20,35,43,0.08)] pt-6">{footer}</div> : null}
+            {footer ? <div className="mt-8 border-t border-[color:var(--edu-border)] pt-6">{footer}</div> : null}
           </div>
         </div>
       </div>

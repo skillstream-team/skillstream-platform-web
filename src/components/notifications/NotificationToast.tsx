@@ -55,23 +55,23 @@ export const NotificationToast: React.FC<NotificationToastProps> = ({
   const getStyles = () => {
     switch (notification.type) {
       case 'success':
-        return 'bg-green-50 border-green-200 text-green-800';
+        return 'bg-green-50 border-green-200 text-green-800 dark:bg-green-950/60 dark:border-green-800/60 dark:text-green-300';
       case 'error':
-        return 'bg-red-50 border-red-200 text-red-800';
+        return 'bg-red-50 border-red-200 text-red-800 dark:bg-red-950/60 dark:border-red-800/60 dark:text-red-300';
       case 'warning':
-        return 'bg-yellow-50 border-yellow-200 text-yellow-800';
+        return 'bg-yellow-50 border-yellow-200 text-yellow-800 dark:bg-yellow-950/60 dark:border-yellow-800/60 dark:text-yellow-300';
       case 'info':
-        return 'bg-blue-50 border-blue-200 text-blue-800';
+        return 'bg-blue-50 border-blue-200 text-blue-800 dark:bg-blue-950/60 dark:border-blue-800/60 dark:text-blue-300';
       default:
-        return 'bg-gray-50 border-gray-200 text-gray-800';
+        return 'bg-gray-50 border-gray-200 text-gray-800 dark:bg-gray-900/60 dark:border-gray-700/60 dark:text-gray-300';
     }
   };
 
   return (
     <div
       className={cn(
-        'w-80 max-w-sm rounded-lg border bg-white p-4 shadow-lg transform transition-all duration-300',
-        isVisible ? "translate-x-0 opacity-100" : "translate-x-full opacity-0",
+        'w-80 max-w-sm rounded-[20px] border p-4 shadow-lg transform transition-all duration-300',
+        isVisible ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0',
         getStyles()
       )}
       role="status"
@@ -81,18 +81,18 @@ export const NotificationToast: React.FC<NotificationToastProps> = ({
         <div className="flex-shrink-0">
           {getIcon()}
         </div>
-        
+
         <div className="flex-1 min-w-0">
           <h4 className="text-sm font-medium">{notification.title}</h4>
-          <p className="text-sm mt-1">{notification.message}</p>
+          <p className="text-sm mt-1 opacity-85">{notification.message}</p>
         </div>
-        
+
         <button
           onClick={() => {
             setIsVisible(false);
             setTimeout(() => onClose(notification.id), 300);
           }}
-          className="flex-shrink-0 p-1 rounded-full hover:bg-gray-100 transition-colors"
+          className="flex-shrink-0 p-1 rounded-full hover:bg-black/8 dark:hover:bg-white/10 transition-colors"
         >
           <X className="w-4 h-4" />
         </button>

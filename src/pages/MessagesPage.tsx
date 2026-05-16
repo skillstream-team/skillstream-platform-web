@@ -254,6 +254,12 @@ export const MessagesPage: React.FC = () => {
                   setDraftMessage(event.target.value);
                   if (sendError) setSendError('');
                 }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    e.currentTarget.form?.requestSubmit();
+                  }
+                }}
                 rows={2}
                 placeholder={`Message ${activeConversation.participantName}`}
                 className="min-h-[44px] flex-1 resize-none rounded-2xl border border-[color:var(--hub-border)] px-3 py-2.5 text-sm outline-none"

@@ -5,6 +5,15 @@ import { useAuthStore } from '../../store/auth';
 import { AuthShell } from '../../components/auth/AuthShell';
 import { hasSupabaseConfig } from '../../lib/supabase';
 
+const getHomeRoute = (user: NonNullable<ReturnType<typeof useAuthStore.getState>['user']>) => {
+  if (user.activeOrgId) {
+    const orgRole = user.orgMemberships.find((m) => m.orgId === user.activeOrgId)?.orgRole;
+    if (orgRole === 'admin' || orgRole === 'instructor') return `/org/${user.activeOrgId}/dashboard`;
+    return '/learn';
+  }
+  return '/dashboard';
+};
+
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const { login, loginWithOAuth, resendConfirmation, isLoading, error, notice, clearError, clearNotice } = useAuthStore();
@@ -30,7 +39,8 @@ export const LoginPage: React.FC = () => {
 
     try {
       await login(normalizedEmail, password);
-      navigate('/dashboard');
+      const { user } = useAuthStore.getState();
+      navigate(user ? getHomeRoute(user) : '/dashboard');
     } catch {
       // store handles auth error
     }
@@ -152,7 +162,7 @@ export const LoginPage: React.FC = () => {
           <button
             type="button"
             onClick={() => void handleOAuth('google')}
-            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-[rgba(17,24,39,0.12)] bg-white px-4 py-3 text-sm font-semibold text-[color:var(--edu-text)] transition-colors hover:bg-[rgba(27,74,128,0.04)] disabled:cursor-not-allowed disabled:opacity-65"
+            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-[color:var(--edu-border)] bg-white px-4 py-3 text-sm font-semibold text-[color:var(--edu-text)] transition-colors hover:bg-[rgba(27,74,128,0.04)] dark:hover:bg-[rgba(68,147,248,0.08)] disabled:cursor-not-allowed disabled:opacity-65"
             disabled={isLoading || oauthLoading !== null || !hasSupabaseConfig}
           >
             <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden="true">
@@ -178,7 +188,7 @@ export const LoginPage: React.FC = () => {
           <button
             type="button"
             onClick={() => void handleOAuth('apple')}
-            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-[rgba(17,24,39,0.12)] bg-white px-4 py-3 text-sm font-semibold text-[color:var(--edu-text)] transition-colors hover:bg-[rgba(27,74,128,0.04)] disabled:cursor-not-allowed disabled:opacity-65"
+            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-[color:var(--edu-border)] bg-white px-4 py-3 text-sm font-semibold text-[color:var(--edu-text)] transition-colors hover:bg-[rgba(27,74,128,0.04)] dark:hover:bg-[rgba(68,147,248,0.08)] disabled:cursor-not-allowed disabled:opacity-65"
             disabled={isLoading || oauthLoading !== null || !hasSupabaseConfig}
           >
             <svg viewBox="0 0 384 512" className="h-4 w-4 fill-current" aria-hidden="true">

@@ -1,0 +1,78 @@
+- generic [ref=e4]:
+  - complementary [ref=e5]:
+    - generic [ref=e6]:
+      - link "SkillStream" [ref=e7] [cursor=pointer]:
+        - /url: /dashboard
+        - paragraph [ref=e10]: SkillStream
+      - navigation [ref=e11]:
+        - link "Dashboard" [ref=e12] [cursor=pointer]:
+          - /url: /dashboard
+          - img [ref=e13]
+          - generic [ref=e16]: Dashboard
+        - link "My Classes" [ref=e17] [cursor=pointer]:
+          - /url: /classes
+          - img [ref=e18]
+          - generic [ref=e21]: My Classes
+        - link "Schedule" [ref=e22] [cursor=pointer]:
+          - /url: /schedule
+          - img [ref=e23]
+          - generic [ref=e25]: Schedule
+        - link "Messages" [ref=e26] [cursor=pointer]:
+          - /url: /messages
+          - img [ref=e27]
+          - generic [ref=e29]: Messages
+        - link "My Profile" [ref=e30] [cursor=pointer]:
+          - /url: /students/demo-student
+          - img [ref=e31]
+          - generic [ref=e35]: My Profile
+        - link "Settings" [ref=e36] [cursor=pointer]:
+          - /url: /settings
+          - img [ref=e37]
+          - generic [ref=e40]: Settings
+      - generic [ref=e41]:
+        - generic [ref=e42]:
+          - generic [ref=e43]: DS
+          - generic [ref=e44]:
+            - paragraph [ref=e45]: Demo Student
+            - paragraph [ref=e46]: student@skillstream.demo
+        - generic [ref=e47]:
+          - button "Toggle theme" [ref=e48] [cursor=pointer]:
+            - img [ref=e49]
+          - button "Sign out" [ref=e51] [cursor=pointer]:
+            - img [ref=e52]
+            - text: Sign out
+  - main [ref=e56]:
+    - generic [ref=e57]:
+      - generic [ref=e59]:
+        - generic [ref=e60]:
+          - generic [ref=e61]: DS
+          - generic [ref=e62]:
+            - paragraph [ref=e63]: My Profile
+            - heading "Demo Student" [level=2] [ref=e64]
+            - paragraph [ref=e65]: student@skillstream.demo
+        - link "Edit profile" [ref=e67] [cursor=pointer]:
+          - /url: /settings
+          - img [ref=e68]
+          - text: Edit profile
+      - generic [ref=e71]:
+        - generic [ref=e72]:
+          - generic [ref=e73]:
+            - paragraph [ref=e74]: My progress
+            - generic [ref=e75]:
+              - generic [ref=e77]:
+                - paragraph [ref=e78]: Overall progress
+                - paragraph [ref=e79]: 72%
+              - generic [ref=e83]:
+                - paragraph [ref=e84]: Homework completion
+                - paragraph [ref=e85]: 68%
+              - generic [ref=e88]:
+                - paragraph [ref=e89]: Last active
+                - paragraph [ref=e90]: Sat 16 May, 19:26
+          - generic [ref=e91]:
+            - generic [ref=e92]:
+              - img [ref=e93]
+              - paragraph [ref=e96]: My classes
+            - generic [ref=e98]: Algebra Focus Group
+        - generic [ref=e99]:
+          - paragraph [ref=e100]: Teacher notes
+          - paragraph [ref=e103]: Needs support with word problems.

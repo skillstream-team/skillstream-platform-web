@@ -23,17 +23,19 @@ export const StudentTable: React.FC<{ students: StudentSummary[]; allowProfileLi
             ) : (
               <p className="text-sm font-semibold text-[color:var(--hub-text)]">{student.name}</p>
             )}
-            <p className="mt-1 text-sm text-[color:var(--hub-muted)]">{student.email}</p>
-            <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-[color:var(--hub-muted)]">
-              <div className="rounded-xl bg-[color:var(--hub-soft)] px-3 py-2">
-                <p className="font-semibold text-[color:var(--hub-text)]">{student.progress}%</p>
-                <p>Progress</p>
+            {allowProfileLinks ? <p className="mt-1 text-sm text-[color:var(--hub-muted)]">{student.email}</p> : null}
+            {allowProfileLinks ? (
+              <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-[color:var(--hub-muted)]">
+                <div className="rounded-xl bg-[color:var(--hub-soft)] px-3 py-2">
+                  <p className="font-semibold text-[color:var(--hub-text)]">{student.progress}%</p>
+                  <p>Progress</p>
+                </div>
+                <div className="rounded-xl bg-[color:var(--hub-soft)] px-3 py-2">
+                  <p className="font-semibold text-[color:var(--hub-text)]">{student.homeworkCompletion}%</p>
+                  <p>Homework</p>
+                </div>
               </div>
-              <div className="rounded-xl bg-[color:var(--hub-soft)] px-3 py-2">
-                <p className="font-semibold text-[color:var(--hub-text)]">{student.homeworkCompletion}%</p>
-                <p>Homework</p>
-              </div>
-            </div>
+            ) : null}
             <p className="mt-3 text-xs text-[color:var(--hub-muted)]">Last active {formatDateTime(student.lastActivity)}</p>
             <p className="mt-1 text-xs text-[color:var(--hub-muted)]">{student.classes.join(', ')}</p>
           </div>
@@ -44,8 +46,8 @@ export const StudentTable: React.FC<{ students: StudentSummary[]; allowProfileLi
           <thead className="bg-[color:var(--hub-soft)]">
             <tr className="text-xs uppercase tracking-[0.18em] text-[color:var(--hub-muted)]">
               <th className="px-5 py-4 font-semibold">Student</th>
-              <th className="px-5 py-4 font-semibold">Progress</th>
-              <th className="px-5 py-4 font-semibold">Homework</th>
+              {allowProfileLinks ? <th className="px-5 py-4 font-semibold">Progress</th> : null}
+              {allowProfileLinks ? <th className="px-5 py-4 font-semibold">Homework</th> : null}
               <th className="px-5 py-4 font-semibold">Last activity</th>
               <th className="px-5 py-4 font-semibold">Classes</th>
             </tr>
@@ -61,10 +63,10 @@ export const StudentTable: React.FC<{ students: StudentSummary[]; allowProfileLi
                   ) : (
                     <span className="font-semibold text-[color:var(--hub-text)]">{student.name}</span>
                   )}
-                  <p className="mt-1 text-sm text-[color:var(--hub-muted)]">{student.email}</p>
+                  {allowProfileLinks ? <p className="mt-1 text-sm text-[color:var(--hub-muted)]">{student.email}</p> : null}
                 </td>
-                <td className="px-5 py-4 text-sm text-[color:var(--hub-text)]">{student.progress}%</td>
-                <td className="px-5 py-4 text-sm text-[color:var(--hub-text)]">{student.homeworkCompletion}% complete</td>
+                {allowProfileLinks ? <td className="px-5 py-4 text-sm text-[color:var(--hub-text)]">{student.progress}%</td> : null}
+                {allowProfileLinks ? <td className="px-5 py-4 text-sm text-[color:var(--hub-text)]">{student.homeworkCompletion}% complete</td> : null}
                 <td className="px-5 py-4 text-sm text-[color:var(--hub-muted)]">{formatDateTime(student.lastActivity)}</td>
                 <td className="px-5 py-4 text-sm text-[color:var(--hub-muted)]">{student.classes.join(', ')}</td>
               </tr>

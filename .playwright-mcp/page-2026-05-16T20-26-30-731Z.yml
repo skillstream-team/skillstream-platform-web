@@ -1,0 +1,96 @@
+- generic [ref=e4]:
+  - complementary [ref=e5]:
+    - generic [ref=e6]:
+      - link "SkillStream" [ref=e7] [cursor=pointer]:
+        - /url: /org/demo-org/dashboard
+        - paragraph [ref=e10]: SkillStream
+      - generic [ref=e13]:
+        - paragraph [ref=e14]: Organisation
+        - paragraph [ref=e15]: Acme Corp
+      - navigation [ref=e16]:
+        - link "Dashboard" [ref=e17] [cursor=pointer]:
+          - /url: /org/demo-org/dashboard
+          - img [ref=e18]
+          - generic [ref=e23]: Dashboard
+        - link "Courses" [ref=e24] [cursor=pointer]:
+          - /url: /org/demo-org/courses
+          - img [ref=e25]
+          - generic [ref=e28]: Courses
+        - link "Learning Paths" [ref=e29] [cursor=pointer]:
+          - /url: /org/demo-org/paths
+          - img [ref=e30]
+          - generic [ref=e34]: Learning Paths
+        - link "Learners" [ref=e35] [cursor=pointer]:
+          - /url: /org/demo-org/learners
+          - img [ref=e36]
+          - generic [ref=e41]: Learners
+        - link "Reports" [ref=e42] [cursor=pointer]:
+          - /url: /org/demo-org/reports
+          - img [ref=e43]
+          - generic [ref=e46]: Reports
+        - link "Certificates" [ref=e47] [cursor=pointer]:
+          - /url: /org/demo-org/certificates
+          - img [ref=e48]
+          - generic [ref=e51]: Certificates
+        - link "Announcements" [ref=e52] [cursor=pointer]:
+          - /url: /org/demo-org/announcements
+          - img [ref=e53]
+          - generic [ref=e56]: Announcements
+        - link "Audit Log" [ref=e57] [cursor=pointer]:
+          - /url: /org/demo-org/audit
+          - img [ref=e58]
+          - generic [ref=e61]: Audit Log
+        - link "Billing" [ref=e62] [cursor=pointer]:
+          - /url: /org/demo-org/billing
+          - img [ref=e63]
+          - generic [ref=e65]: Billing
+        - link "Settings" [ref=e66] [cursor=pointer]:
+          - /url: /org/demo-org/settings
+          - img [ref=e67]
+          - generic [ref=e70]: Settings
+      - generic [ref=e71]:
+        - generic [ref=e72]:
+          - generic [ref=e73]: DO
+          - generic [ref=e74]:
+            - paragraph [ref=e75]: Demo Org Admin
+            - paragraph [ref=e76]: orgadmin@skillstream.demo
+        - generic [ref=e77]:
+          - button "Toggle theme" [ref=e78] [cursor=pointer]:
+            - img [ref=e79]
+          - button "Sign out" [ref=e81] [cursor=pointer]:
+            - img [ref=e82]
+            - text: Sign out
+  - main [ref=e86]:
+    - generic [ref=e87]:
+      - generic [ref=e88]:
+        - paragraph [ref=e89]: Communications
+        - generic [ref=e90]:
+          - generic [ref=e91]:
+            - heading "Announcements" [level=2] [ref=e92]
+            - paragraph [ref=e93]: Post notices that appear in your learners' dashboard.
+          - button "New announcement" [ref=e94] [cursor=pointer]:
+            - img [ref=e95]
+            - text: New announcement
+      - generic [ref=e96]:
+        - generic [ref=e98]:
+          - generic [ref=e99]:
+            - generic [ref=e100]:
+              - paragraph [ref=e101]: Q2 Compliance Deadline
+              - generic [ref=e102]: Active
+            - paragraph [ref=e103]: All mandatory compliance courses must be completed by 1 June 2026. Please check your learning dashboard and complete any outstanding courses before the deadline.
+            - generic [ref=e105]: Posted Tue 28 Apr, 10:00
+          - generic [ref=e106]:
+            - button "Hide" [ref=e107] [cursor=pointer]
+            - button [ref=e108] [cursor=pointer]:
+              - img [ref=e109]
+        - generic [ref=e113]:
+          - generic [ref=e114]:
+            - generic [ref=e115]:
+              - paragraph [ref=e116]: New Leadership Course Available
+              - generic [ref=e117]: Active
+            - paragraph [ref=e118]: We've added "Leadership Essentials for New Managers" to the course library. If you're a new or aspiring manager, we encourage you to enrol.
+            - generic [ref=e120]: Posted Tue 10 Mar, 9:00
+          - generic [ref=e121]:
+            - button "Hide" [ref=e122] [cursor=pointer]
+            - button [ref=e123] [cursor=pointer]:
+              - img [ref=e124]

@@ -15,5 +15,6 @@ export function useRealtimeMessages(): void {
 
     const unsubscribe = subscribeToMessages(user.id, receiveDirectMessage, receiveClassMessage);
     return unsubscribe;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id, receiveDirectMessage, receiveClassMessage]);
 }

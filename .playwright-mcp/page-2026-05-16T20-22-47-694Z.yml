@@ -1,0 +1,105 @@
+- generic [ref=e4]:
+  - complementary [ref=e5]:
+    - generic [ref=e6]:
+      - link "SkillStream" [ref=e7] [cursor=pointer]:
+        - /url: /dashboard
+        - paragraph [ref=e10]: SkillStream
+      - navigation [ref=e11]:
+        - link "Dashboard" [ref=e12] [cursor=pointer]:
+          - /url: /dashboard
+          - img [ref=e13]
+          - generic [ref=e16]: Dashboard
+        - link "Classes" [ref=e17] [cursor=pointer]:
+          - /url: /classes
+          - img [ref=e18]
+          - generic [ref=e21]: Classes
+        - link "Students" [ref=e22] [cursor=pointer]:
+          - /url: /students
+          - img [ref=e23]
+          - generic [ref=e28]: Students
+        - link "Schedule" [ref=e29] [cursor=pointer]:
+          - /url: /schedule
+          - img [ref=e30]
+          - generic [ref=e32]: Schedule
+        - link "Messages" [ref=e33] [cursor=pointer]:
+          - /url: /messages
+          - img [ref=e34]
+          - generic [ref=e36]: Messages
+        - link "Payments" [ref=e37] [cursor=pointer]:
+          - /url: /payments
+          - img [ref=e38]
+          - generic [ref=e40]: Payments
+        - link "Settings" [ref=e41] [cursor=pointer]:
+          - /url: /settings
+          - img [ref=e42]
+          - generic [ref=e45]: Settings
+      - generic [ref=e46]:
+        - generic [ref=e47]:
+          - generic [ref=e48]: DT
+          - generic [ref=e49]:
+            - paragraph [ref=e50]: Demo Teacher
+            - paragraph [ref=e51]: teacher@skillstream.demo
+        - generic [ref=e52]:
+          - button "Toggle theme" [ref=e53] [cursor=pointer]:
+            - img [ref=e54]
+          - button "Sign out" [ref=e56] [cursor=pointer]:
+            - img [ref=e57]
+            - text: Sign out
+  - main [ref=e61]:
+    - generic [ref=e62]:
+      - generic [ref=e63]:
+        - generic [ref=e64]:
+          - generic [ref=e65]:
+            - paragraph [ref=e66]: Current plan
+            - heading "Studio" [level=3] [ref=e67]
+            - paragraph [ref=e68]: Live usage resets every month.
+          - generic [ref=e69]:
+            - paragraph [ref=e70]: Projected bill
+            - paragraph [ref=e71]: £89.00
+        - generic [ref=e72]:
+          - generic [ref=e73]:
+            - generic [ref=e74]: Live minute usage
+            - generic [ref=e75]: 240 / 40,000
+          - generic [ref=e78]:
+            - generic [ref=e79]:
+              - paragraph [ref=e80]: Base fee
+              - paragraph [ref=e81]: £89.00
+            - generic [ref=e82]:
+              - paragraph [ref=e83]: Included minutes
+              - paragraph [ref=e84]: 40,000
+            - generic [ref=e85]:
+              - paragraph [ref=e86]: Overage minutes
+              - paragraph [ref=e87]: "0"
+            - generic [ref=e88]:
+              - paragraph [ref=e89]: Overage charge
+              - paragraph [ref=e90]: £0.00
+      - generic [ref=e91]:
+        - generic [ref=e92]:
+          - img [ref=e93]
+          - paragraph [ref=e98]: Plan tiers
+        - generic [ref=e99]:
+          - button "Creator £39.00 /month 10,000 participant-minutes included. £0.00 per extra participant-minute. 8% platform fee on paid one-off events. Click to schedule for next month" [ref=e100] [cursor=pointer]:
+            - paragraph [ref=e102]: Creator
+            - paragraph [ref=e103]: £39.00 /month
+            - paragraph [ref=e104]: 10,000 participant-minutes included.
+            - paragraph [ref=e105]: £0.00 per extra participant-minute.
+            - paragraph [ref=e106]: 8% platform fee on paid one-off events.
+            - paragraph [ref=e107]: Click to schedule for next month
+          - button "Studio Active £89.00 /month 40,000 participant-minutes included. £0.00 per extra participant-minute. 6% platform fee on paid one-off events." [ref=e108] [cursor=pointer]:
+            - generic [ref=e109]:
+              - paragraph [ref=e110]: Studio
+              - generic [ref=e111]:
+                - img [ref=e112]
+                - text: Active
+            - paragraph [ref=e114]: £89.00 /month
+            - paragraph [ref=e115]: 40,000 participant-minutes included.
+            - paragraph [ref=e116]: £0.00 per extra participant-minute.
+            - paragraph [ref=e117]: 6% platform fee on paid one-off events.
+          - button "Academy £199.00 /month 150,000 participant-minutes included. £0.00 per extra participant-minute. 5% platform fee on paid one-off events. Click to schedule for next month" [ref=e118] [cursor=pointer]:
+            - paragraph [ref=e120]: Academy
+            - paragraph [ref=e121]: £199.00 /month
+            - paragraph [ref=e122]: 150,000 participant-minutes included.
+            - paragraph [ref=e123]: £0.00 per extra participant-minute.
+            - paragraph [ref=e124]: 5% platform fee on paid one-off events.
+            - paragraph [ref=e125]: Click to schedule for next month
+      - generic [ref=e126]: No payment records yet.

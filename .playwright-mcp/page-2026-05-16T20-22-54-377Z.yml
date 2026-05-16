@@ -1,0 +1,155 @@
+- generic [ref=e4]:
+  - complementary [ref=e5]:
+    - generic [ref=e6]:
+      - link "SkillStream" [ref=e7] [cursor=pointer]:
+        - /url: /dashboard
+        - paragraph [ref=e10]: SkillStream
+      - navigation [ref=e11]:
+        - link "Dashboard" [ref=e12] [cursor=pointer]:
+          - /url: /dashboard
+          - img [ref=e13]
+          - generic [ref=e16]: Dashboard
+        - link "Classes" [ref=e17] [cursor=pointer]:
+          - /url: /classes
+          - img [ref=e18]
+          - generic [ref=e21]: Classes
+        - link "Students" [ref=e22] [cursor=pointer]:
+          - /url: /students
+          - img [ref=e23]
+          - generic [ref=e28]: Students
+        - link "Schedule" [ref=e29] [cursor=pointer]:
+          - /url: /schedule
+          - img [ref=e30]
+          - generic [ref=e32]: Schedule
+        - link "Messages" [ref=e33] [cursor=pointer]:
+          - /url: /messages
+          - img [ref=e34]
+          - generic [ref=e36]: Messages
+        - link "Payments" [ref=e37] [cursor=pointer]:
+          - /url: /payments
+          - img [ref=e38]
+          - generic [ref=e40]: Payments
+        - link "Settings" [ref=e41] [cursor=pointer]:
+          - /url: /settings
+          - img [ref=e42]
+          - generic [ref=e45]: Settings
+      - generic [ref=e46]:
+        - generic [ref=e47]:
+          - generic [ref=e48]: DT
+          - generic [ref=e49]:
+            - paragraph [ref=e50]: Demo Teacher
+            - paragraph [ref=e51]: teacher@skillstream.demo
+        - generic [ref=e52]:
+          - button "Toggle theme" [ref=e53] [cursor=pointer]:
+            - img [ref=e54]
+          - button "Sign out" [ref=e56] [cursor=pointer]:
+            - img [ref=e57]
+            - text: Sign out
+  - main [ref=e61]:
+    - generic [ref=e62]:
+      - generic [ref=e63]:
+        - paragraph [ref=e64]: Settings
+        - heading "Keep the teaching workspace focused." [level=2] [ref=e65]
+        - paragraph [ref=e66]: Manage your profile, account security, and workspace preferences.
+      - generic [ref=e67]:
+        - generic [ref=e68]:
+          - img [ref=e69]
+          - generic [ref=e73]:
+            - paragraph [ref=e74]: Profile
+            - paragraph [ref=e75]: Your public-facing name, bio, and details.
+        - generic [ref=e76]:
+          - button "Upload profile photo" [ref=e77] [cursor=pointer]:
+            - text: DT
+            - img [ref=e79]
+          - generic [ref=e82]:
+            - paragraph [ref=e83]: Demo Teacher
+            - paragraph [ref=e84]: teacher@skillstream.demo
+            - paragraph [ref=e85]: TEACHER
+            - paragraph [ref=e86]: Photo upload not available in demo mode.
+        - generic [ref=e87]:
+          - generic [ref=e88]:
+            - text: Display name
+            - textbox "Display name" [ref=e89]:
+              - /placeholder: Your full name
+              - text: Demo Teacher
+          - generic [ref=e90]:
+            - text: Bio
+            - textbox "Bio" [ref=e91]:
+              - /placeholder: A short intro about yourself, your teaching style, and experience...
+          - generic [ref=e92]:
+            - text: Subjects / specialities
+            - textbox "Subjects / specialities Comma-separated list of subjects you teach." [ref=e93]:
+              - /placeholder: e.g. Piano, Music Theory, Guitar
+            - generic [ref=e94]: Comma-separated list of subjects you teach.
+          - button "Save profile" [disabled] [ref=e96]
+      - generic [ref=e97]:
+        - generic [ref=e98]:
+          - img [ref=e99]
+          - generic [ref=e102]:
+            - paragraph [ref=e103]: Account security
+            - paragraph [ref=e104]: Update your email address or password.
+        - generic [ref=e105]:
+          - generic [ref=e106]:
+            - generic [ref=e107]:
+              - img [ref=e108]
+              - paragraph [ref=e111]: Change email
+            - paragraph [ref=e112]: "Current: teacher@skillstream.demo"
+            - generic [ref=e113]:
+              - textbox "New email address" [ref=e114]
+              - button "Update email" [disabled] [ref=e116]
+          - generic [ref=e118]:
+            - generic [ref=e119]:
+              - img [ref=e120]
+              - paragraph [ref=e123]: Change password
+            - paragraph [ref=e124]: "Demo password: SkillStreamDemo123!"
+            - generic [ref=e125]:
+              - generic [ref=e126]:
+                - textbox "Current password" [ref=e127]
+                - button "Toggle current password visibility" [ref=e128] [cursor=pointer]:
+                  - img [ref=e129]
+              - generic [ref=e132]:
+                - textbox "New password" [ref=e133]
+                - button "Toggle new password visibility" [ref=e134] [cursor=pointer]:
+                  - img [ref=e135]
+              - textbox "Confirm new password" [ref=e138]
+              - paragraph [ref=e139]: Must be at least 8 characters with one uppercase letter, one lowercase letter, and one number.
+              - button "Update password" [disabled] [ref=e141]
+      - generic [ref=e142]:
+        - generic [ref=e143]:
+          - generic [ref=e144]:
+            - img [ref=e145]
+            - generic [ref=e150]:
+              - paragraph [ref=e151]: Message and homework alerts
+              - paragraph [ref=e152]: Keep urgent items visible without noise.
+          - generic [ref=e153]:
+            - generic [ref=e154]:
+              - generic [ref=e155]:
+                - paragraph [ref=e156]: Message alerts
+                - paragraph [ref=e157]: Instant updates for class messages.
+              - button "Message alerts" [pressed] [ref=e158] [cursor=pointer]
+            - generic [ref=e160]:
+              - generic [ref=e161]:
+                - paragraph [ref=e162]: Homework alerts
+                - paragraph [ref=e163]: Reminders for due assignments and reviews.
+              - button "Homework alerts" [pressed] [ref=e164] [cursor=pointer]
+            - generic [ref=e166]:
+              - generic [ref=e167]:
+                - paragraph [ref=e168]: Weekly summary reminder
+                - paragraph [ref=e169]: Sunday summary email-style digest in your inbox.
+              - button "Weekly summary reminder" [ref=e170] [cursor=pointer]
+        - generic [ref=e172]:
+          - generic [ref=e173]:
+            - img [ref=e174]
+            - generic [ref=e176]:
+              - paragraph [ref=e177]: Private teaching workspace
+              - paragraph [ref=e178]: No public ranking or social feed noise.
+          - generic [ref=e180]:
+            - generic [ref=e181]:
+              - paragraph [ref=e182]: Private workspace mode
+              - paragraph [ref=e183]: Hide non-essential social visibility and engagement signals.
+            - button "Private workspace mode" [pressed] [ref=e184] [cursor=pointer]
+      - generic [ref=e187]:
+        - paragraph [ref=e188]: All preferences are saved.
+        - generic [ref=e189]:
+          - button "Reset" [disabled] [ref=e190]
+          - button "Save preferences" [disabled] [ref=e191]

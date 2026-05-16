@@ -17,11 +17,11 @@ export function printStudentReport(student: StudentSummary): void {
     *{box-sizing:border-box;margin:0;padding:0}
     body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#0f172a;background:#fff;padding:48px;max-width:680px;margin:0 auto}
     .header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #e2e8f0;padding-bottom:24px;margin-bottom:32px}
-    .brand{font-size:12px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:#2563eb}
+    .brand{font-size:12px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:#1b4a80}
     h1{font-size:28px;font-weight:700;margin-top:6px}
     .sub{font-size:13px;color:#64748b;margin-top:4px}
     .section{margin-bottom:28px}
-    .section-title{font-size:10px;font-weight:700;letter-spacing:0.22em;text-transform:uppercase;color:#2563eb;margin-bottom:14px}
+    .section-title{font-size:10px;font-weight:700;letter-spacing:0.22em;text-transform:uppercase;color:#1b4a80;margin-bottom:14px}
     .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
     .stat-card{background:#f8fafc;border-radius:12px;padding:16px}
     .stat-label{font-size:11px;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:0.14em}
@@ -52,7 +52,7 @@ export function printStudentReport(student: StudentSummary): void {
       <div class="stat-card">
         <div class="stat-label">Overall progress</div>
         <div class="stat-value">${student.progress}%</div>
-        ${progressBar(student.progress, '#2563eb')}
+        ${progressBar(student.progress, '#1b4a80')}
         <div class="stat-note">Across all enrolled classes</div>
       </div>
       <div class="stat-card">

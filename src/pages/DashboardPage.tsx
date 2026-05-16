@@ -1,13 +1,10 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { ArrowRight, CheckCheck, Sparkles, Video } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import React, { useMemo } from 'react';
+import { ArrowRight, CheckCheck, Video } from 'lucide-react';
+import { Link, Navigate } from 'react-router-dom';
 import { NextStepsPanel } from '../components/hub/NextStepsPanel';
-import { getTeacherAiSuggestions } from '../data/teacherHub';
-import { askAiTutor, fetchAiInsights, fetchAiSummary, RuleInsight } from '../lib/aiAssistant';
 import { getSessionCachedValue } from '../lib/sessionCache';
 import { formatHubDateTime } from '../lib/utils';
 import { useAuthStore } from '../store/auth';
-import { usePreferencesStore } from '../store/preferences';
 import { useTeacherHubStore } from '../store/teacherHub';
 
 export const DashboardPage: React.FC = () => {
@@ -17,7 +14,6 @@ export const DashboardPage: React.FC = () => {
   const students = useTeacherHubStore((state) => state.students);
   const tasks = useTeacherHubStore((state) => state.tasks);
   const revision = useTeacherHubStore((state) => state.revision);
-  const aiHelperEnabled = usePreferencesStore((state) => state.preferences.aiHelper);
   const currentStudent = students.find((entry) => entry.email.toLowerCase() === (user?.email || '').toLowerCase());
   const classes = useMemo(
     () =>
@@ -28,52 +24,6 @@ export const DashboardPage: React.FC = () => {
         : allClasses,
     [allClasses, currentStudent, isStudent]
   );
-  const [aiInsights, setAiInsights] = useState<RuleInsight[]>([]);
-  const [aiSummary, setAiSummary] = useState('');
-  const [aiSummaryBullets, setAiSummaryBullets] = useState<string[]>([]);
-  const [aiTutorReply, setAiTutorReply] = useState('');
-  const [aiTutorTips, setAiTutorTips] = useState<string[]>([]);
-  const [aiLoading, setAiLoading] = useState(false);
-  const [aiError, setAiError] = useState('');
-
-  const fallbackAiSuggestions = useMemo(() => {
-    if (isStudent) {
-      const progress = currentStudent?.progress || 0;
-      if (progress < 70) return ['Focus on one weak topic this week and ask one question after class.'];
-      return ['Keep your weekly recap routine consistent to maintain progress.'];
-    }
-    return getTeacherAiSuggestions({
-      classesCount: classes.length,
-      attentionCount: classes.flatMap((entry) => entry.students).filter((entry) => entry.needsAttention).length,
-    });
-  }, [classes, currentStudent?.progress, isStudent]);
-
-  useEffect(() => {
-    if (!user || !aiHelperEnabled) {
-      setAiInsights([]);
-      setAiError('');
-      return;
-    }
-    let isMounted = true;
-    setAiLoading(true);
-    setAiError('');
-    void fetchAiInsights()
-      .then((insights) => {
-        if (!isMounted) return;
-        setAiInsights(insights);
-      })
-      .catch((error) => {
-        if (!isMounted) return;
-        setAiError(error instanceof Error ? error.message : 'Could not load study assist.');
-      })
-      .finally(() => {
-        if (!isMounted) return;
-        setAiLoading(false);
-      });
-    return () => {
-      isMounted = false;
-    };
-  }, [aiHelperEnabled, revision, user]);
   const allLessons = getSessionCachedValue(
     `dashboard:all-lessons:${revision}:${user?.role || 'guest'}`,
     () => classes.flatMap((entry) => entry.lessons),
@@ -109,6 +59,13 @@ export const DashboardPage: React.FC = () => {
     { id: 'upcoming', label: 'Upcoming lessons', value: `${allLessons.filter((lesson) => lesson.status !== 'completed').length}`, note: 'Next 7 days' },
     { id: 'tasks', label: 'Pending tasks', value: `${tasks.filter((task) => task.status !== 'done').length}`, note: 'Reviews, messages, payments' },
   ];
+
+  // Org users should never land here — redirect to their portal.
+  if (user?.activeOrgId) {
+    const orgRole = user.orgMemberships.find((m) => m.orgId === user.activeOrgId)?.orgRole;
+    if (orgRole === 'admin' || orgRole === 'instructor') return <Navigate to={`/org/${user.activeOrgId}/dashboard`} replace />;
+    return <Navigate to="/learn" replace />;
+  }
 
   return (
     <div className="space-y-6 lg:space-y-8">
@@ -154,7 +111,7 @@ export const DashboardPage: React.FC = () => {
           {stats.map((item) => (
             <div key={item.id} className="rounded-[24px] bg-[color:var(--hub-soft)] p-4">
               <p className="text-sm font-medium text-[color:var(--hub-muted)]">{item.label}</p>
-              <p className="mt-3 text-3xl font-semibold text-[color:var(--hub-text)]">{item.value}</p>
+              <p className="mt-3 text-3xl font-semibold text-[color:var(--hub-accent)]">{item.value}</p>
               <p className="mt-1 text-sm text-[color:var(--hub-muted)]">{item.note}</p>
             </div>
           ))}
@@ -231,113 +188,6 @@ export const DashboardPage: React.FC = () => {
         </div>
 
         <div className="space-y-6">
-          {isStudent ? (
-            <section className="rounded-[32px] border border-[color:var(--hub-border)] bg-white p-6 shadow-[0_18px_48px_rgba(15,23,42,0.05)]">
-              <div className="flex items-center gap-2 text-[color:var(--hub-primary)]">
-                <Sparkles className="h-5 w-5" />
-                <p className="text-sm font-semibold uppercase tracking-[0.18em]">Study assist</p>
-              </div>
-              <div className="mt-4 grid gap-3">
-                {!aiHelperEnabled ? (
-                  <div className="rounded-[22px] bg-[color:var(--hub-soft)] p-4 text-sm text-[color:var(--hub-muted)]">
-                    Study assist is off. Turn it on in settings.
-                  </div>
-                ) : null}
-                {aiError ? (
-                  <div className="rounded-[22px] border border-[rgba(200,95,73,0.24)] bg-[rgba(200,95,73,0.08)] p-4 text-sm text-[color:var(--edu-danger)]">
-                    {aiError}
-                  </div>
-                ) : null}
-                {aiLoading ? (
-                  <div className="rounded-[22px] bg-[color:var(--hub-soft)] p-4 text-sm text-[color:var(--hub-muted)]">
-                    Refreshing insights...
-                  </div>
-                ) : null}
-                {(aiHelperEnabled && aiInsights.length > 0 ? aiInsights.map((item) => item.text) : fallbackAiSuggestions).map((item) => (
-                  <div key={item} className="rounded-[22px] bg-[color:var(--hub-soft)] p-4 text-sm text-[color:var(--hub-text)]">
-                    {item}
-                  </div>
-                ))}
-              </div>
-              <div className="mt-4 flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setAiLoading(true);
-                    setAiError('');
-                    void fetchAiInsights()
-                      .then((insights) => setAiInsights(insights))
-                      .catch((error) => setAiError(error instanceof Error ? error.message : 'Could not refresh insights.'))
-                      .finally(() => setAiLoading(false));
-                  }}
-                  className="rounded-full border border-[color:var(--hub-border)] px-3 py-1.5 text-xs font-semibold text-[color:var(--hub-text)]"
-                  disabled={!aiHelperEnabled || aiLoading}
-                >
-                  Refresh
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const classId = classes[0]?.id;
-                    setAiLoading(true);
-                    setAiError('');
-                    void fetchAiSummary(classId)
-                      .then((result) => {
-                        setAiSummary(result.summary);
-                        setAiSummaryBullets(result.bullets);
-                      })
-                      .catch((error) => setAiError(error instanceof Error ? error.message : 'Could not generate summary.'))
-                      .finally(() => setAiLoading(false));
-                  }}
-                  className="rounded-full border border-[color:var(--hub-border)] px-3 py-1.5 text-xs font-semibold text-[color:var(--hub-text)]"
-                  disabled={!aiHelperEnabled || aiLoading}
-                >
-                  Class summary
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const classId = classes[0]?.id;
-                    const prompt = 'How can I improve my progress this week?';
-                    setAiLoading(true);
-                    setAiError('');
-                    void askAiTutor(prompt, classId)
-                      .then((result) => {
-                        setAiTutorReply(result.answer);
-                        setAiTutorTips(result.tips);
-                      })
-                      .catch((error) => setAiError(error instanceof Error ? error.message : 'Could not generate coaching tips.'))
-                      .finally(() => setAiLoading(false));
-                  }}
-                  className="rounded-full border border-[color:var(--hub-border)] px-3 py-1.5 text-xs font-semibold text-[color:var(--hub-text)]"
-                  disabled={!aiHelperEnabled || aiLoading}
-                >
-                  Coach me
-                </button>
-              </div>
-              {aiSummary ? (
-                <div className="mt-4 rounded-[22px] border border-[color:var(--hub-border)] p-4">
-                  <p className="text-sm font-semibold text-[color:var(--hub-text)]">{aiSummary}</p>
-                  <div className="mt-2 grid gap-1">
-                    {aiSummaryBullets.map((item) => (
-                      <p key={item} className="text-sm text-[color:var(--hub-muted)]">{item}</p>
-                    ))}
-                  </div>
-                </div>
-              ) : null}
-              {aiTutorReply ? (
-                <div className="mt-4 rounded-[22px] border border-[color:var(--hub-border)] p-4">
-                  <p className="text-sm font-semibold text-[color:var(--hub-text)]">{aiTutorReply}</p>
-                  <div className="mt-2 grid gap-1">
-                    {aiTutorTips.map((tip) => (
-                      <p key={tip} className="text-sm text-[color:var(--hub-muted)]">{tip}</p>
-                    ))}
-                  </div>
-                </div>
-              ) : null}
-            </section>
-          ) : null}
-
           <section className="rounded-[32px] border border-[color:var(--hub-border)] bg-white p-6 shadow-[0_18px_48px_rgba(15,23,42,0.05)]">
             <div className="flex items-center justify-between gap-4">
               <div>

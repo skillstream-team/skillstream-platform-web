@@ -1,0 +1,111 @@
+- generic [ref=e4]:
+  - complementary [ref=e5]:
+    - generic [ref=e6]:
+      - link "SkillStream" [ref=e7] [cursor=pointer]:
+        - /url: /dashboard
+        - paragraph [ref=e10]: SkillStream
+      - navigation [ref=e11]:
+        - link "Dashboard" [ref=e12] [cursor=pointer]:
+          - /url: /dashboard
+          - img [ref=e13]
+          - generic [ref=e16]: Dashboard
+        - link "Classes" [ref=e17] [cursor=pointer]:
+          - /url: /classes
+          - img [ref=e18]
+          - generic [ref=e21]: Classes
+        - link "Students" [ref=e22] [cursor=pointer]:
+          - /url: /students
+          - img [ref=e23]
+          - generic [ref=e28]: Students
+        - link "Schedule" [ref=e29] [cursor=pointer]:
+          - /url: /schedule
+          - img [ref=e30]
+          - generic [ref=e32]: Schedule
+        - link "Messages" [ref=e33] [cursor=pointer]:
+          - /url: /messages
+          - img [ref=e34]
+          - generic [ref=e36]: Messages
+        - link "Payments" [ref=e37] [cursor=pointer]:
+          - /url: /payments
+          - img [ref=e38]
+          - generic [ref=e40]: Payments
+        - link "Settings" [ref=e41] [cursor=pointer]:
+          - /url: /settings
+          - img [ref=e42]
+          - generic [ref=e45]: Settings
+      - generic [ref=e46]:
+        - generic [ref=e47]:
+          - generic [ref=e48]: DT
+          - generic [ref=e49]:
+            - paragraph [ref=e50]: Demo Teacher
+            - paragraph [ref=e51]: teacher@skillstream.demo
+        - generic [ref=e52]:
+          - button "Toggle theme" [ref=e53] [cursor=pointer]:
+            - img [ref=e54]
+          - button "Sign out" [ref=e56] [cursor=pointer]:
+            - img [ref=e57]
+            - text: Sign out
+  - main [ref=e61]:
+    - generic [ref=e62]:
+      - generic [ref=e63]:
+        - generic [ref=e64]:
+          - generic [ref=e65]:
+            - paragraph [ref=e66]: Class Detail
+            - heading "Algebra Focus Group" [level=2] [ref=e67]
+            - paragraph [ref=e68]: Extra lessons for tricky algebra topics.
+          - generic [ref=e69]:
+            - generic [ref=e70]:
+              - paragraph [ref=e71]: Students
+              - paragraph [ref=e72]: 2 enrolled
+            - generic [ref=e73]:
+              - paragraph [ref=e74]: Next session
+              - paragraph [ref=e75]: Sat 16 May, 23:17
+            - generic [ref=e76]:
+              - paragraph [ref=e77]: Invite code
+              - paragraph [ref=e78]: CLS-DEMO101
+        - generic [ref=e79]:
+          - button "Add student" [ref=e80] [cursor=pointer]:
+            - img [ref=e81]
+            - text: Add student
+          - button "Copy and refresh invite" [ref=e82] [cursor=pointer]:
+            - img [ref=e83]
+            - text: Copy and refresh invite
+          - button "Edit class" [ref=e86] [cursor=pointer]:
+            - img [ref=e87]
+            - text: Edit class
+          - button "Archive class" [ref=e90] [cursor=pointer]:
+            - img [ref=e91]
+            - text: Archive class
+      - generic [ref=e94]:
+        - button "Students" [ref=e95] [cursor=pointer]
+        - button "Lessons" [active] [ref=e96] [cursor=pointer]
+        - button "Homework / Assignments" [ref=e97] [cursor=pointer]
+        - button "Resources" [ref=e98] [cursor=pointer]
+        - button "Progress Tracking" [ref=e99] [cursor=pointer]
+        - button "Messages" [ref=e100] [cursor=pointer]
+      - generic [ref=e147]:
+        - generic [ref=e148]:
+          - paragraph [ref=e149]: Today
+          - heading "Solving Quadratics Fast" [level=3] [ref=e150]
+          - paragraph [ref=e151]: Sat 16 May, 23:17
+          - paragraph [ref=e152]: 60 minutes • 2 students
+          - generic [ref=e153]:
+            - button "Start / join lesson" [ref=e154] [cursor=pointer]:
+              - img [ref=e155]
+              - text: Start / join lesson
+            - button "Reschedule" [ref=e158] [cursor=pointer]
+            - button "Cancel" [ref=e159] [cursor=pointer]
+        - generic [ref=e160]:
+          - paragraph [ref=e161]: Upcoming session
+          - 'heading "Exam Drill: Factorization" [level=3] [ref=e162]'
+          - paragraph [ref=e163]: Mon 18 May, 21:17
+          - paragraph [ref=e164]: 60 minutes • 2 students
+          - generic [ref=e165]:
+            - button "Start / join lesson" [ref=e166] [cursor=pointer]:
+              - img [ref=e167]
+              - text: Start / join lesson
+            - button "Reschedule" [ref=e170] [cursor=pointer]
+            - button "Cancel" [ref=e171] [cursor=pointer]
+        - button "Schedule a new session Add another lesson to this class in a couple of clicks." [ref=e172] [cursor=pointer]:
+          - paragraph [ref=e173]: Schedule a new session
+          - paragraph [ref=e174]: Add another lesson to this class in a couple of clicks.

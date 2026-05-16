@@ -1,0 +1,100 @@
+- generic [ref=e4]:
+  - complementary [ref=e5]:
+    - generic [ref=e6]:
+      - link "SkillStream" [ref=e7] [cursor=pointer]:
+        - /url: /dashboard
+        - paragraph [ref=e10]: SkillStream
+      - navigation [ref=e11]:
+        - link "Dashboard" [ref=e12] [cursor=pointer]:
+          - /url: /dashboard
+          - img [ref=e13]
+          - generic [ref=e16]: Dashboard
+        - link "My Classes" [ref=e17] [cursor=pointer]:
+          - /url: /classes
+          - img [ref=e18]
+          - generic [ref=e21]: My Classes
+        - link "Schedule" [ref=e22] [cursor=pointer]:
+          - /url: /schedule
+          - img [ref=e23]
+          - generic [ref=e25]: Schedule
+        - link "Messages" [ref=e26] [cursor=pointer]:
+          - /url: /messages
+          - img [ref=e27]
+          - generic [ref=e29]: Messages
+        - link "My Profile" [ref=e30] [cursor=pointer]:
+          - /url: /students/demo-student
+          - img [ref=e31]
+          - generic [ref=e35]: My Profile
+        - link "Settings" [ref=e36] [cursor=pointer]:
+          - /url: /settings
+          - img [ref=e37]
+          - generic [ref=e40]: Settings
+      - generic [ref=e41]:
+        - generic [ref=e42]:
+          - generic [ref=e43]: DS
+          - generic [ref=e44]:
+            - paragraph [ref=e45]: Demo Student
+            - paragraph [ref=e46]: student@skillstream.demo
+        - generic [ref=e47]:
+          - button "Toggle theme" [ref=e48] [cursor=pointer]:
+            - img [ref=e49]
+          - button "Sign out" [ref=e51] [cursor=pointer]:
+            - img [ref=e52]
+            - text: Sign out
+  - main [ref=e56]:
+    - generic [ref=e57]:
+      - generic [ref=e58]:
+        - generic [ref=e59]:
+          - generic [ref=e60]:
+            - paragraph [ref=e61]: Class Detail
+            - heading "Algebra Focus Group" [level=2] [ref=e62]
+            - paragraph [ref=e63]: Extra lessons for tricky algebra topics.
+          - generic [ref=e64]:
+            - generic [ref=e65]:
+              - paragraph [ref=e66]: Students
+              - paragraph [ref=e67]: 2 enrolled
+            - generic [ref=e68]:
+              - paragraph [ref=e69]: Next session
+              - paragraph [ref=e70]: Sat 16 May, 22:51
+            - generic [ref=e71]:
+              - paragraph [ref=e72]: Invite code
+              - paragraph [ref=e73]: CLS-DEMO101
+        - generic [ref=e75]:
+          - img [ref=e76]
+          - text: "Invite code: CLS-DEMO101"
+      - generic [ref=e78]:
+        - button "Students" [ref=e79] [cursor=pointer]
+        - button "Lessons" [ref=e80] [cursor=pointer]
+        - button "Homework / Assignments" [ref=e81] [cursor=pointer]
+        - button "Resources" [ref=e82] [cursor=pointer]
+        - button "Progress Tracking" [ref=e83] [cursor=pointer]
+        - button "Messages" [ref=e84] [cursor=pointer]
+      - generic [ref=e86]:
+        - generic [ref=e88]:
+          - img [ref=e89]
+          - paragraph [ref=e94]: Enrolled students
+        - table [ref=e98]:
+          - rowgroup [ref=e99]:
+            - row "Student Progress Homework Last activity Classes" [ref=e100]:
+              - columnheader "Student" [ref=e101]
+              - columnheader "Progress" [ref=e102]
+              - columnheader "Homework" [ref=e103]
+              - columnheader "Last activity" [ref=e104]
+              - columnheader "Classes" [ref=e105]
+          - rowgroup [ref=e106]:
+            - row "Demo Student student@skillstream.demo 72% 68% complete 16 May, 19:21 Algebra Focus Group" [ref=e107]:
+              - cell "Demo Student student@skillstream.demo" [ref=e108]:
+                - text: Demo Student
+                - paragraph [ref=e109]: student@skillstream.demo
+              - cell "72%" [ref=e110]
+              - cell "68% complete" [ref=e111]
+              - cell "16 May, 19:21" [ref=e112]
+              - cell "Algebra Focus Group" [ref=e113]
+            - row "Ava Thompson ava.thompson@example.com 84% 91% complete 16 May, 19:51 Algebra Focus Group" [ref=e114]:
+              - cell "Ava Thompson ava.thompson@example.com" [ref=e115]:
+                - text: Ava Thompson
+                - paragraph [ref=e116]: ava.thompson@example.com
+              - cell "84%" [ref=e117]
+              - cell "91% complete" [ref=e118]
+              - cell "16 May, 19:51" [ref=e119]
+              - cell "Algebra Focus Group" [ref=e120]

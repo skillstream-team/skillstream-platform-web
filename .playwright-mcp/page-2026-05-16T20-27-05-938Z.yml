@@ -1,0 +1,103 @@
+- generic [ref=e240]:
+  - complementary [ref=e241]:
+    - generic [ref=e242]:
+      - link "SkillStream" [ref=e243] [cursor=pointer]:
+        - /url: /learn
+        - paragraph [ref=e246]: SkillStream
+      - generic [ref=e249]:
+        - paragraph [ref=e250]: Organisation
+        - paragraph [ref=e251]: Acme Corp
+      - navigation [ref=e252]:
+        - link "My Learning" [ref=e253] [cursor=pointer]:
+          - /url: /learn
+          - img [ref=e254]
+          - generic [ref=e258]: My Learning
+        - link "Certificates" [ref=e259] [cursor=pointer]:
+          - /url: /learn/certificates
+          - img [ref=e260]
+          - generic [ref=e263]: Certificates
+      - generic [ref=e264]:
+        - generic [ref=e265]:
+          - generic [ref=e266]: DL
+          - generic [ref=e267]:
+            - paragraph [ref=e268]: Demo Learner
+            - paragraph [ref=e269]: learner@skillstream.demo
+        - generic [ref=e270]:
+          - button "Toggle theme" [ref=e271] [cursor=pointer]:
+            - img [ref=e272]
+          - button "Sign out" [ref=e274] [cursor=pointer]:
+            - img [ref=e275]
+            - text: Sign out
+  - main [ref=e279]:
+    - generic [ref=e280]:
+      - generic [ref=e281]:
+        - paragraph [ref=e282]: My Learning
+        - generic [ref=e284]:
+          - heading "Your courses" [level=2] [ref=e285]
+          - paragraph [ref=e286]: 1 in progress · 1 completed · 1 certificate
+        - generic [ref=e287]:
+          - img [ref=e288]
+          - text: 1 mandatory course pending — required for compliance.
+      - generic [ref=e291]:
+        - paragraph [ref=e292]: Announcements
+        - generic [ref=e293]:
+          - generic [ref=e294]:
+            - paragraph [ref=e295]: Welcome to SkillStream LMS
+            - paragraph [ref=e296]: You have been enrolled in your onboarding learning path. Please complete the mandatory courses by your deadline.
+          - generic [ref=e297]:
+            - paragraph [ref=e298]: Compliance Reminder
+            - paragraph [ref=e299]: All mandatory training must be completed by 1 June 2026. Please check your enrolled courses for deadlines.
+      - generic [ref=e300]:
+        - generic [ref=e301]:
+          - img [ref=e302]
+          - paragraph [ref=e306]: Learning paths
+        - generic [ref=e308]:
+          - generic [ref=e309]:
+            - generic [ref=e310]:
+              - paragraph [ref=e311]: New Employee Onboarding
+              - paragraph [ref=e312]: Everything new employees need to complete in their first 30 days.
+            - generic [ref=e313]: 50%
+          - generic [ref=e316]:
+            - button "Workplace Safety Fundamentals 50%" [ref=e317] [cursor=pointer]:
+              - img [ref=e319]
+              - generic [ref=e321]: Workplace Safety Fundamentals
+              - generic [ref=e322]: 50%
+            - button "Data Privacy & GDPR Essentials 100%" [ref=e323] [cursor=pointer]:
+              - img [ref=e325]
+              - generic [ref=e328]: Data Privacy & GDPR Essentials
+              - generic [ref=e329]: 100%
+      - generic [ref=e330]:
+        - paragraph [ref=e331]: In progress
+        - generic [ref=e333]:
+          - generic [ref=e334]:
+            - generic [ref=e335]:
+              - generic [ref=e336]: In progress
+              - generic [ref=e337]: Required
+            - generic [ref=e338]:
+              - img [ref=e339]
+              - text: 90 min
+          - heading "Workplace Safety Fundamentals" [level=3] [ref=e342]
+          - paragraph [ref=e343]: Core health and safety procedures every employee must complete.
+          - paragraph [ref=e344]: Acme Corp
+          - generic [ref=e346]:
+            - generic [ref=e347]: 2/4 lessons
+            - generic [ref=e348]: 50%
+          - paragraph [ref=e351]: Due Mon 1 Jun, 10:00
+          - button "Continue" [ref=e352] [cursor=pointer]
+      - generic [ref=e353]:
+        - paragraph [ref=e354]: Completed
+        - generic [ref=e356]:
+          - generic [ref=e357]:
+            - generic [ref=e358]:
+              - generic [ref=e359]: Completed
+              - generic [ref=e360]: Required
+            - generic [ref=e361]:
+              - img [ref=e362]
+              - text: 60 min
+          - heading "Data Privacy & GDPR Essentials" [level=3] [ref=e365]
+          - paragraph [ref=e366]: A practical guide to data protection law for business professionals.
+          - paragraph [ref=e367]: Acme Corp
+          - generic [ref=e369]:
+            - generic [ref=e370]: 2/2 lessons
+            - generic [ref=e371]: 100%
+          - button "Review course" [ref=e374] [cursor=pointer]
