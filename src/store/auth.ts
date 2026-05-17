@@ -74,6 +74,9 @@ const normalizeAuthError = (error: unknown): string => {
   if (lower.includes('invalid login credentials')) {
     return 'Invalid email or password.';
   }
+  if (lower.includes('user already registered') || lower.includes('user_already_exists')) {
+    return 'An account with this email already exists. Sign in instead.';
+  }
   if (
     lower.includes('teacher invite is invalid or expired')
     || lower.includes('database error saving new user')
@@ -153,7 +156,8 @@ const ensureProfile = async (input: { userId: string; email: string; fullName?: 
   }
 };
 
-let authListenerBound = false;
+// Persist across HMR reloads so the listener is never registered twice.
+const win = window as Window & { __authListenerBound?: boolean };
 let expectedSignOut = false;
 const ENABLE_DEMO_ACCOUNTS = (process.env.REACT_APP_ENABLE_DEMO_ACCOUNTS || 'true').toLowerCase() !== 'false';
 const DEMO_PASSWORD = 'SkillStreamDemo123!';
@@ -280,48 +284,21 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     }
     set({ isLoading: true, error: null });
 
-    if (!authListenerBound) {
-      supabase.auth.onAuthStateChange(async (_event, session) => {
-        if (_event === 'SIGNED_OUT' && !expectedSignOut) {
-          set({ notice: 'Session expired. Sign in again to continue.' });
-        }
-
-        if (!session?.user) {
-          const carryNotice = !expectedSignOut ? get().notice : null;
+    if (!win.__authListenerBound) {
+      supabase.auth.onAuthStateChange((_event, session) => {
+        if (_event === 'SIGNED_OUT') {
+          const notice = !expectedSignOut ? 'Session expired. Sign in again to continue.' : null;
           expectedSignOut = false;
-          set({ user: null, token: null, isAuthenticated: false, isLoading: false, notice: carryNotice });
+          set({ user: null, token: null, isAuthenticated: false, isLoading: false, notice });
           return;
         }
-        try {
-          const profile = await ensureProfile({
-            userId: session.user.id,
-            email: session.user.email || '',
-            fullName: (session.user.user_metadata?.full_name as string | undefined) || undefined,
-            role: (session.user.user_metadata?.role as 'student' | 'teacher' | 'admin' | undefined) || undefined,
-          });
-          const orgMemberships = await loadOrgMemberships(profile.id);
-          const baseUser = toAuthUser(profile);
-          set({
-            user: { ...baseUser, orgMemberships, activeOrgId: orgMemberships[0]?.orgId || null },
-            token: session.access_token,
-            isAuthenticated: true,
-            isLoading: false,
-            error: null,
-            notice: null,
-          });
-          expectedSignOut = false;
-        } catch (error) {
-          set({
-            user: null,
-            token: null,
-            isAuthenticated: false,
-            isLoading: false,
-            error: formatError(error, 'Signed in, but profile loading failed.'),
-            notice: null,
-          });
+        if (_event === 'TOKEN_REFRESHED' && session) {
+          set({ token: session.access_token });
         }
+        // INITIAL_SESSION and SIGNED_IN are handled explicitly by
+        // initAuth / login / register — no profile loading here.
       });
-      authListenerBound = true;
+      win.__authListenerBound = true;
     }
 
     const { data, error } = await supabase.auth.getSession();
@@ -352,14 +329,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         notice: null,
       });
     } catch (profileError) {
-      set({
-        user: null,
-        token: null,
-        isAuthenticated: false,
-        isLoading: false,
-        error: normalizeAuthError(profileError),
-        notice: null,
-      });
+      set({ user: null, token: null, isAuthenticated: false, isLoading: false, error: normalizeAuthError(profileError), notice: null });
     }
   },
 
@@ -457,14 +427,17 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         return;
       }
 
+      // Session exists (email confirmation disabled) — load profile and authenticate.
       const profile = await ensureProfile({
         userId: data.user.id,
         email: data.user.email || email.trim(),
         fullName: name.trim(),
-        role: role.toLowerCase() as 'student' | 'teacher',
+        role: role.toLowerCase() as 'student' | 'teacher' | 'admin',
       });
+      const orgMemberships = await loadOrgMemberships(profile.id);
+      const baseUser = toAuthUser(profile);
       set({
-        user: toAuthUser(profile),
+        user: { ...baseUser, orgMemberships, activeOrgId: orgMemberships[0]?.orgId || null },
         token: data.session.access_token,
         isAuthenticated: true,
         isLoading: false,

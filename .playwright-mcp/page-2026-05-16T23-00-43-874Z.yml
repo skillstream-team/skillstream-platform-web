@@ -1,0 +1,102 @@
+- generic [ref=e2]:
+  - generic [ref=e80]:
+    - complementary [ref=e81]:
+      - generic [ref=e82]:
+        - link "SkillStream" [ref=e83] [cursor=pointer]:
+          - /url: /dashboard
+          - paragraph [ref=e86]: SkillStream
+        - navigation [ref=e87]:
+          - link "Dashboard" [ref=e88] [cursor=pointer]:
+            - /url: /dashboard
+            - img [ref=e89]
+            - generic [ref=e92]: Dashboard
+          - link "My Classes" [ref=e93] [cursor=pointer]:
+            - /url: /classes
+            - img [ref=e94]
+            - generic [ref=e97]: My Classes
+          - link "Schedule" [ref=e98] [cursor=pointer]:
+            - /url: /schedule
+            - img [ref=e99]
+            - generic [ref=e101]: Schedule
+          - link "Messages" [ref=e102] [cursor=pointer]:
+            - /url: /messages
+            - img [ref=e103]
+            - generic [ref=e105]: Messages
+          - link "Settings" [ref=e106] [cursor=pointer]:
+            - /url: /settings
+            - img [ref=e107]
+            - generic [ref=e110]: Settings
+        - generic [ref=e111]:
+          - generic [ref=e112]:
+            - generic [ref=e113]: JS
+            - generic [ref=e114]:
+              - paragraph [ref=e115]: Jane Smith
+              - paragraph [ref=e116]: jane.smith.mcp@mailinator.com
+          - generic [ref=e117]:
+            - button "Toggle theme" [ref=e118] [cursor=pointer]:
+              - img [ref=e119]
+            - button "Sign out" [ref=e121] [cursor=pointer]:
+              - img [ref=e122]
+              - text: Sign out
+    - main [ref=e126]:
+      - generic [ref=e127]:
+        - generic [ref=e128]:
+          - generic [ref=e129]:
+            - generic [ref=e130]:
+              - paragraph [ref=e131]: Dashboard
+              - heading "Your learning dashboard." [level=2] [ref=e132]
+              - paragraph [ref=e133]: Track classes, lessons, and updates in one place.
+            - generic [ref=e134]:
+              - link "Open classes" [ref=e135] [cursor=pointer]:
+                - /url: /classes
+                - text: Open classes
+                - img [ref=e136]
+              - link "View schedule" [ref=e138] [cursor=pointer]:
+                - /url: /schedule
+          - generic [ref=e139]:
+            - generic [ref=e140]:
+              - paragraph [ref=e141]: My classes
+              - paragraph [ref=e142]: "0"
+              - paragraph [ref=e143]: Active right now
+            - generic [ref=e144]:
+              - paragraph [ref=e145]: Upcoming lessons
+              - paragraph [ref=e146]: "0"
+              - paragraph [ref=e147]: Next 7 days
+            - generic [ref=e148]:
+              - paragraph [ref=e149]: My progress
+              - paragraph [ref=e150]: 0%
+              - paragraph [ref=e151]: Across active classes
+            - generic [ref=e152]:
+              - paragraph [ref=e153]: Homework done
+              - paragraph [ref=e154]: 0%
+              - paragraph [ref=e155]: Latest completion rate
+        - generic [ref=e156]:
+          - generic [ref=e157]:
+            - generic [ref=e158]:
+              - generic [ref=e159]:
+                - generic [ref=e160]:
+                  - paragraph [ref=e161]: Today's Schedule
+                  - heading "Classes happening today" [level=3] [ref=e162]
+                - link "View calendar" [ref=e163] [cursor=pointer]:
+                  - /url: /schedule
+              - generic [ref=e165]: No classes today.
+            - generic [ref=e167]:
+              - generic [ref=e168]:
+                - paragraph [ref=e169]: Recent Activity
+                - heading "Recent class updates" [level=3] [ref=e170]
+              - img [ref=e171]
+          - generic [ref=e175]:
+            - generic [ref=e176]:
+              - generic [ref=e177]:
+                - paragraph [ref=e178]: My classes
+                - paragraph [ref=e179]: Where you are learning now
+              - link "Open classes" [ref=e180] [cursor=pointer]:
+                - /url: /classes
+            - generic [ref=e182]: You are not enrolled in any classes yet.
+  - generic [ref=e185]:
+    - button "Skip tour" [ref=e194] [cursor=pointer]:
+      - img [ref=e195]
+    - paragraph [ref=e198]: Getting started
+    - heading "Welcome to SkillStream" [level=3] [ref=e199]
+    - paragraph [ref=e200]: Your personal learning workspace. Here's a quick look at how it all works.
+    - button "Show me around" [ref=e202] [cursor=pointer]

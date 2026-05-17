@@ -51,7 +51,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, className }) => {
     ];
     if (isTeacher) return teacherAdminItems.filter((item) => item.to !== '/admin');
     return teacherAdminItems;
-  }, [isStudent, isTeacher, studentSelf, user?.email]);
+  }, [isStudent, isTeacher, studentSelf]);
   const [showMobileMore, setShowMobileMore] = useState(false);
   const { mobilePrimaryItems, mobileOverflowItems } = useMemo(() => {
     if (visibleNavItems.length <= 5) {

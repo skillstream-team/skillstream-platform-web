@@ -1,0 +1,94 @@
+- generic [ref=e283]:
+  - complementary [ref=e284]:
+    - generic [ref=e285]:
+      - link "SkillStream" [ref=e286] [cursor=pointer]:
+        - /url: /dashboard
+        - paragraph [ref=e289]: SkillStream
+      - navigation [ref=e290]:
+        - link "Dashboard" [ref=e291] [cursor=pointer]:
+          - /url: /dashboard
+          - img [ref=e292]
+          - generic [ref=e295]: Dashboard
+        - link "My Classes" [ref=e296] [cursor=pointer]:
+          - /url: /classes
+          - img [ref=e297]
+          - generic [ref=e300]: My Classes
+        - link "Schedule" [ref=e301] [cursor=pointer]:
+          - /url: /schedule
+          - img [ref=e302]
+          - generic [ref=e304]: Schedule
+        - link "Messages" [ref=e305] [cursor=pointer]:
+          - /url: /messages
+          - img [ref=e306]
+          - generic [ref=e308]: Messages
+        - link "Settings" [ref=e309] [cursor=pointer]:
+          - /url: /settings
+          - img [ref=e310]
+          - generic [ref=e313]: Settings
+      - generic [ref=e314]:
+        - generic [ref=e315]:
+          - generic [ref=e316]: JS
+          - generic [ref=e317]:
+            - paragraph [ref=e318]: Jane Smith
+            - paragraph [ref=e319]: jane.smith.mcp@mailinator.com
+        - generic [ref=e320]:
+          - button "Toggle theme" [ref=e321] [cursor=pointer]:
+            - img [ref=e322]
+          - button "Sign out" [ref=e324] [cursor=pointer]:
+            - img [ref=e325]
+            - text: Sign out
+  - main [ref=e329]:
+    - generic [ref=e330]:
+      - generic [ref=e331]:
+        - generic [ref=e332]:
+          - generic [ref=e333]:
+            - paragraph [ref=e334]: Dashboard
+            - heading "Your learning dashboard." [level=2] [ref=e335]
+            - paragraph [ref=e336]: Track classes, lessons, and updates in one place.
+          - generic [ref=e337]:
+            - link "Open classes" [ref=e338] [cursor=pointer]:
+              - /url: /classes
+              - text: Open classes
+              - img [ref=e339]
+            - link "View schedule" [ref=e341] [cursor=pointer]:
+              - /url: /schedule
+        - generic [ref=e342]:
+          - generic [ref=e343]:
+            - paragraph [ref=e344]: My classes
+            - paragraph [ref=e345]: "0"
+            - paragraph [ref=e346]: Active right now
+          - generic [ref=e347]:
+            - paragraph [ref=e348]: Upcoming lessons
+            - paragraph [ref=e349]: "0"
+            - paragraph [ref=e350]: Next 7 days
+          - generic [ref=e351]:
+            - paragraph [ref=e352]: My progress
+            - paragraph [ref=e353]: 0%
+            - paragraph [ref=e354]: Across active classes
+          - generic [ref=e355]:
+            - paragraph [ref=e356]: Homework done
+            - paragraph [ref=e357]: 0%
+            - paragraph [ref=e358]: Latest completion rate
+      - generic [ref=e359]:
+        - generic [ref=e360]:
+          - generic [ref=e361]:
+            - generic [ref=e362]:
+              - generic [ref=e363]:
+                - paragraph [ref=e364]: Today's Schedule
+                - heading "Classes happening today" [level=3] [ref=e365]
+              - link "View calendar" [ref=e366] [cursor=pointer]:
+                - /url: /schedule
+            - generic [ref=e368]: No classes today.
+          - generic [ref=e370]:
+            - generic [ref=e371]:
+              - paragraph [ref=e372]: Recent Activity
+              - heading "Recent class updates" [level=3] [ref=e373]
+            - img [ref=e374]
+        - generic [ref=e378]:
+          - generic [ref=e379]:
+            - generic [ref=e380]:
+              - paragraph [ref=e381]: My classes
+              - paragraph [ref=e382]: Where you are learning now
+            - link "Open classes" [ref=e383] [cursor=pointer]:
+              - /url: /classes
+          - generic [ref=e385]: You are not enrolled in any classes yet.
