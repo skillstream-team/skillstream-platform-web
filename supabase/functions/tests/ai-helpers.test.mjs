@@ -38,16 +38,14 @@ test('loadEdgeHelperModule handles missing file gracefully', () => {
 // the frontend lib and the edge function helper
 // ---------------------------------------------------------------------------
 
-test('signalwire-token and daily-token produce different channel names for same lesson', () => {
-  // Daily uses a different prefix so they never collide
-  const { roomNameFromLessonId: sw } = loadEdgeHelperModule('../signalwire-token/helpers.js');
-  const { roomNameFromLessonId: daily } = loadEdgeHelperModule('../daily-token/helpers.js');
-
-  const lessonId = 'abc123-def456';
-  assert.equal(sw(lessonId), `skillstream-${lessonId.replace(/-/g, '').slice(0, 24)}`);
-  assert.equal(daily(lessonId), `skillstream-${lessonId.replace(/-/g, '').slice(0, 24)}`);
-  // They happen to use the same formula — confirm they are identical (not a collision risk)
-  assert.equal(sw(lessonId), daily(lessonId));
+test('signalwire-token roomNameFromLessonId matches the frontend lib formula', () => {
+  const { roomNameFromLessonId } = loadEdgeHelperModule('../signalwire-token/helpers.js');
+  const lessonId = 'abc123-def456-789';
+  const expected = `skillstream-${lessonId.replace(/-/g, '').slice(0, 24)}`;
+  assert.equal(roomNameFromLessonId(lessonId), expected);
+  // Two different lesson IDs must produce different room names
+  const other = 'zzz999-aaa111-000';
+  assert.notEqual(roomNameFromLessonId(lessonId), roomNameFromLessonId(other));
 });
 
 test('normalizeTicketPrice edge cases: string numbers and floats', () => {
