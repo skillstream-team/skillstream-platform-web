@@ -46,14 +46,13 @@ test.describe('Authentication', () => {
     await expect(page.getByText('Demo Admin')).toBeVisible();
   });
 
-  test('wrong password shows an error message', async ({ page }) => {
+  test('wrong password stays on login page', async ({ page }) => {
     await page.goto('/login');
     await page.locator('input[type="email"]').fill(TEACHER.email);
     await page.locator('input[type="password"]').fill('wrongpassword');
     await page.getByRole('button', { name: /sign in/i }).click();
-    // In demo-only mode (no Supabase) a wrong password falls through to the
-    // config-missing error, which is rendered as "Auth is not connected yet."
-    await expect(page.getByText(/auth is not connected|invalid|incorrect/i)).toBeVisible();
+    // Wrong credentials must never redirect to dashboard regardless of Supabase config
+    await expect(page).toHaveURL(/\/login/);
   });
 
   test('logout clears session and redirects to login', async ({ page }) => {

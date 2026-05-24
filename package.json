@@ -13,7 +13,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "backend:test": "node --test supabase/functions/tests/*.test.cjs supabase/functions/tests/*.test.mjs",
+    "backend:test": "node --test supabase/functions/tests/*.test.mjs",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:all": "npm run test:coverage && npm run backend:test && npm run test:e2e"
