@@ -2,7 +2,8 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { X } from 'lucide-react';
 import { useAuthStore } from '../../store/auth';
 
-const TOUR_KEY = 'ss_tour_v1';
+const TOUR_VERSION = 'v2';
+const tourKey = (userId: string) => `ss_tour_${userId}_${TOUR_VERSION}`;
 const PAD = 12;
 
 interface Step {
@@ -55,6 +56,12 @@ const TEACHER_STEPS: Step[] = [
     selector: 'a[href="/dashboard"]',
   },
   {
+    id: 'ai',
+    title: 'AI teaching tools built in',
+    body: "Open any lesson card inside a class to access your AI tools: generate a full lesson plan, create a ready-to-use quiz, or get a session recap after a live class ends. When reviewing submitted homework you can also run AI feedback to help you grade faster.",
+    selector: 'a[href="/classes"]',
+  },
+  {
     id: 'done',
     title: "You're all set.",
     body: 'Start by creating your first class. Your students join using the invite link you generate from the Classes page. Welcome aboard.',
@@ -92,6 +99,12 @@ const STUDENT_STEPS: Step[] = [
     selector: 'a[href="/messages"]',
   },
   {
+    id: 'ai',
+    title: 'AI writing assist',
+    body: "Stuck on an assignment? When you submit homework, tap \"Get writing help\" for AI guidance — it will help you think through the problem and structure your answer, but the work stays yours.",
+    selector: 'a[href="/classes"]',
+  },
+  {
     id: 'done',
     title: "You're ready.",
     body: 'Open your classes to see what is scheduled and get started with your learning.',
@@ -116,18 +129,19 @@ export const OnboardingTour: React.FC = () => {
 
   const steps = user?.role === 'STUDENT' ? STUDENT_STEPS : TEACHER_STEPS;
   const current = steps[step];
+  const isAdmin = user?.role === 'ADMIN';
   const isFirst = step === 0;
   const isLast = step === steps.length - 1;
 
   const finish = useCallback(() => {
-    localStorage.setItem(TOUR_KEY, 'done');
+    if (user?.id) localStorage.setItem(tourKey(user.id), 'done');
     setVisible(false);
-  }, []);
+  }, [user?.id]);
 
-  // Show tour on first login only
+  // Show tour on first login only (keyed per user so each account gets it once)
   useEffect(() => {
     if (!user?.id) return;
-    if (localStorage.getItem(TOUR_KEY)) return;
+    if (localStorage.getItem(tourKey(user.id))) return;
     const t = window.setTimeout(() => setVisible(true), 450);
     return () => window.clearTimeout(t);
   }, [user?.id]);
@@ -154,7 +168,7 @@ export const OnboardingTour: React.FC = () => {
     return () => window.removeEventListener('resize', measureSpot);
   }, [visible, measureSpot]);
 
-  if (!visible || !user) return null;
+  if (!visible || !user || isAdmin) return null;
 
   const vw = window.innerWidth;
   const vh = window.innerHeight;

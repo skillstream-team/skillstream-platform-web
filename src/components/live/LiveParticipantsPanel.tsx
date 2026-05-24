@@ -1,24 +1,15 @@
 import React from 'react';
-import { DailyParticipant } from '@daily-co/daily-js';
 import { Mic, MicOff, Video, VideoOff } from 'lucide-react';
+import { SWParticipant } from '../../lib/signalwireLive';
 import { getInitials } from '../../lib/utils';
 
 interface LiveParticipantsPanelProps {
-  participants: DailyParticipant[];
+  participants: SWParticipant[];
   isTeacher?: boolean;
-  onMuteParticipant?: (participant: DailyParticipant) => void;
-  onRemoveParticipant?: (participant: DailyParticipant) => void;
+  onMuteParticipant?: (participant: SWParticipant) => void;
+  onRemoveParticipant?: (participant: SWParticipant) => void;
   onMuteAll?: () => void;
 }
-
-const isTrackOn = (participant: DailyParticipant, track: 'audio' | 'video') => {
-  const trackState = participant.tracks?.[track]?.state;
-  if (trackState) {
-    return trackState === 'playable';
-  }
-  const fallback = (participant as unknown as Record<string, unknown>)[track];
-  return typeof fallback === 'boolean' ? fallback : false;
-};
 
 export const LiveParticipantsPanel: React.FC<LiveParticipantsPanelProps> = ({
   participants,
@@ -49,21 +40,25 @@ export const LiveParticipantsPanel: React.FC<LiveParticipantsPanelProps> = ({
           <div className="rounded-2xl bg-[color:var(--hub-soft)] p-3 text-sm text-[color:var(--hub-muted)]">No one connected yet.</div>
         ) : (
           participants.map((participant) => (
-            <div key={participant.session_id} className="flex items-center gap-3 rounded-2xl border border-[color:var(--hub-border)] px-3 py-2.5">
+            <div key={participant.id} className="flex items-center gap-3 rounded-2xl border border-[color:var(--hub-border)] px-3 py-2.5">
               <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[color:var(--hub-primary)] text-xs font-bold text-white">
-                {getInitials(participant.user_name || 'SkillStream')}
+                {getInitials(participant.name || 'SkillStream')}
               </div>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-semibold text-[color:var(--hub-text)]">
-                  {participant.user_name || 'Guest'}
-                  {participant.local ? ' (You)' : ''}
+                  {participant.name || 'Guest'}
+                  {participant.isLocal ? ' (You)' : ''}
                 </p>
               </div>
               <div className="flex items-center gap-1.5 text-[color:var(--hub-muted)]">
-                {isTrackOn(participant, 'audio') ? <Mic className="h-4 w-4" /> : <MicOff className="h-4 w-4 text-rose-600" />}
-                {isTrackOn(participant, 'video') ? <Video className="h-4 w-4" /> : <VideoOff className="h-4 w-4 text-rose-600" />}
+                {participant.audioMuted
+                  ? <MicOff className="h-4 w-4 text-rose-600" />
+                  : <Mic className="h-4 w-4" />}
+                {participant.videoMuted
+                  ? <VideoOff className="h-4 w-4 text-rose-600" />
+                  : <Video className="h-4 w-4" />}
               </div>
-              {isTeacher && !participant.local ? (
+              {isTeacher && !participant.isLocal ? (
                 <div className="flex items-center gap-1">
                   <button
                     type="button"

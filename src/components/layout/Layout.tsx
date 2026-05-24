@@ -183,6 +183,14 @@ export const Layout: React.FC<LayoutProps> = ({ children, className }) => {
                     </NavLink>
                   ))}
                 </div>
+                <button
+                  type="button"
+                  onClick={() => { logout(); navigate('/login'); }}
+                  className="mt-2 flex w-full items-center gap-2 rounded-2xl bg-[color:var(--hub-soft)] px-3 py-2.5 text-sm font-semibold text-[color:var(--hub-text)]"
+                >
+                  <LogOut className="h-4 w-4" />
+                  <span>Sign out</span>
+                </button>
               </div>
             ) : null}
             <div

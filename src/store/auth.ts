@@ -19,7 +19,7 @@ interface AuthActions {
     email: string,
     password: string,
     role: 'STUDENT' | 'TEACHER',
-    options?: { teacherInviteCode?: string }
+    options?: { teacherInviteCode?: string; selectedPlan?: string }
   ) => Promise<void>;
   resendConfirmation: (email: string) => Promise<void>;
   requestPasswordReset: (email: string) => Promise<void>;
@@ -383,7 +383,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     }
   },
 
-  register: async (name: string, email: string, password: string, role: 'STUDENT' | 'TEACHER', options?: { teacherInviteCode?: string }) => {
+  register: async (name: string, email: string, password: string, role: 'STUDENT' | 'TEACHER', options?: { teacherInviteCode?: string; selectedPlan?: string }) => {
     ensureSupabaseConfig();
     set({ isLoading: true, error: null, notice: null });
     try {
@@ -434,6 +434,23 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         fullName: name.trim(),
         role: role.toLowerCase() as 'student' | 'teacher' | 'admin',
       });
+
+      // Create subscription row for teachers who selected a plan during sign-up.
+      if (role === 'TEACHER' && options?.selectedPlan) {
+        const { data: planRow } = await supabase
+          .from('billing_plans')
+          .select('id')
+          .eq('code', options.selectedPlan)
+          .single();
+        if (planRow) {
+          await supabase.from('teacher_subscriptions').insert({
+            teacher_user_id: data.user.id,
+            billing_plan_id: planRow.id,
+            status: 'active',
+          });
+        }
+      }
+
       const orgMemberships = await loadOrgMemberships(profile.id);
       const baseUser = toAuthUser(profile);
       set({

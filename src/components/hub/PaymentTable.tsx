@@ -1,5 +1,6 @@
 import React from 'react';
 import { PaymentRecord } from '../../data/teacherHub';
+import { useCurrencyFormatter } from '../../lib/currency';
 
 const toneClasses: Record<PaymentRecord['status'], string> = {
   paid: 'bg-emerald-100 text-emerald-700',
@@ -14,6 +15,7 @@ const formatDate = (dateString: string) =>
   }).format(new Date(dateString));
 
 export const PaymentTable: React.FC<{ payments: PaymentRecord[] }> = ({ payments }) => {
+  const { format: formatMoney } = useCurrencyFormatter();
   return (
     <div className="overflow-hidden rounded-[28px] border border-[color:var(--hub-border)] bg-white shadow-[0_16px_40px_rgba(15,23,42,0.05)]">
       <div className="overflow-x-auto">
@@ -32,7 +34,7 @@ export const PaymentTable: React.FC<{ payments: PaymentRecord[] }> = ({ payments
               <tr key={payment.id} className="border-t border-[color:var(--hub-border)]">
                 <td className="px-5 py-4 text-sm font-semibold text-[color:var(--hub-text)]">{payment.studentName}</td>
                 <td className="px-5 py-4 text-sm text-[color:var(--hub-muted)]">{payment.className}</td>
-                <td className="px-5 py-4 text-sm text-[color:var(--hub-text)]">GBP {payment.amount}</td>
+                <td className="px-5 py-4 text-sm text-[color:var(--hub-text)]">{formatMoney(payment.amount)}</td>
                 <td className="px-5 py-4 text-sm text-[color:var(--hub-muted)]">{formatDate(payment.dueAt)}</td>
                 <td className="px-5 py-4 text-sm">
                   <span className={`rounded-full px-3 py-1 text-xs font-semibold ${toneClasses[payment.status]}`}>{payment.status}</span>

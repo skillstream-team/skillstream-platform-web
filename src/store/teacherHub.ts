@@ -91,6 +91,7 @@ interface TeacherHubActions {
   receiveDirectMessage: (conversationId: string, message: DirectConversationMessage) => void;
   receiveClassMessage: (classId: string, message: ClassMessage) => void;
   setLessonRecording: (classId: string, lessonId: string, recordingUrl: string) => void;
+  setLessonAiRecap: (classId: string, lessonId: string, recap: string) => void;
   updatePaymentStatus: (paymentId: string, status: PaymentStatus) => void;
   updateStudentNote: (studentId: string, note: string) => Promise<void>;
   undoLastAction: () => void;
@@ -137,6 +138,7 @@ type LessonRow = {
   duration_minutes: number;
   state: 'scheduled' | 'live' | 'completed' | 'cancelled';
   recording_url?: string | null;
+  ai_recap?: string | null;
 };
 
 type AssignmentRow = {
@@ -602,6 +604,7 @@ const buildHubData = (input: {
       studentCount: 0,
       syncStatus: 'synced',
       recordingUrl: row.recording_url || undefined,
+      aiRecap: row.ai_recap || undefined,
     };
     lessonsByClassId.get(row.class_id)?.push(lesson);
   });
@@ -930,7 +933,7 @@ export const useTeacherHubStore = create<TeacherHubStore>((set, get) => ({
       ] = await Promise.all([
         supabase.from('classes').select('id, owner_user_id, name, overview, invite_code, archived_at').in('id', classIds).is('archived_at', null),
         supabase.from('class_members').select('class_id, user_id, member_role').in('class_id', classIds),
-        supabase.from('lessons').select('id, class_id, title, scheduled_at, duration_minutes, state, recording_url').in('class_id', classIds),
+        supabase.from('lessons').select('id, class_id, title, scheduled_at, duration_minutes, state, recording_url, ai_recap').in('class_id', classIds),
         supabase
           .from('class_assignments')
           .select('id, class_id, title, description, resources, due_at, completion_rate, submissions_pending_review, assigned_to')
@@ -2508,6 +2511,20 @@ export const useTeacherHubStore = create<TeacherHubStore>((set, get) => ({
           ...entry,
           lessons: entry.lessons.map((lesson) => (
             lesson.id !== lessonId ? lesson : { ...lesson, recordingUrl }
+          )),
+        }
+      )),
+      revision: state.revision + 1,
+    }));
+  },
+
+  setLessonAiRecap: (classId, lessonId, recap) => {
+    set((state) => ({
+      classes: state.classes.map((entry) => (
+        entry.id !== classId ? entry : {
+          ...entry,
+          lessons: entry.lessons.map((lesson) => (
+            lesson.id !== lessonId ? lesson : { ...lesson, aiRecap: recap }
           )),
         }
       )),

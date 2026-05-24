@@ -67,6 +67,56 @@ export interface TeacherInvite {
   createdAt: string;
 }
 
+export interface BillingPlan {
+  id: string;
+  code: string;
+  name: string;
+  monthlyFeeGbp: number;
+  includedParticipantMinutes: number;
+  overagePerParticipantMinuteGbp: number;
+  oneOffPlatformFeePercent: number;
+  aiMonthlyTokenLimit: number;
+  isActive: boolean;
+}
+
+export interface AdminTeacherSubscription {
+  id: string;
+  teacherUserId: string;
+  teacherName: string;
+  teacherEmail: string;
+  planId: string;
+  planCode: string;
+  planName: string;
+  status: string;
+  periodEnd: string;
+}
+
+export interface PromoCode {
+  id: string;
+  code: string;
+  description: string;
+  discountPercent: number;
+  maxUses: number | null;
+  usedCount: number;
+  validFrom: string;
+  validUntil: string | null;
+  isActive: boolean;
+  appliesTo: 'all' | 'creator' | 'studio' | 'academy';
+  createdAt: string;
+}
+
+export interface AffiliateCode {
+  id: string;
+  teacherUserId: string;
+  teacherName: string;
+  teacherEmail: string;
+  code: string;
+  discountPercentReferrer: number;
+  discountPercentReferee: number;
+  totalReferrals: number;
+  createdAt: string;
+}
+
 export const adminMetrics: AdminMetric[] = [];
 export const teacherUsers: PlatformUserSummary[] = [];
 export const studentUsers: PlatformUserSummary[] = [];

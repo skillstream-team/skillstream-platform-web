@@ -93,10 +93,10 @@ esbuild.build({
     'process.env.REACT_APP_GOOGLE_CLIENT_ID': JSON.stringify(process.env.REACT_APP_GOOGLE_CLIENT_ID || ''),
     'process.env.REACT_APP_GOOGLE_CLIENT_SECRET': JSON.stringify(process.env.REACT_APP_GOOGLE_CLIENT_SECRET || ''),
     'process.env.REACT_APP_ENABLE_DEMO_ACCOUNTS': JSON.stringify(process.env.REACT_APP_ENABLE_DEMO_ACCOUNTS || 'true'),
-    'process.env.REACT_APP_DAILY_DEFAULT_DOMAIN': JSON.stringify(process.env.REACT_APP_DAILY_DEFAULT_DOMAIN || ''),
     'process.env.REACT_APP_SUPABASE_URL': JSON.stringify(process.env.REACT_APP_SUPABASE_URL || ''),
     'process.env.REACT_APP_SUPABASE_ANON_KEY': JSON.stringify(process.env.REACT_APP_SUPABASE_ANON_KEY || ''),
   },
+  external: ['markmap-common', 'html2canvas', 'dompurify', 'canvg'],
   minify: true,
   sourcemap: false,
 }).then(() => {

@@ -3,7 +3,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight, Eye, EyeOff, Lock, Mail } from 'lucide-react';
 import { useAuthStore } from '../../store/auth';
 import { AuthShell } from '../../components/auth/AuthShell';
-import { hasSupabaseConfig } from '../../lib/supabase';
 
 const getHomeRoute = (user: NonNullable<ReturnType<typeof useAuthStore.getState>['user']>) => {
   if (user.activeOrgId) {
@@ -16,14 +15,13 @@ const getHomeRoute = (user: NonNullable<ReturnType<typeof useAuthStore.getState>
 
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
-  const { login, loginWithOAuth, resendConfirmation, isLoading, error, notice, clearError, clearNotice } = useAuthStore();
+  const { login, resendConfirmation, isLoading, error, notice, clearError, clearNotice } = useAuthStore();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [formError, setFormError] = useState('');
   const [isResending, setIsResending] = useState(false);
-  const [oauthLoading, setOauthLoading] = useState<'google' | 'apple' | null>(null);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -43,21 +41,6 @@ export const LoginPage: React.FC = () => {
       navigate(user ? getHomeRoute(user) : '/dashboard');
     } catch {
       // store handles auth error
-    }
-  };
-
-  const handleOAuth = async (provider: 'google' | 'apple') => {
-    clearError();
-    clearNotice();
-    setFormError('');
-    setOauthLoading(provider);
-
-    try {
-      await loginWithOAuth(provider);
-    } catch {
-      // store handles oauth error
-    } finally {
-      setOauthLoading(null);
     }
   };
 
@@ -158,45 +141,6 @@ export const LoginPage: React.FC = () => {
           <ArrowRight className="h-4 w-4" />
         </button>
 
-        <div className="grid gap-3 pt-1 sm:grid-cols-2">
-          <button
-            type="button"
-            onClick={() => void handleOAuth('google')}
-            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-[color:var(--edu-border)] bg-white px-4 py-3 text-sm font-semibold text-[color:var(--edu-text)] transition-colors hover:bg-[rgba(27,74,128,0.04)] dark:hover:bg-[rgba(68,147,248,0.08)] disabled:cursor-not-allowed disabled:opacity-65"
-            disabled={isLoading || oauthLoading !== null || !hasSupabaseConfig}
-          >
-            <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden="true">
-              <path
-                fill="#4285F4"
-                d="M23.49 12.27c0-.81-.07-1.59-.2-2.34H12v4.43h6.45a5.52 5.52 0 0 1-2.4 3.62v3h3.88c2.27-2.09 3.56-5.17 3.56-8.71Z"
-              />
-              <path
-                fill="#34A853"
-                d="M12 24c3.24 0 5.95-1.07 7.93-2.9l-3.88-3c-1.07.72-2.44 1.14-4.05 1.14-3.12 0-5.77-2.11-6.72-4.95H1.27v3.09A12 12 0 0 0 12 24Z"
-              />
-              <path
-                fill="#FBBC05"
-                d="M5.28 14.29A7.2 7.2 0 0 1 4.9 12c0-.8.14-1.57.38-2.29V6.62H1.27A12 12 0 0 0 0 12c0 1.93.46 3.76 1.27 5.38l4.01-3.09Z"
-              />
-              <path
-                fill="#EA4335"
-                d="M12 4.77c1.76 0 3.34.61 4.58 1.81l3.43-3.43C17.95 1.21 15.24 0 12 0A12 12 0 0 0 1.27 6.62l4.01 3.09C6.23 6.88 8.88 4.77 12 4.77Z"
-              />
-            </svg>
-            {oauthLoading === 'google' ? 'Connecting...' : 'Continue with Google'}
-          </button>
-          <button
-            type="button"
-            onClick={() => void handleOAuth('apple')}
-            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-[color:var(--edu-border)] bg-white px-4 py-3 text-sm font-semibold text-[color:var(--edu-text)] transition-colors hover:bg-[rgba(27,74,128,0.04)] dark:hover:bg-[rgba(68,147,248,0.08)] disabled:cursor-not-allowed disabled:opacity-65"
-            disabled={isLoading || oauthLoading !== null || !hasSupabaseConfig}
-          >
-            <svg viewBox="0 0 384 512" className="h-4 w-4 fill-current" aria-hidden="true">
-              <path d="M318.7 268.7c-.2-50.3 41.1-74.4 42.9-75.5-23.5-34.3-60-39-73-39.5-31-3.1-60.6 18.3-76.3 18.3-15.8 0-40.1-17.8-65.9-17.3-33.9 .5-65.2 19.7-82.6 49.9-35.3 61.2-9 151.8 25.4 201.4 16.8 24.1 36.8 51.1 63.1 50.1 25.2-1 34.7-16.3 65.2-16.3 30.5 0 39 16.3 65.7 15.8 27.2-.5 44.4-24.6 61.1-48.8 19.2-28 27.1-55.1 27.4-56.5-.6-.2-52.5-20.2-52.9-80.6zM267.1 120.1c14-17 23.4-40.2 20.8-63.8-20.1 .8-44.5 13.4-58.9 30.4-13 15-24.4 38.6-21.3 61.3 22.4 1.7 45.4-11.4 59.4-27.9z" />
-            </svg>
-            {oauthLoading === 'apple' ? 'Connecting...' : 'Continue with Apple'}
-          </button>
-        </div>
       </form>
 
     </AuthShell>

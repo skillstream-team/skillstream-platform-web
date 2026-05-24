@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Archive, CalendarDays, Copy, Link2, MessageSquare, Pencil, Plus, Users, Video } from 'lucide-react';
+import { Archive, CalendarDays, Copy, Link2, MessageSquare, Pencil, PlayCircle, Plus, Sparkles, Users, Video } from 'lucide-react';
 import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { AiPanel } from '../components/ai/AiPanel';
 import { ActionModal } from '../components/common/ActionModal';
 import { ConfirmDialog } from '../components/common/ConfirmDialog';
 import { ProgressStrip } from '../components/hub/ProgressStrip';
@@ -54,6 +55,7 @@ export const ClassPage: React.FC = () => {
   const gradeAssignmentSubmission = useTeacherHubStore((state) => state.gradeAssignmentSubmission);
   const uploadClassResource = useTeacherHubStore((state) => state.uploadClassResource);
   const sendClassMessage = useTeacherHubStore((state) => state.sendClassMessage);
+  const setLessonAiRecap = useTeacherHubStore((state) => state.setLessonAiRecap);
   const [showAddStudent, setShowAddStudent] = useState(false);
   const [showEditClassModal, setShowEditClassModal] = useState(false);
   const [showArchiveClassConfirm, setShowArchiveClassConfirm] = useState(false);
@@ -62,6 +64,7 @@ export const ClassPage: React.FC = () => {
   const [showSubmitAssignmentModal, setShowSubmitAssignmentModal] = useState(false);
   const [showReviewSubmissionsModal, setShowReviewSubmissionsModal] = useState(false);
   const [showResourceModal, setShowResourceModal] = useState(false);
+  const [recordingPlayingId, setRecordingPlayingId] = useState<string | null>(null);
   const [showMessageModal, setShowMessageModal] = useState(false);
   const [studentToRemove, setStudentToRemove] = useState<string | null>(null);
   const [selectedStudentId, setSelectedStudentId] = useState('');
@@ -114,6 +117,10 @@ export const ClassPage: React.FC = () => {
   const [isReschedulingLesson, setIsReschedulingLesson] = useState(false);
   const [messageError, setMessageError] = useState('');
   const [isSendingMessage, setIsSendingMessage] = useState(false);
+  const [aiOpenLessonId, setAiOpenLessonId] = useState<string | null>(null);
+  const [aiTabByLesson, setAiTabByLesson] = useState<Record<string, 'plan' | 'quiz' | 'recap'>>({});
+  const [aiAssistQuestion, setAiAssistQuestion] = useState('');
+  const [showAiAssist, setShowAiAssist] = useState(false);
 
   if (!teacherClass) {
     return <Navigate to="/classes" replace />;
@@ -296,15 +303,14 @@ export const ClassPage: React.FC = () => {
                   {lesson.status === 'cancelled' ? 'Session cancelled' : lesson.status === 'completed' ? 'View session' : 'Start / join lesson'}
                 </button>
                 {lesson.recordingUrl ? (
-                  <a
-                    href={lesson.recordingUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-2 rounded-full border border-[color:var(--hub-border)] px-4 py-2.5 text-sm font-semibold text-[color:var(--hub-text)]"
+                  <button
+                    type="button"
+                    onClick={() => setRecordingPlayingId(recordingPlayingId === lesson.id ? null : lesson.id)}
+                    className={`inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold ${recordingPlayingId === lesson.id ? 'bg-[color:var(--hub-primary)] text-white' : 'border border-[color:var(--hub-border)] text-[color:var(--hub-text)]'}`}
                   >
-                    <Video className="h-4 w-4" />
-                    Watch recording
-                  </a>
+                    <PlayCircle className="h-4 w-4" />
+                    {recordingPlayingId === lesson.id ? 'Close player' : 'Watch recording'}
+                  </button>
                 ) : null}
                 {!isStudent ? (
                   <>
@@ -349,6 +355,82 @@ export const ClassPage: React.FC = () => {
                   </>
                 ) : null}
               </div>
+
+              {/* Inline recording player */}
+              {lesson.recordingUrl && recordingPlayingId === lesson.id ? (
+                <div className="mt-4 overflow-hidden rounded-2xl border border-[color:var(--hub-border)] bg-gray-950">
+                  <video
+                    key={lesson.recordingUrl}
+                    src={lesson.recordingUrl}
+                    controls
+                    autoPlay
+                    controlsList="nodownload"
+                    onContextMenu={(e) => e.preventDefault()}
+                    className="w-full"
+                    style={{ maxHeight: 340, display: 'block' }}
+                  />
+                  <div className="px-4 py-2.5">
+                    <span className="text-xs text-white/40">Recorded lesson · {lesson.title}</span>
+                  </div>
+                </div>
+              ) : null}
+
+              {/* AI Tools section (teacher only) */}
+              {!isStudent ? (
+                <div className="mt-4">
+                  <button
+                    type="button"
+                    onClick={() => setAiOpenLessonId(aiOpenLessonId === lesson.id ? null : lesson.id)}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-[color:var(--hub-border)] px-3 py-1.5 text-xs font-semibold text-[color:var(--hub-muted)]"
+                  >
+                    <Sparkles className="h-3.5 w-3.5" />
+                    AI tools
+                  </button>
+
+                  {aiOpenLessonId === lesson.id ? (
+                    <div className="mt-3 rounded-2xl border border-[color:var(--hub-border)] bg-[color:var(--hub-soft)] p-4">
+                      {/* Sub-tab switcher */}
+                      <div className="flex gap-2">
+                        {(['plan', 'quiz', 'recap'] as const).map((tab) => (
+                          <button
+                            key={tab}
+                            type="button"
+                            onClick={() => setAiTabByLesson((prev) => ({ ...prev, [lesson.id]: tab }))}
+                            className={`rounded-full px-3 py-1 text-xs font-semibold ${(aiTabByLesson[lesson.id] || 'plan') === tab ? 'bg-[color:var(--hub-primary)] text-white' : 'border border-[color:var(--hub-border)] text-[color:var(--hub-muted)]'}`}
+                          >
+                            {tab === 'plan' ? 'Lesson Plan' : tab === 'quiz' ? 'Quiz' : 'Session Recap'}
+                          </button>
+                        ))}
+                      </div>
+
+                      {(aiTabByLesson[lesson.id] || 'plan') === 'plan' ? (
+                        <AiPanel
+                          feature="ai-lesson-plan"
+                          payload={{ topic: lesson.title, durationMinutes: lesson.durationMinutes }}
+                          label="Generate lesson plan"
+                          outputFormat="text"
+                        />
+                      ) : (aiTabByLesson[lesson.id] || 'plan') === 'quiz' ? (
+                        <AiPanel
+                          feature="ai-quiz-gen"
+                          payload={{ lessonTitle: lesson.title, questionCount: 5 }}
+                          label="Generate quiz"
+                          outputFormat="quiz"
+                        />
+                      ) : (
+                        <AiPanel
+                          feature="ai-session-recap"
+                          payload={{ lessonId: lesson.id }}
+                          label="Generate session recap"
+                          outputFormat="text"
+                          storedResult={lesson.aiRecap}
+                          onResult={(r) => setLessonAiRecap(teacherClass.id, lesson.id, r)}
+                        />
+                      )}
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
             </div>
           ))}
           {teacherClass.lessons.length === 0 ? (
@@ -1176,6 +1258,38 @@ export const ClassPage: React.FC = () => {
             <p className="text-xs text-[color:var(--hub-muted)]">Selected: {submissionFile.name}</p>
           ) : null}
           {submissionError ? <p className="text-xs text-[color:var(--edu-danger)]">{submissionError}</p> : null}
+
+          {/* AI writing assist for students */}
+          {activeAssignment ? (
+            <div className="rounded-2xl border border-[color:var(--hub-border)] p-4">
+              <button
+                type="button"
+                onClick={() => setShowAiAssist((prev) => !prev)}
+                className="inline-flex items-center gap-1.5 text-xs font-semibold text-[color:var(--hub-primary)]"
+              >
+                <Sparkles className="h-3.5 w-3.5" />
+                Get writing help
+              </button>
+              {showAiAssist ? (
+                <AiPanel
+                  feature="ai-assignment-assist"
+                  payload={{
+                    assignmentTitle: activeAssignment.title,
+                    assignmentDescription: activeAssignment.description,
+                  }}
+                  promptInput={{
+                    label: 'What are you stuck on?',
+                    placeholder: 'e.g. I don\'t understand what the question is asking...',
+                    value: aiAssistQuestion,
+                    onChange: setAiAssistQuestion,
+                  }}
+                  label="Get guidance"
+                  outputFormat="text"
+                />
+              ) : null}
+            </div>
+          ) : null}
+
           <button type="submit" disabled={isSubmittingAssignment} className="rounded-full bg-[color:var(--hub-primary)] px-4 py-3 text-sm font-semibold text-white disabled:opacity-60">
             {isSubmittingAssignment ? 'Submitting...' : 'Submit homework'}
           </button>
@@ -1229,6 +1343,20 @@ export const ClassPage: React.FC = () => {
                     </a>
                   ) : null}
                 </div>
+
+                {activeAssignment ? (
+                  <AiPanel
+                    feature="ai-assignment-feedback"
+                    payload={{
+                      assignmentTitle: activeAssignment.title,
+                      assignmentDescription: activeAssignment.description,
+                      submissionNote: activeSubmission.submissionNote || '',
+                      fileUrl: activeSubmission.fileUrl || '',
+                    }}
+                    label="AI feedback assist"
+                    outputFormat="text"
+                  />
+                ) : null}
 
                 <form
                   className="grid gap-3"

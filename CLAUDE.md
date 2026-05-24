@@ -33,7 +33,7 @@ All app state lives in **Zustand stores** (`src/store/`):
 - `teacherHub.ts` — the primary data store (2400+ lines). Classes, lessons, students, assignments, messages, conversations, payments. Every page reads from here.
 - `adminHub.ts` — admin-only data (users, invites, system stats).
 - `preferences.ts` — per-user preferences (notifications, AI features, etc.).
-- `sessionUi.ts` — live session UI state (Daily.co frame, recording, chat).
+- `sessionUi.ts` — live session UI state (recording, chat).
 - `theme.ts` — light/dark/system theme.
 
 ### Demo mode
@@ -50,7 +50,6 @@ Required env vars (`.env` or `.env.local`):
 ```
 REACT_APP_SUPABASE_URL=https://<ref>.supabase.co
 REACT_APP_SUPABASE_ANON_KEY=<anon-key>
-REACT_APP_DAILY_DEFAULT_DOMAIN=<domain>.daily.co
 ```
 
 ### Routing & access control
@@ -69,21 +68,29 @@ Two CSS variable namespaces defined in `src/styles/index.css`:
 Dark mode is toggled via `document.documentElement.classList.toggle('dark', ...)` and overrides both sets of variables under `.dark {}`.
 
 ### Live sessions
-`LiveSessionPage.tsx` integrates Daily.co (`@daily-co/daily-js`). The flow:
-1. Teacher calls `daily-token` edge function to get a room URL + owner token
-2. Students call it to get a participant token
-3. `daily-webhook` edge function receives recording/attendance events from Daily
+`LiveSessionPage.tsx` integrates **SignalWire** (`@signalwire/js`) for video/audio. The flow:
+1. Teacher or student calls `signalwire-token` edge function — it calls SignalWire's REST API and returns a short-lived room token
+2. Frontend creates `Video.RoomSession({ token, rootElement })` — SignalWire handles WebRTC and renders video tiles into `rootElement`
+3. Participant list is maintained via `room.joined` / `member.joined` / `member.left` / `member.updated` events
+4. Teacher mute/kick signals use Supabase Realtime broadcast on `session:<roomName>`; teacher-initiated removes also use `roomSession.removeMember()`
+5. Recording uses browser `getDisplayMedia` + `MediaRecorder` → Supabase Storage `recordings` bucket
 
+Required Supabase secrets: `SIGNALWIRE_SPACE_URL`, `SIGNALWIRE_PROJECT_ID`, `SIGNALWIRE_API_TOKEN`
+
+`src/lib/signalwireLive.ts` — types (`SWSessionConfig`, `SWParticipant`, `LiveSessionMode`) and `roomNameFromLessonId()`.
 `src/lib/realtime.ts` subscribes to Supabase Realtime postgres_changes for `direct_messages` and `class_messages`. Requires `replica identity full` on both tables (already applied).
 
 ### Edge functions
 Located in `supabase/functions/`. Shared utilities in `_shared/`. Required secrets:
-- `DAILY_API_KEY` — for `daily-token`, `daily-recording`, `daily-webhook`
-- `DAILY_WEBHOOK_HMAC` — for webhook signature verification
+- `SIGNALWIRE_SPACE_URL`, `SIGNALWIRE_PROJECT_ID`, `SIGNALWIRE_API_TOKEN` — for `signalwire-token`
+- `ANTHROPIC_API_KEY` — for all `ai-*` edge functions
+- `DODO_API_KEY`, `DODO_WEBHOOK_SECRET`, `DODO_ENV`, `DODO_PRODUCT_CREATOR`, `DODO_PRODUCT_STUDIO`, `DODO_PRODUCT_ACADEMY`, `DODO_PRODUCT_LESSON` — for `dodo-checkout` / `dodo-webhook`
 - `OPS_CRON_SECRET` — for `ops-cron` scheduled trigger
+
+Note: `daily-token`, `daily-recording`, `daily-webhook` are legacy functions that are no longer called by the frontend. They reference the dropped `daily_room_url` column and should be deleted once confirmed unused.
 
 ### Data types
 Canonical TypeScript interfaces for hub data are in `src/data/teacherHub.ts`. The Supabase row types (snake_case) are defined inline inside `src/store/teacherHub.ts` and mapped to the camelCase interface types before being stored in state.
 
 ### Payments
-`PaymentsPage.tsx` has the full UI (Creator/Studio/Academy plan tiers + learner invoices table) but **no payment backend**. The database schema is ready for Stripe integration — this is the only major remaining feature.
+`PaymentsPage.tsx` has the full UI (Creator/Studio/Academy plan tiers + learner invoices table). The payment backend is implemented via **Dodo Payments**: `dodo-checkout` edge function creates a hosted checkout session and returns a redirect URL; `dodo-webhook` handles `subscription.active`, `subscription.cancelled`, `subscription.renewed`, and `payment.succeeded` (lesson tickets) events and writes to `teacher_subscriptions`. Requires Dodo secrets to be set before payments go live.

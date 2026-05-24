@@ -1,5 +1,5 @@
 import React from 'react';
-import { BookOpen, Compass, Sparkles, Video } from 'lucide-react';
+import { BookOpen, CalendarDays, CreditCard, Video } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 import { SkillStreamLogo } from '../branding/SkillStreamLogo';
 
@@ -31,17 +31,17 @@ export function AuthShell({
             <div className="space-y-3">
               <span className="edu-pill w-fit text-white">SkillStream</span>
               <h1 className="edu-title max-w-lg text-3xl font-bold leading-tight text-white xl:text-4xl">
-                Teach, learn, and connect in one focused learning platform.
+                Your all-in-one platform for live teaching.
               </h1>
             </div>
           </div>
 
           <div className="relative z-10 grid gap-3 sm:grid-cols-2">
             {[
-              { icon: BookOpen, title: 'Courses', text: 'Build and access structured learning paths.' },
-              { icon: Video, title: 'Live', text: 'Run sessions and replay them when needed.' },
-              { icon: Sparkles, title: 'Practice', text: 'Track progress and focus where it matters.' },
-              { icon: Compass, title: 'Community', text: 'Keep learners and teachers in sync.' },
+              { icon: Video, title: 'Live classes', text: 'Host HD video sessions straight from your browser.' },
+              { icon: BookOpen, title: 'Assignments', text: 'Send homework and track submissions in one place.' },
+              { icon: CalendarDays, title: 'Scheduling', text: 'Plan your week and keep students in the loop.' },
+              { icon: CreditCard, title: 'Payments', text: 'Charge for sessions with a secure hosted checkout.' },
             ].map((item) => (
               <div key={item.title} className="rounded-[20px] border border-white/12 bg-white/10 p-4 backdrop-blur-sm">
                 <item.icon className="h-4 w-4 text-white" />

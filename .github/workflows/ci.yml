@@ -1,0 +1,174 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+# Cancel in-progress runs for the same branch to avoid queuing up stale runs
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Quality: typecheck + lint + production build
+  # ---------------------------------------------------------------------------
+  quality:
+    name: Quality (typecheck · lint · build)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type-check
+        run: npm run typecheck
+
+      - name: Lint (0 warnings allowed)
+        run: npm run lint
+
+      - name: Production build
+        run: npm run build
+
+  # ---------------------------------------------------------------------------
+  # Frontend tests + coverage enforcement
+  # ---------------------------------------------------------------------------
+  test-frontend:
+    name: Frontend tests & coverage
+    runs-on: ubuntu-latest
+    needs: quality
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests with coverage
+        # Fails the job if:
+        #   • any test fails
+        #   • coverage on tracked files drops below 85% (lines / funcs / stmts / branches)
+        run: npm run test:coverage
+
+      - name: Upload HTML coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/
+          retention-days: 30
+
+      - name: Upload LCOV for external tools (Codecov / SonarCloud)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-lcov
+          path: coverage/lcov.info
+          retention-days: 30
+
+  # ---------------------------------------------------------------------------
+  # Backend edge-function unit tests (node --test, no Supabase needed)
+  # ---------------------------------------------------------------------------
+  test-backend:
+    name: Backend edge-function tests
+    runs-on: ubuntu-latest
+    needs: quality
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run edge-function helper tests
+        run: npm run backend:test
+
+  # ---------------------------------------------------------------------------
+  # Playwright end-to-end tests (demo mode, no Supabase needed)
+  # ---------------------------------------------------------------------------
+  test-e2e:
+    name: Playwright e2e tests
+    runs-on: ubuntu-latest
+    needs: quality
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install chromium --with-deps
+
+      - name: Run Playwright tests
+        run: npm run test:e2e
+        env:
+          REACT_APP_ENABLE_DEMO_ACCOUNTS: 'true'
+          CI: 'true'
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+
+  # ---------------------------------------------------------------------------
+  # Gate: all three test jobs must pass before this succeeds.
+  # Point branch protection rules at this single job.
+  # ---------------------------------------------------------------------------
+  all-tests-pass:
+    name: All tests passed
+    runs-on: ubuntu-latest
+    needs: [test-frontend, test-backend, test-e2e]
+    if: always()
+
+    steps:
+      - name: Check results
+        run: |
+          if [[ "${{ needs.test-frontend.result }}" != "success" ]]; then
+            echo "Frontend tests failed or were skipped."
+            exit 1
+          fi
+          if [[ "${{ needs.test-backend.result }}" != "success" ]]; then
+            echo "Backend tests failed or were skipped."
+            exit 1
+          fi
+          if [[ "${{ needs.test-e2e.result }}" != "success" ]]; then
+            echo "Playwright e2e tests failed or were skipped."
+            exit 1
+          fi
+          echo "All tests passed."

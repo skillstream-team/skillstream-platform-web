@@ -1,6 +1,7 @@
 import React from 'react';
 import { Ticket, Users } from 'lucide-react';
-import { LiveSessionMode } from '../../lib/dailyLive';
+import { LiveSessionMode } from '../../lib/signalwireLive';
+import { useCurrencyStore } from '../../store/currency';
 
 interface LiveSetupPanelProps {
   isTeacher: boolean;
@@ -27,6 +28,7 @@ export const LiveSetupPanel: React.FC<LiveSetupPanelProps> = ({
   isJoining,
   isDisabled,
 }) => {
+  const currency = useCurrencyStore((state) => state.currency);
   return (
     <section className="rounded-[32px] border border-[color:var(--hub-border)] bg-white p-6 shadow-[0_18px_48px_rgba(15,23,42,0.05)] sm:p-8">
       <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[color:var(--hub-primary)]">Live session</p>
@@ -59,22 +61,18 @@ export const LiveSetupPanel: React.FC<LiveSetupPanelProps> = ({
           </div>
         ) : null}
 
-        {isTeacher ? (
+        {isTeacher && sessionMode === 'paid' ? (
           <div>
-            {sessionMode === 'paid' ? (
-              <>
-                <label className="mb-2 block text-sm font-semibold text-[color:var(--hub-text)]" htmlFor="ticket-price">Ticket price (GBP)</label>
-                <input
-                  id="ticket-price"
-                  type="number"
-                  min={1}
-                  step={1}
-                  value={ticketPriceGBP}
-                  onChange={(event) => onTicketPriceChange(Number(event.target.value) || 1)}
-                  className="w-full rounded-2xl border border-[color:var(--hub-border)] px-4 py-3 text-sm outline-none"
-                />
-              </>
-            ) : null}
+            <label className="mb-2 block text-sm font-semibold text-[color:var(--hub-text)]" htmlFor="ticket-price">Ticket price ({currency})</label>
+            <input
+              id="ticket-price"
+              type="number"
+              min={1}
+              step={1}
+              value={ticketPriceGBP}
+              onChange={(event) => onTicketPriceChange(Number(event.target.value) || 1)}
+              className="w-full rounded-2xl border border-[color:var(--hub-border)] px-4 py-3 text-sm outline-none"
+            />
           </div>
         ) : null}
 

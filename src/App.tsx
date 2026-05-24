@@ -23,6 +23,7 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { AppPageLoader } from './components/common/AppPageLoader';
 import { useTeacherHubStore } from './store/teacherHub';
 import { usePreferencesStore } from './store/preferences';
+import { useCurrencyStore } from './store/currency';
 import { resolveStudentTheme } from './data/studentThemes';
 import { OrgLayout } from './components/layout/OrgLayout';
 import { OrgDashboardPage } from './pages/org/OrgDashboardPage';
@@ -38,6 +39,10 @@ import { OrgAnnouncementsPage } from './pages/org/OrgAnnouncementsPage';
 import { OrgBillingPage } from './pages/org/OrgBillingPage';
 import { OrgCertificatesPage } from './pages/org/OrgCertificatesPage';
 import { OrgAuditPage } from './pages/org/OrgAuditPage';
+import { LandingPage } from './pages/LandingPage';
+import { NotFoundPage } from './pages/NotFoundPage';
+import { PrivacyPolicyPage } from './pages/legal/PrivacyPolicyPage';
+import { TermsPage } from './pages/legal/TermsPage';
 import { LearnPage } from './pages/learn/LearnPage';
 import { CoursePlayerPage } from './pages/learn/CoursePlayerPage';
 import { CertificatesPage } from './pages/learn/CertificatesPage';
@@ -94,6 +99,7 @@ function App() {
   const isWorkspaceHydrated = useTeacherHubStore((state) => state.isHydrated);
   const isWorkspaceSyncing = useTeacherHubStore((state) => state.isSyncing);
   const loadPreferences = usePreferencesStore((state) => state.loadPreferences);
+  const loadCurrency = useCurrencyStore((state) => state.loadCurrency);
   const studentTheme = usePreferencesStore((state) => state.preferences.studentTheme);
   const { theme, getEffectiveTheme } = useThemeStore();
 
@@ -108,6 +114,10 @@ function App() {
   useEffect(() => {
     void loadPreferences(user?.id);
   }, [loadPreferences, user?.id]);
+
+  useEffect(() => {
+    void loadCurrency();
+  }, [loadCurrency]);
 
   useEffect(() => {
     if (user?.role === 'STUDENT') {
@@ -149,7 +159,7 @@ function App() {
   return (
     <ErrorBoundary>
       <NotificationManager>
-        <Router>
+        <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
           <Routes>
             <Route path="/auth/google/callback" element={<OAuthDisabledPage />} />
             <Route path="/oauth/callback" element={<OAuthDisabledPage />} />
@@ -304,13 +314,21 @@ function App() {
             <Route path="/learn/course/:courseId" element={<ProtectedRoute><OrgLayout><CoursePlayerPage /></OrgLayout></ProtectedRoute>} />
             <Route path="/learn/certificates" element={<ProtectedRoute><OrgLayout><CertificatesPage /></OrgLayout></ProtectedRoute>} />
 
-            <Route path="/" element={<Navigate to={homeRoute(user)} replace />} />
+            <Route
+              path="/"
+              element={
+                user ? <Navigate to={homeRoute(user)} replace /> : <LandingPage />
+              }
+            />
+            <Route path="/privacy" element={<PrivacyPolicyPage />} />
+            <Route path="/terms" element={<TermsPage />} />
+
             <Route path="/home" element={<Navigate to="/dashboard" replace />} />
             <Route path="/calendar" element={<Navigate to="/schedule" replace />} />
             <Route path="/messages/new" element={<Navigate to="/messages" replace />} />
             <Route path="/messages/:userId" element={<Navigate to="/messages" replace />} />
             <Route path="/profile" element={<Navigate to="/settings" replace />} />
-            <Route path="*" element={<Navigate to={homeRoute(user)} replace />} />
+            <Route path="*" element={<NotFoundPage />} />
           </Routes>
         </Router>
       </NotificationManager>

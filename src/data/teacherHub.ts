@@ -36,6 +36,7 @@ export interface LessonSummary {
   studentCount: number;
   syncStatus?: 'pending' | 'synced';
   recordingUrl?: string;
+  aiRecap?: string;
 }
 
 export interface AssignmentSummary {
