@@ -21,38 +21,43 @@ export const LiveControlsBar: React.FC<LiveControlsBarProps> = ({
   onLeave,
 }) => {
   return (
-    <div className="flex flex-wrap items-center gap-2 rounded-[24px] border border-[color:var(--hub-border)] bg-white p-3">
+    <div className="flex items-center gap-2 sm:gap-3">
       <button
         type="button"
         onClick={onToggleMic}
-        className={`inline-flex items-center gap-2 rounded-full px-3 py-2 text-sm font-semibold ${micOn ? 'bg-[color:var(--hub-soft)] text-[color:var(--hub-text)]' : 'bg-rose-100 text-rose-700'}`}
+        title={micOn ? 'Mute microphone' : 'Unmute microphone'}
+        className={`flex h-12 w-12 items-center justify-center rounded-full transition active:scale-95 ${micOn ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-rose-500 text-white hover:bg-rose-600'}`}
       >
-        {micOn ? <Mic className="h-4 w-4" /> : <MicOff className="h-4 w-4" />}
-        {micOn ? 'Mic on' : 'Mic off'}
+        {micOn ? <Mic className="h-5 w-5" /> : <MicOff className="h-5 w-5" />}
       </button>
+
       <button
         type="button"
         onClick={onToggleCamera}
-        className={`inline-flex items-center gap-2 rounded-full px-3 py-2 text-sm font-semibold ${cameraOn ? 'bg-[color:var(--hub-soft)] text-[color:var(--hub-text)]' : 'bg-rose-100 text-rose-700'}`}
+        title={cameraOn ? 'Turn off camera' : 'Turn on camera'}
+        className={`flex h-12 w-12 items-center justify-center rounded-full transition active:scale-95 ${cameraOn ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-rose-500 text-white hover:bg-rose-600'}`}
       >
-        {cameraOn ? <Video className="h-4 w-4" /> : <VideoOff className="h-4 w-4" />}
-        {cameraOn ? 'Camera on' : 'Camera off'}
+        {cameraOn ? <Video className="h-5 w-5" /> : <VideoOff className="h-5 w-5" />}
       </button>
+
       <button
         type="button"
         onClick={onToggleScreenShare}
-        className={`inline-flex items-center gap-2 rounded-full px-3 py-2 text-sm font-semibold ${screenSharingOn ? 'bg-[color:var(--hub-primary)] text-white' : 'bg-[color:var(--hub-soft)] text-[color:var(--hub-text)]'}`}
+        title={screenSharingOn ? 'Stop sharing screen' : 'Share your screen'}
+        className={`flex h-12 w-12 items-center justify-center rounded-full transition active:scale-95 ${screenSharingOn ? 'bg-blue-500 text-white hover:bg-blue-600' : 'bg-white/10 text-white hover:bg-white/20'}`}
       >
-        {screenSharingOn ? <ScreenShareOff className="h-4 w-4" /> : <ScreenShare className="h-4 w-4" />}
-        {screenSharingOn ? 'Stop share' : 'Share screen'}
+        {screenSharingOn ? <ScreenShareOff className="h-5 w-5" /> : <ScreenShare className="h-5 w-5" />}
       </button>
+
+      <div className="mx-1 h-8 w-px bg-white/15" />
+
       <button
         type="button"
         onClick={onLeave}
-        className="ml-auto inline-flex items-center gap-2 rounded-full bg-rose-600 px-3 py-2 text-sm font-semibold text-white"
+        title="Leave session"
+        className="flex h-12 w-12 items-center justify-center rounded-full bg-rose-600 text-white transition hover:bg-rose-700 active:scale-95"
       >
-        <PhoneOff className="h-4 w-4" />
-        Leave
+        <PhoneOff className="h-5 w-5" />
       </button>
     </div>
   );

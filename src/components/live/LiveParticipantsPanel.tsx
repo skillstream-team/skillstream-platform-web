@@ -19,67 +19,83 @@ export const LiveParticipantsPanel: React.FC<LiveParticipantsPanelProps> = ({
   onMuteAll,
 }) => {
   return (
-    <aside className="rounded-[28px] border border-[color:var(--hub-border)] bg-white p-4 shadow-[0_12px_32px_rgba(15,23,42,0.05)]">
-      <div className="flex items-start justify-between gap-3">
+    <div className="flex h-full flex-col">
+      <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
         <div>
-          <p className="text-sm font-semibold uppercase tracking-[0.16em] text-[color:var(--hub-primary)]">Participants</p>
-          <p className="mt-1 text-sm text-[color:var(--hub-muted)]">{participants.length} in session</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-white/50">Participants</p>
+          <p className="mt-0.5 text-sm font-semibold text-white">{participants.length} in session</p>
         </div>
-        {isTeacher ? (
+        {isTeacher && participants.filter((p) => !p.isLocal).length > 0 ? (
           <button
             type="button"
             onClick={onMuteAll}
-            className="rounded-full border border-[color:var(--hub-border)] px-3 py-1.5 text-xs font-semibold text-[color:var(--hub-text)]"
+            className="rounded-full border border-white/15 px-3 py-1.5 text-xs font-semibold text-white/70 transition hover:border-white/30 hover:text-white"
           >
             Mute all
           </button>
         ) : null}
       </div>
-      <div className="mt-4 grid gap-2">
+
+      <div className="flex-1 overflow-y-auto px-3 py-3">
         {participants.length === 0 ? (
-          <div className="rounded-2xl bg-[color:var(--hub-soft)] p-3 text-sm text-[color:var(--hub-muted)]">No one connected yet.</div>
+          <div className="rounded-2xl bg-white/5 px-4 py-4 text-sm text-white/30 text-center">
+            No one else is here yet.
+          </div>
         ) : (
-          participants.map((participant) => (
-            <div key={participant.id} className="flex items-center gap-3 rounded-2xl border border-[color:var(--hub-border)] px-3 py-2.5">
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[color:var(--hub-primary)] text-xs font-bold text-white">
-                {getInitials(participant.name || 'SkillStream')}
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-semibold text-[color:var(--hub-text)]">
-                  {participant.name || 'Guest'}
-                  {participant.isLocal ? ' (You)' : ''}
-                </p>
-              </div>
-              <div className="flex items-center gap-1.5 text-[color:var(--hub-muted)]">
-                {participant.audioMuted
-                  ? <MicOff className="h-4 w-4 text-rose-600" />
-                  : <Mic className="h-4 w-4" />}
-                {participant.videoMuted
-                  ? <VideoOff className="h-4 w-4 text-rose-600" />
-                  : <Video className="h-4 w-4" />}
-              </div>
-              {isTeacher && !participant.isLocal ? (
-                <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={() => onMuteParticipant?.(participant)}
-                    className="rounded-full border border-[color:var(--hub-border)] px-2 py-1 text-[10px] font-semibold text-[color:var(--hub-text)]"
-                  >
-                    Mute
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => onRemoveParticipant?.(participant)}
-                    className="rounded-full border border-[rgba(200,95,73,0.3)] px-2 py-1 text-[10px] font-semibold text-[color:var(--edu-danger)]"
-                  >
-                    Remove
-                  </button>
+          <div className="space-y-1.5">
+            {participants.map((participant) => (
+              <div
+                key={participant.id}
+                className="flex items-center gap-3 rounded-2xl px-3 py-2.5 transition hover:bg-white/5"
+              >
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[color:var(--hub-primary)] text-xs font-bold text-white">
+                  {getInitials(participant.name || 'SkillStream')}
                 </div>
-              ) : null}
-            </div>
-          ))
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-white">
+                    {participant.name || 'Guest'}
+                    {participant.isLocal ? <span className="ml-1 text-xs text-white/40">(You)</span> : null}
+                  </p>
+                </div>
+                <div className="flex shrink-0 items-center gap-1.5">
+                  {participant.audioMuted
+                    ? <MicOff className="h-3.5 w-3.5 text-rose-400" />
+                    : <Mic className="h-3.5 w-3.5 text-white/40" />}
+                  {participant.videoMuted
+                    ? <VideoOff className="h-3.5 w-3.5 text-rose-400" />
+                    : <Video className="h-3.5 w-3.5 text-white/40" />}
+                </div>
+              </div>
+            ))}
+          </div>
         )}
       </div>
-    </aside>
+
+      {isTeacher && participants.some((p) => !p.isLocal) ? (
+        <div className="border-t border-white/10 px-3 py-3">
+          <div className="space-y-1">
+            {participants.filter((p) => !p.isLocal).map((participant) => (
+              <div key={`actions-${participant.id}`} className="flex items-center gap-2 px-1">
+                <span className="min-w-0 flex-1 truncate text-xs text-white/40">{participant.name}</span>
+                <button
+                  type="button"
+                  onClick={() => onMuteParticipant?.(participant)}
+                  className="rounded-full border border-white/15 px-2.5 py-1 text-[10px] font-semibold text-white/60 transition hover:border-white/30 hover:text-white"
+                >
+                  Mute
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onRemoveParticipant?.(participant)}
+                  className="rounded-full border border-rose-500/30 px-2.5 py-1 text-[10px] font-semibold text-rose-400 transition hover:border-rose-500/60"
+                >
+                  Remove
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
+    </div>
   );
 };

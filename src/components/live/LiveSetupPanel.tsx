@@ -30,77 +30,72 @@ export const LiveSetupPanel: React.FC<LiveSetupPanelProps> = ({
 }) => {
   const currency = useCurrencyStore((state) => state.currency);
   return (
-    <section className="rounded-[32px] border border-[color:var(--hub-border)] bg-white p-6 shadow-[0_18px_48px_rgba(15,23,42,0.05)] sm:p-8">
-      <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[color:var(--hub-primary)]">Live session</p>
-      <h3 className="mt-2 text-2xl font-semibold text-[color:var(--hub-text)]">{isTeacher ? 'Start lesson instantly.' : 'Join your live lesson.'}</h3>
-
-      <div className="mt-5 grid gap-4">
-        {isTeacher ? (
-          <div>
-            <p className="mb-2 text-sm font-semibold text-[color:var(--hub-text)]">Session type</p>
-            <div className="inline-flex rounded-full border border-[color:var(--hub-border)] p-1">
-              <button
-                type="button"
-                onClick={() => onSessionModeChange('free')}
-                disabled={!isTeacher}
-                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold ${sessionMode === 'free' ? 'bg-[color:var(--hub-primary)] text-white' : 'text-[color:var(--hub-muted)]'}`}
-              >
-                <Users className="h-4 w-4" />
-                Free session
-              </button>
-              <button
-                type="button"
-                onClick={() => onSessionModeChange('paid')}
-                disabled={!isTeacher}
-                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold ${sessionMode === 'paid' ? 'bg-[color:var(--hub-primary)] text-white' : 'text-[color:var(--hub-muted)]'}`}
-              >
-                <Ticket className="h-4 w-4" />
-                Paid one-off
-              </button>
-            </div>
+    <div className="grid gap-4">
+      {isTeacher ? (
+        <div>
+          <p className="mb-2 text-sm font-semibold text-white/70">Session type</p>
+          <div className="inline-flex rounded-full border border-white/15 p-1">
+            <button
+              type="button"
+              onClick={() => onSessionModeChange('free')}
+              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold transition ${sessionMode === 'free' ? 'bg-[color:var(--hub-primary)] text-white' : 'text-white/50 hover:text-white'}`}
+            >
+              <Users className="h-4 w-4" />
+              Free session
+            </button>
+            <button
+              type="button"
+              onClick={() => onSessionModeChange('paid')}
+              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold transition ${sessionMode === 'paid' ? 'bg-[color:var(--hub-primary)] text-white' : 'text-white/50 hover:text-white'}`}
+            >
+              <Ticket className="h-4 w-4" />
+              Paid one-off
+            </button>
           </div>
-        ) : null}
+        </div>
+      ) : null}
 
-        {isTeacher && sessionMode === 'paid' ? (
-          <div>
-            <label className="mb-2 block text-sm font-semibold text-[color:var(--hub-text)]" htmlFor="ticket-price">Ticket price ({currency})</label>
-            <input
-              id="ticket-price"
-              type="number"
-              min={1}
-              step={1}
-              value={ticketPriceGBP}
-              onChange={(event) => onTicketPriceChange(Number(event.target.value) || 1)}
-              className="w-full rounded-2xl border border-[color:var(--hub-border)] px-4 py-3 text-sm outline-none"
-            />
-          </div>
-        ) : null}
+      {isTeacher && sessionMode === 'paid' ? (
+        <div>
+          <label className="mb-2 block text-sm font-semibold text-white/70" htmlFor="ticket-price">
+            Ticket price ({currency})
+          </label>
+          <input
+            id="ticket-price"
+            type="number"
+            min={1}
+            step={1}
+            value={ticketPriceGBP}
+            onChange={(event) => onTicketPriceChange(Number(event.target.value) || 1)}
+            className="w-full rounded-2xl border border-white/15 bg-white/5 px-4 py-3 text-sm text-white outline-none placeholder:text-white/30 focus:border-white/30"
+          />
+        </div>
+      ) : null}
 
-        {isTeacher ? (
-          <div>
-            <label className="mb-2 block text-sm font-semibold text-[color:var(--hub-text)]" htmlFor="lesson-notes">Lesson notes (optional)</label>
-            <textarea
-              id="lesson-notes"
-              value={notes}
-              onChange={(event) => onNotesChange(event.target.value)}
-              rows={3}
-              placeholder="What this live lesson covers"
-              className="w-full rounded-2xl border border-[color:var(--hub-border)] px-4 py-3 text-sm outline-none"
-            />
-          </div>
-        ) : null}
-      </div>
+      {isTeacher ? (
+        <div>
+          <label className="mb-2 block text-sm font-semibold text-white/70" htmlFor="lesson-notes">
+            Lesson notes (optional)
+          </label>
+          <textarea
+            id="lesson-notes"
+            value={notes}
+            onChange={(event) => onNotesChange(event.target.value)}
+            rows={3}
+            placeholder="What this live lesson covers"
+            className="w-full rounded-2xl border border-white/15 bg-white/5 px-4 py-3 text-sm text-white outline-none placeholder:text-white/30 focus:border-white/30"
+          />
+        </div>
+      ) : null}
 
-      <div className="mt-5 flex flex-wrap gap-3">
-        <button
-          type="button"
-          disabled={isDisabled || isJoining}
-          onClick={onJoin}
-          className="rounded-full bg-[color:var(--hub-primary)] px-4 py-2.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {isJoining ? 'Starting...' : isTeacher ? 'Start lesson' : 'Join lesson'}
-        </button>
-      </div>
-    </section>
+      <button
+        type="button"
+        disabled={isDisabled || isJoining}
+        onClick={onJoin}
+        className="w-full rounded-full bg-[color:var(--hub-primary)] py-3.5 text-sm font-semibold text-white shadow-[0_8px_24px_rgba(27,74,128,0.35)] transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        {isJoining ? 'Connecting…' : 'Start lesson'}
+      </button>
+    </div>
   );
 };

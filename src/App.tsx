@@ -217,9 +217,7 @@ function App() {
               path="/class/:id/live/:lessonId"
               element={
                 <ProtectedRoute>
-                  <Layout>
-                    <LiveSessionPage />
-                  </Layout>
+                  <LiveSessionPage />
                 </ProtectedRoute>
               }
             />
