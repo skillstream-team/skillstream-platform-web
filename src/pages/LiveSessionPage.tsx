@@ -1,14 +1,20 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  ChevronLeft, Circle, CreditCard, Mic, MicOff, Radio,
+  BarChart2, ChevronLeft, Circle, CreditCard, DoorOpen,
+  Hand, LayoutGrid, Lock, Unlock, Maximize2,
+  MessageSquare, Mic, MicOff, Radio,
   Users, Video, VideoOff,
 } from 'lucide-react';
 import { Link, Navigate, useParams, useSearchParams } from 'react-router-dom';
+import { BreakoutPanel } from '../components/live/BreakoutPanel';
+import { ChatPanel } from '../components/live/ChatPanel';
 import { LiveControlsBar } from '../components/live/LiveControlsBar';
 import { LiveParticipantsPanel } from '../components/live/LiveParticipantsPanel';
 import { LiveSetupPanel } from '../components/live/LiveSetupPanel';
+import { PollPanel } from '../components/live/PollPanel';
 import { VideoGrid } from '../components/live/VideoGrid';
 import { useNotifications } from '../components/notifications/NotificationToast';
+import { BreakoutRoom, ChatMessage, Poll, PollResults, RaisedHand, SidePanelId } from '../lib/liveFeatures';
 import { LiveSessionMode, SWParticipant, SWSessionConfig } from '../lib/signalwireLive';
 import { hasSupabaseConfig, supabase } from '../lib/supabase';
 import { formatDateTime, getInitials } from '../lib/utils';
@@ -34,12 +40,18 @@ export const LiveSessionPage: React.FC = () => {
   const setLessonRecording = useTeacherHubStore((state) => state.setLessonRecording);
   const setLessonAiRecap = useTeacherHubStore((state) => state.setLessonAiRecap);
 
+  // ─── Refs ─────────────────────────────────────────────────────────────────
   const swSessionRef = useRef<any>(null);
   const swMemberIdRef = useRef<string>('');
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordingChunksRef = useRef<Blob[]>([]);
   const swContainerRef = useRef<HTMLDivElement>(null);
+  // Single persistent Realtime channel (fixes ephemeral channel bug)
+  const realtimeChRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  // Ref for sidePanel so the channel event handler always has the current value
+  const sidePanelRef = useRef<SidePanelId | null>(null);
 
+  // ─── Core session state ───────────────────────────────────────────────────
   const [sessionConfig, setSessionConfig] = useState<SWSessionConfig | null>(null);
   const [sessionMode, setSessionMode] = useState<LiveSessionMode>('free');
   const [ticketPriceGBP, setTicketPriceGBP] = useState(0);
@@ -56,55 +68,168 @@ export const LiveSessionPage: React.FC = () => {
   const [pinnedId, setPinnedId] = useState<string | null>(null);
   const [paymentRequired, setPaymentRequired] = useState<{ ticketPriceGBP: number } | null>(null);
   const [isPayingForLesson, setIsPayingForLesson] = useState(false);
-  const [showParticipants, setShowParticipants] = useState(false);
   const [searchParams] = useSearchParams();
   const paymentSuccess = searchParams.get('payment_success') === '1';
 
+  // ─── Layout + room controls ───────────────────────────────────────────────
+  const [sessionLayout, setSessionLayout] = useState<'grid' | 'spotlight'>('grid');
+  const [isRoomLocked, setIsRoomLocked] = useState(false);
+
+  // ─── Feature state ────────────────────────────────────────────────────────
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [unreadChat, setUnreadChat] = useState(0);
+  const [raisedHands, setRaisedHands] = useState<RaisedHand[]>([]);
+  const [myHandRaised, setMyHandRaised] = useState(false);
+  const [activePoll, setActivePoll] = useState<Poll | null>(null);
+  const [pollResults, setPollResults] = useState<PollResults | null>(null);
+  const [myVote, setMyVote] = useState<number[] | null>(null);
+  const [breakoutRooms, setBreakoutRooms] = useState<BreakoutRoom[] | null>(null);
+  const [myBreakoutRoom, setMyBreakoutRoom] = useState<BreakoutRoom | null>(null);
+
+  // ─── Sidebar panel ────────────────────────────────────────────────────────
+  const [sidePanel, setSidePanelState] = useState<SidePanelId | null>(null);
+  const setSidePanel = (val: SidePanelId | null | ((prev: SidePanelId | null) => SidePanelId | null)) => {
+    setSidePanelState((prev) => {
+      const next = typeof val === 'function' ? val(prev) : val;
+      sidePanelRef.current = next;
+      return next;
+    });
+  };
+
+  // ─── Cleanup on unmount ───────────────────────────────────────────────────
   useEffect(() => {
     return () => {
       swSessionRef.current?.leave().catch(() => undefined);
       swSessionRef.current = null;
+      if (realtimeChRef.current) {
+        supabase.removeChannel(realtimeChRef.current);
+        realtimeChRef.current = null;
+      }
     };
   }, []);
 
+  // ─── Persistent Realtime channel ─────────────────────────────────────────
+  // Set up when isJoined becomes true; torn down on leave or unmount.
+  // All sends also go through this ref to avoid the ephemeral-channel bug.
   useEffect(() => {
-    if (!isJoined || !sessionConfig || isTeacher || isDemoSession) return;
-    const ch = supabase.channel(`session:${sessionConfig.roomName}`);
-    ch.on('broadcast', { event: 'teacher:mute' }, (evt) => {
-      if ((evt.payload as { targetId?: string }).targetId === swMemberIdRef.current) {
-        swSessionRef.current?.audioMute().catch(() => undefined);
-        setIsMicOn(false);
-      }
-    });
-    ch.on('broadcast', { event: 'teacher:kick' }, (evt) => {
-      if ((evt.payload as { targetId?: string }).targetId === swMemberIdRef.current) {
-        void handleLeave();
-      }
-    });
-    ch.subscribe();
-    return () => { supabase.removeChannel(ch); };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isJoined, sessionConfig?.roomName]);
+    if (!isJoined || isDemoSession || !sessionConfig) return;
 
+    const ch = supabase.channel(`session:${sessionConfig.roomName}`);
+    realtimeChRef.current = ch;
+
+    // Everyone: chat
+    ch.on('broadcast', { event: 'chat:message' }, (evt) => {
+      const msg = evt.payload as Omit<ChatMessage, 'isLocal'>;
+      setChatMessages((prev) => [...prev, { ...msg, isLocal: msg.uid === swMemberIdRef.current }]);
+      if (sidePanelRef.current !== 'chat') setUnreadChat((c) => c + 1);
+    });
+
+    if (!isTeacher) {
+      // Students receive teacher commands + broadcast events
+      ch.on('broadcast', { event: 'teacher:mute' }, (evt) => {
+        if ((evt.payload as { targetId?: string }).targetId === swMemberIdRef.current) {
+          swSessionRef.current?.audioMute().catch(() => undefined);
+          setIsMicOn(false);
+        }
+      });
+      ch.on('broadcast', { event: 'teacher:kick' }, (evt) => {
+        if ((evt.payload as { targetId?: string }).targetId === swMemberIdRef.current) {
+          void handleLeave();
+        }
+      });
+      ch.on('broadcast', { event: 'poll:create' }, (evt) => {
+        setActivePoll(evt.payload as Poll);
+        setMyVote(null);
+        setPollResults(null);
+        setSidePanel('polls');
+        addNotification({ type: 'info', title: 'New poll', message: 'Your teacher launched a poll.', duration: 2200 });
+      });
+      ch.on('broadcast', { event: 'poll:close' }, (evt) => {
+        setPollResults((evt.payload as { results: PollResults }).results ?? {});
+      });
+      ch.on('broadcast', { event: 'poll:clear' }, () => {
+        setActivePoll(null);
+        setPollResults(null);
+        setMyVote(null);
+      });
+      ch.on('broadcast', { event: 'breakout:create' }, (evt) => {
+        const rooms = (evt.payload as { rooms: BreakoutRoom[] }).rooms;
+        setBreakoutRooms(rooms);
+        const mine = rooms.find((r) => r.memberIds.includes(swMemberIdRef.current));
+        setMyBreakoutRoom(mine ?? null);
+        setSidePanel('breakout');
+        addNotification({ type: 'info', title: 'Breakout started', message: mine ? `You're in ${mine.name}.` : 'Breakout rooms are open.', duration: 3000 });
+      });
+      ch.on('broadcast', { event: 'breakout:end' }, () => {
+        setBreakoutRooms(null);
+        setMyBreakoutRoom(null);
+        addNotification({ type: 'info', title: 'Breakout ended', message: 'Everyone is back in the main session.', duration: 2200 });
+      });
+      ch.on('broadcast', { event: 'layout:change' }, (evt) => {
+        const layout = (evt.payload as { layout: 'grid' | 'spotlight' }).layout;
+        setSessionLayout(layout);
+        if (layout === 'spotlight') {
+          setPinnedId(null); // teacher's side sets pinned on their own
+        }
+      });
+      ch.on('broadcast', { event: 'room:lock' }, (evt) => {
+        setIsRoomLocked((evt.payload as { locked: boolean }).locked ?? false);
+      });
+      ch.on('broadcast', { event: 'hand:lower-all' }, () => {
+        setMyHandRaised(false);
+      });
+    }
+
+    if (isTeacher) {
+      ch.on('broadcast', { event: 'hand:raise' }, (evt) => {
+        const { uid, name, raisedAt } = evt.payload as RaisedHand;
+        setRaisedHands((prev) => prev.find((h) => h.uid === uid) ? prev : [...prev, { uid, name, raisedAt }]);
+        addNotification({ type: 'info', title: `${name} raised their hand`, message: '', duration: 2500 });
+      });
+      ch.on('broadcast', { event: 'hand:lower' }, (evt) => {
+        const uid = (evt.payload as { uid: string }).uid;
+        setRaisedHands((prev) => prev.filter((h) => h.uid !== uid));
+      });
+      ch.on('broadcast', { event: 'poll:vote' }, (evt) => {
+        const { name, optionIndices } = evt.payload as { uid: string; name: string; optionIndices: number[] };
+        setPollResults((prev) => {
+          const updated: PollResults = {};
+          // Copy existing, removing old votes from this voter
+          for (const [k, voters] of Object.entries(prev ?? {})) {
+            updated[Number(k)] = voters.filter((v) => v !== name);
+          }
+          // Add new votes
+          optionIndices.forEach((i) => {
+            updated[i] = [...(updated[i] ?? []), name];
+          });
+          return updated;
+        });
+      });
+    }
+
+    ch.subscribe();
+
+    return () => {
+      supabase.removeChannel(ch);
+      realtimeChRef.current = null;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isJoined, sessionConfig?.roomName, isDemoSession, isTeacher]);
+
+  // ─── Guards ───────────────────────────────────────────────────────────────
   if (!teacherClass || !lesson) return <Navigate to="/classes" replace />;
   if (isStudent && (!currentStudent || !teacherClass.students.some((s) => s.id === currentStudent.id))) {
     return <Navigate to="/classes" replace />;
   }
 
-  // ─── Cancelled ───────────────────────────────────────────────────────────────
   if (lesson.status === 'cancelled') {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-gray-950 p-6">
         <div className="w-full max-w-sm rounded-3xl border border-white/10 bg-white/5 p-8 text-center">
           <p className="text-xs font-semibold uppercase tracking-[0.22em] text-white/40">Live classroom</p>
           <h2 className="mt-3 text-2xl font-semibold text-white">Session cancelled</h2>
-          <p className="mt-3 text-sm text-white/50">
-            This lesson was cancelled. Please check the class schedule for a replacement session.
-          </p>
-          <Link
-            to={`/class/${id}`}
-            className="mt-6 inline-flex items-center gap-2 rounded-full border border-white/15 px-5 py-2.5 text-sm font-semibold text-white/70 transition hover:border-white/30 hover:text-white"
-          >
+          <p className="mt-3 text-sm text-white/50">This lesson was cancelled. Please check the class schedule for a replacement session.</p>
+          <Link to={`/class/${id}`} className="mt-6 inline-flex items-center gap-2 rounded-full border border-white/15 px-5 py-2.5 text-sm font-semibold text-white/70 transition hover:border-white/30 hover:text-white">
             <ChevronLeft className="h-4 w-4" />
             Back to class
           </Link>
@@ -113,7 +238,13 @@ export const LiveSessionPage: React.FC = () => {
     );
   }
 
-  // ─── Handlers ────────────────────────────────────────────────────────────────
+  // ─── Broadcast helper (always uses the persistent channel) ───────────────
+  const broadcast = async (event: string, payload: Record<string, unknown>) => {
+    if (isDemoSession || !realtimeChRef.current) return;
+    await realtimeChRef.current.send({ type: 'broadcast', event, payload });
+  };
+
+  // ─── Core session handlers ────────────────────────────────────────────────
   const fetchJoinToken = async (): Promise<SWSessionConfig | null> => {
     if (!hasSupabaseConfig) throw new Error('Live sessions are not configured yet.');
     const body: Record<string, unknown> = { lessonId: lesson.id };
@@ -160,7 +291,7 @@ export const LiveSessionPage: React.FC = () => {
       window.setTimeout(() => {
         setIsJoined(true);
         setIsJoining(false);
-        setShowParticipants(true);
+        setSidePanel('participants');
         setParticipants([
           { id: 'demo-1', name: user?.name || 'Demo User', isLocal: true, audioMuted: !isMicOn, videoMuted: !isCameraOn },
           { id: 'demo-2', name: 'Ava Thompson', isLocal: false, audioMuted: false, videoMuted: true },
@@ -190,16 +321,13 @@ export const LiveSessionPage: React.FC = () => {
         const myId: string = e.room_session?.member_id || '';
         swMemberIdRef.current = myId;
         const initial: SWParticipant[] = (e.room_session?.members || []).map((m: any) => ({
-          id: m.id,
-          name: m.name || 'Guest',
-          isLocal: m.id === myId,
-          audioMuted: m.audio_muted ?? false,
-          videoMuted: m.video_muted ?? false,
+          id: m.id, name: m.name || 'Guest', isLocal: m.id === myId,
+          audioMuted: m.audio_muted ?? false, videoMuted: m.video_muted ?? false,
         }));
         setParticipants(initial);
         setIsJoined(true);
         setIsJoining(false);
-        setShowParticipants(true);
+        setSidePanel('participants');
         addNotification({ type: 'success', title: config.isModerator ? 'Lesson started' : 'Joined lesson', message: 'You are now live.', duration: 2200 });
       });
 
@@ -218,9 +346,7 @@ export const LiveSessionPage: React.FC = () => {
       roomSession.on('member.updated', (e: any) => {
         const m = e.member;
         setParticipants((prev) => prev.map((p) =>
-          p.id === m.id
-            ? { ...p, audioMuted: m.audio_muted ?? p.audioMuted, videoMuted: m.video_muted ?? p.videoMuted }
-            : p,
+          p.id === m.id ? { ...p, audioMuted: m.audio_muted ?? p.audioMuted, videoMuted: m.video_muted ?? p.videoMuted } : p,
         ));
       });
 
@@ -237,29 +363,42 @@ export const LiveSessionPage: React.FC = () => {
       setIsJoined(false);
       setParticipants([]);
       setIsRecording(false);
-      setShowParticipants(false);
-      return;
-    }
-    await swSessionRef.current?.leave().catch(() => undefined);
-    swSessionRef.current = null;
-    swMemberIdRef.current = '';
-    setIsJoined(false);
-    setParticipants([]);
-    setSessionConfig(null);
-    setPinnedId(null);
-    setShowParticipants(false);
+    } else {
+      await swSessionRef.current?.leave().catch(() => undefined);
+      swSessionRef.current = null;
+      swMemberIdRef.current = '';
+      setIsJoined(false);
+      setParticipants([]);
+      setSessionConfig(null);
+      setPinnedId(null);
 
-    if (isTeacher && lesson?.id && hasSupabaseConfig) {
-      void supabase.functions
-        .invoke('ai-session-recap', { body: { lessonId: lesson.id } })
-        .then((res) => {
-          const recap = (res.data as { result?: string } | null)?.result;
-          if (recap) setLessonAiRecap(id, lesson.id, recap);
-        })
-        .catch(() => undefined);
+      if (isTeacher && lesson?.id && hasSupabaseConfig) {
+        void supabase.functions
+          .invoke('ai-session-recap', { body: { lessonId: lesson.id } })
+          .then((res) => {
+            const recap = (res.data as { result?: string } | null)?.result;
+            if (recap) setLessonAiRecap(id, lesson.id, recap);
+          })
+          .catch(() => undefined);
+      }
     }
+
+    // Reset all feature state
+    setSidePanel(null);
+    setChatMessages([]);
+    setUnreadChat(0);
+    setRaisedHands([]);
+    setMyHandRaised(false);
+    setActivePoll(null);
+    setPollResults(null);
+    setMyVote(null);
+    setBreakoutRooms(null);
+    setMyBreakoutRoom(null);
+    setSessionLayout('grid');
+    setIsRoomLocked(false);
   };
 
+  // ─── Media controls ───────────────────────────────────────────────────────
   const toggleMic = async () => {
     if (isDemoSession) { setIsMicOn((c) => !c); return; }
     try {
@@ -307,13 +446,7 @@ export const LiveSessionPage: React.FC = () => {
       return;
     }
     if (!isTeacher) return;
-
-    if (isRecording) {
-      mediaRecorderRef.current?.stop();
-      setIsRecording(false);
-      return;
-    }
-
+    if (isRecording) { mediaRecorderRef.current?.stop(); setIsRecording(false); return; }
     try {
       const displayStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
       const mimeType =
@@ -354,16 +487,14 @@ export const LiveSessionPage: React.FC = () => {
     }
   };
 
+  // ─── Participant management ───────────────────────────────────────────────
   const muteParticipant = async (participant: SWParticipant) => {
     if (!isTeacher || participant.isLocal) return;
     if (isDemoSession) {
       addNotification({ type: 'success', title: 'Participant muted', message: `${participant.name} has been muted.`, duration: 1800 });
       return;
     }
-    if (!sessionConfig) return;
-    const ch = supabase.channel(`session:${sessionConfig.roomName}`);
-    await ch.send({ type: 'broadcast', event: 'teacher:mute', payload: { targetId: participant.id } });
-    supabase.removeChannel(ch);
+    await broadcast('teacher:mute', { targetId: participant.id });
     addNotification({ type: 'info', title: 'Mute sent', message: `${participant.name} was asked to mute.`, duration: 2000 });
   };
 
@@ -374,13 +505,10 @@ export const LiveSessionPage: React.FC = () => {
       addNotification({ type: 'success', title: 'Participant removed', message: `${participant.name} has been removed.`, duration: 1800 });
       return;
     }
-    if (!sessionConfig) return;
     try {
       await swSessionRef.current?.removeMember({ memberId: participant.id });
     } catch {
-      const ch = supabase.channel(`session:${sessionConfig.roomName}`);
-      await ch.send({ type: 'broadcast', event: 'teacher:kick', payload: { targetId: participant.id } });
-      supabase.removeChannel(ch);
+      await broadcast('teacher:kick', { targetId: participant.id });
     }
   };
 
@@ -389,8 +517,144 @@ export const LiveSessionPage: React.FC = () => {
     await Promise.all(participants.filter((p) => !p.isLocal).map((p) => muteParticipant(p)));
   };
 
+  // ─── Layout + room lock ───────────────────────────────────────────────────
+  const toggleLayout = async () => {
+    const next: 'grid' | 'spotlight' = sessionLayout === 'grid' ? 'spotlight' : 'grid';
+    setSessionLayout(next);
+    if (next === 'spotlight') {
+      const local = participants.find((p) => p.isLocal);
+      setPinnedId(local?.id ?? null);
+      swSessionRef.current?.setLayout?.({ name: 'highlight' }).catch(() => undefined);
+    } else {
+      setPinnedId(null);
+      swSessionRef.current?.setLayout?.({ name: 'grid-responsive' }).catch(() => undefined);
+    }
+    await broadcast('layout:change', { layout: next });
+  };
+
+  const toggleRoomLock = async () => {
+    const locked = !isRoomLocked;
+    setIsRoomLocked(locked);
+    if (locked) { swSessionRef.current?.lock?.().catch(() => undefined); }
+    else { swSessionRef.current?.unlock?.().catch(() => undefined); }
+    await broadcast('room:lock', { locked });
+    addNotification({ type: 'info', title: locked ? 'Room locked' : 'Room unlocked', message: locked ? 'New participants cannot join.' : 'New participants can now join.', duration: 2000 });
+  };
+
+  // ─── Chat ─────────────────────────────────────────────────────────────────
+  const sendChatMessage = async (text: string) => {
+    const msg: ChatMessage = {
+      id: crypto.randomUUID(),
+      uid: isDemoSession ? (user?.id ?? 'demo') : swMemberIdRef.current,
+      name: user?.name ?? 'Unknown',
+      text,
+      timestamp: Date.now(),
+      isLocal: true,
+    };
+    setChatMessages((prev) => [...prev, msg]);
+    await broadcast('chat:message', { ...msg, isLocal: false });
+  };
+
+  // ─── Hand raising ─────────────────────────────────────────────────────────
+  const toggleHandRaise = async () => {
+    const newState = !myHandRaised;
+    setMyHandRaised(newState);
+    const uid = isDemoSession ? (user?.id ?? 'demo') : swMemberIdRef.current;
+    const name = user?.name ?? 'Unknown';
+
+    if (isDemoSession) {
+      if (newState) {
+        setRaisedHands((prev) => [...prev, { uid, name, raisedAt: Date.now() }]);
+      } else {
+        setRaisedHands((prev) => prev.filter((h) => h.uid !== uid));
+      }
+      return;
+    }
+
+    if (newState) {
+      await broadcast('hand:raise', { uid, name, raisedAt: Date.now() });
+    } else {
+      await broadcast('hand:lower', { uid });
+    }
+  };
+
+  const lowerHand = async (uid: string) => {
+    setRaisedHands((prev) => prev.filter((h) => h.uid !== uid));
+    await broadcast('hand:lower', { uid });
+  };
+
+  // ─── Polls ────────────────────────────────────────────────────────────────
+  const createPoll = async (data: { question: string; options: string[]; allowMultiple: boolean }) => {
+    const poll: Poll = { id: crypto.randomUUID(), ...data, createdAt: Date.now() };
+    setActivePoll(poll);
+    setPollResults({});
+    setMyVote(null);
+    await broadcast('poll:create', { ...poll });
+  };
+
+  const closePoll = async () => {
+    const results = pollResults ?? {};
+    setPollResults(results);
+    await broadcast('poll:close', { results });
+  };
+
+  const clearPoll = async () => {
+    setActivePoll(null);
+    setPollResults(null);
+    setMyVote(null);
+    await broadcast('poll:clear', {});
+  };
+
+  const submitVote = async (optionIndices: number[]) => {
+    if (!activePoll) return;
+    setMyVote(optionIndices);
+    const uid = isDemoSession ? (user?.id ?? 'demo') : swMemberIdRef.current;
+    const name = user?.name ?? 'Unknown';
+
+    if (isDemoSession) {
+      setPollResults((prev) => {
+        const updated: PollResults = { ...(prev ?? {}) };
+        optionIndices.forEach((i) => { updated[i] = [...(updated[i] ?? []), name]; });
+        return updated;
+      });
+      return;
+    }
+    await broadcast('poll:vote', { pollId: activePoll.id, uid, name, optionIndices });
+  };
+
+  // ─── Breakout rooms ───────────────────────────────────────────────────────
+  const startBreakout = async (rooms: BreakoutRoom[]) => {
+    setBreakoutRooms(rooms);
+    setMyBreakoutRoom(null);
+    await broadcast('breakout:create', { rooms });
+  };
+
+  const endBreakout = async () => {
+    setBreakoutRooms(null);
+    setMyBreakoutRoom(null);
+    await broadcast('breakout:end', {});
+  };
+
+  const moveParticipant = (uid: string, toRoomId: string) => {
+    setBreakoutRooms((prev) => {
+      if (!prev) return prev;
+      return prev.map((r) => ({
+        ...r,
+        memberIds: r.id === toRoomId
+          ? [...r.memberIds.filter((mid) => mid !== uid), uid]
+          : r.memberIds.filter((mid) => mid !== uid),
+      }));
+    });
+  };
+
+  // ─── Derived values ───────────────────────────────────────────────────────
+  // In breakout mode, show only participants in the same room (visual only — audio stays global in demo)
+  const videoParticipants = myBreakoutRoom
+    ? participants.filter((p) => p.isLocal || myBreakoutRoom.memberIds.includes(p.id))
+    : participants;
+
   const videoGridProps = {
-    participants,
+    participants: videoParticipants,
     isTeacher,
     pinnedId,
     onPin: setPinnedId,
@@ -398,12 +662,74 @@ export const LiveSessionPage: React.FC = () => {
     onRemoveParticipant: (p: SWParticipant) => void removeParticipant(p),
   };
 
-  // ─── Render ───────────────────────────────────────────────────────────────────
+  const openPanel = (panel: SidePanelId) => {
+    setSidePanel((prev) => prev === panel ? null : panel);
+    if (panel === 'chat') setUnreadChat(0);
+  };
+
+  // ─── Sidebar content ──────────────────────────────────────────────────────
+  const sidebarContent = sidePanel ? (
+    <aside className="flex w-64 shrink-0 flex-col border-l border-white/10 xl:w-72">
+      {/* Sidebar header with panel title */}
+      <div className="flex h-14 shrink-0 items-center border-b border-white/10 px-4">
+        <p className="flex-1 text-sm font-semibold text-white">
+          {sidePanel === 'participants' && 'Participants'}
+          {sidePanel === 'chat' && 'Chat'}
+          {sidePanel === 'polls' && (isTeacher ? 'Polls' : 'Poll')}
+          {sidePanel === 'breakout' && 'Breakout rooms'}
+        </p>
+      </div>
+      <div className="flex-1 overflow-hidden">
+        {sidePanel === 'participants' && (
+          <LiveParticipantsPanel
+            participants={participants}
+            isTeacher={isTeacher}
+            raisedHands={raisedHands}
+            onLowerHand={(uid) => void lowerHand(uid)}
+            onMuteParticipant={(p) => void muteParticipant(p)}
+            onRemoveParticipant={(p) => void removeParticipant(p)}
+            onMuteAll={() => void muteAllParticipants()}
+          />
+        )}
+        {sidePanel === 'chat' && (
+          <ChatPanel
+            messages={chatMessages}
+            onSend={(text) => void sendChatMessage(text)}
+          />
+        )}
+        {sidePanel === 'polls' && (
+          <PollPanel
+            isTeacher={isTeacher}
+            activePoll={activePoll}
+            results={pollResults}
+            myVote={myVote}
+            onCreatePoll={(data) => void createPoll(data)}
+            onVote={(indices) => void submitVote(indices)}
+            onClosePoll={() => void closePoll()}
+            onClearPoll={() => void clearPoll()}
+          />
+        )}
+        {sidePanel === 'breakout' && (
+          <BreakoutPanel
+            isTeacher={isTeacher}
+            participants={participants}
+            rooms={breakoutRooms}
+            myRoom={myBreakoutRoom}
+            onStartBreakout={(rooms) => void startBreakout(rooms)}
+            onEndBreakout={() => void endBreakout()}
+            onMoveParticipant={moveParticipant}
+          />
+        )}
+      </div>
+    </aside>
+  ) : null;
+
+  // ─── Render ───────────────────────────────────────────────────────────────
   return (
     <div className={`flex flex-col bg-gray-950 ${isJoined ? 'h-screen overflow-hidden' : 'min-h-screen'}`}>
 
-      {/* ── Top bar ─────────────────────────────────────────────────────────── */}
-      <header className="flex h-14 shrink-0 items-center gap-3 border-b border-white/10 px-4">
+      {/* ── Top bar ──────────────────────────────────────────────────────── */}
+      <header className="flex h-14 shrink-0 items-center gap-2 border-b border-white/10 px-4">
         <Link
           to={`/class/${id}`}
           className="flex items-center gap-1 rounded-full px-3 py-1.5 text-sm font-semibold text-white/50 transition hover:bg-white/10 hover:text-white"
@@ -417,44 +743,122 @@ export const LiveSessionPage: React.FC = () => {
           <p className="text-[11px] text-white/35">{teacherClass.name} · {lesson.durationMinutes} min</p>
         </div>
 
-        <div className="flex items-center gap-2">
-          {isJoined && isRecording ? (
+        <div className="flex items-center gap-1.5">
+          {/* Status chips */}
+          {isJoined && isRecording && (
             <span className="flex items-center gap-1.5 rounded-full bg-rose-500/20 px-2.5 py-1 text-xs font-semibold text-rose-400">
-              <Circle className="h-2 w-2 fill-rose-400" />
-              REC
-            </span>
-          ) : null}
-          {isJoined ? (
-            <span className="flex items-center gap-1.5 rounded-full bg-emerald-500/15 px-2.5 py-1 text-xs font-semibold text-emerald-400">
-              <Circle className="h-2 w-2 fill-emerald-400" />
-              LIVE
-            </span>
-          ) : (
-            <span className="flex items-center gap-1.5 rounded-full bg-white/5 px-2.5 py-1 text-xs font-semibold text-white/30">
-              <Circle className="h-2 w-2" />
-              Not connected
+              <Circle className="h-2 w-2 fill-rose-400" /> REC
             </span>
           )}
           {isJoined ? (
-            <button
-              type="button"
-              onClick={() => setShowParticipants((v) => !v)}
-              title="Toggle participants"
-              className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold transition ${showParticipants ? 'bg-white/15 text-white' : 'text-white/50 hover:bg-white/10 hover:text-white'}`}
-            >
-              <Users className="h-4 w-4" />
-              {participants.length}
-            </button>
-          ) : null}
+            <span className="flex items-center gap-1.5 rounded-full bg-emerald-500/15 px-2.5 py-1 text-xs font-semibold text-emerald-400">
+              <Circle className="h-2 w-2 fill-emerald-400" /> LIVE
+            </span>
+          ) : (
+            <span className="flex items-center gap-1.5 rounded-full bg-white/5 px-2.5 py-1 text-xs font-semibold text-white/25">
+              <Circle className="h-2 w-2" /> Not connected
+            </span>
+          )}
+
+          {isJoined && (
+            <>
+              <div className="mx-0.5 h-5 w-px bg-white/10" />
+
+              {/* Teacher: layout + lock in top bar */}
+              {isTeacher && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => void toggleLayout()}
+                    title={sessionLayout === 'spotlight' ? 'Switch to grid view' : 'Spotlight view'}
+                    className={`flex h-8 w-8 items-center justify-center rounded-full transition ${sessionLayout === 'spotlight' ? 'bg-blue-500/30 text-blue-300' : 'text-white/40 hover:bg-white/10 hover:text-white'}`}
+                  >
+                    {sessionLayout === 'spotlight' ? <LayoutGrid className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void toggleRoomLock()}
+                    title={isRoomLocked ? 'Unlock room' : 'Lock room — prevent new joiners'}
+                    className={`flex h-8 w-8 items-center justify-center rounded-full transition ${isRoomLocked ? 'bg-amber-500/30 text-amber-300' : 'text-white/40 hover:bg-white/10 hover:text-white'}`}
+                  >
+                    {isRoomLocked ? <Lock className="h-4 w-4" /> : <Unlock className="h-4 w-4" />}
+                  </button>
+                  <div className="mx-0.5 h-5 w-px bg-white/10" />
+                </>
+              )}
+
+              {/* Panel toggles */}
+              <button
+                type="button"
+                onClick={() => openPanel('participants')}
+                title="Participants"
+                className={`flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-xs font-semibold transition ${sidePanel === 'participants' ? 'bg-white/15 text-white' : 'text-white/50 hover:bg-white/10 hover:text-white'}`}
+              >
+                <Users className="h-3.5 w-3.5" />
+                {participants.length}
+                {raisedHands.length > 0 && (
+                  <span className="flex h-4 w-4 items-center justify-center rounded-full bg-amber-400 text-[9px] font-bold text-gray-900">
+                    {raisedHands.length}
+                  </span>
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => openPanel('chat')}
+                title="Chat"
+                className={`relative flex h-8 w-8 items-center justify-center rounded-full transition ${sidePanel === 'chat' ? 'bg-white/15 text-white' : 'text-white/50 hover:bg-white/10 hover:text-white'}`}
+              >
+                <MessageSquare className="h-4 w-4" />
+                {unreadChat > 0 && (
+                  <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-[color:var(--hub-primary)] text-[9px] font-bold text-white">
+                    {unreadChat > 9 ? '9+' : unreadChat}
+                  </span>
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => openPanel('polls')}
+                title="Polls"
+                className={`relative flex h-8 w-8 items-center justify-center rounded-full transition ${sidePanel === 'polls' ? 'bg-white/15 text-white' : 'text-white/50 hover:bg-white/10 hover:text-white'}`}
+              >
+                <BarChart2 className="h-4 w-4" />
+                {activePoll && pollResults === null && (
+                  <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-emerald-400" />
+                )}
+              </button>
+
+              {(isTeacher || breakoutRooms !== null) && (
+                <button
+                  type="button"
+                  onClick={() => openPanel('breakout')}
+                  title="Breakout rooms"
+                  className={`relative flex h-8 w-8 items-center justify-center rounded-full transition ${sidePanel === 'breakout' ? 'bg-white/15 text-white' : 'text-white/50 hover:bg-white/10 hover:text-white'}`}
+                >
+                  <DoorOpen className="h-4 w-4" />
+                  {breakoutRooms && (
+                    <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-emerald-400" />
+                  )}
+                </button>
+              )}
+            </>
+          )}
         </div>
       </header>
 
       {/* ── In-session layout ──────────────────────────────────────────────── */}
       {isJoined ? (
         <>
-          {/* Main area: video + optional participants sidebar */}
           <div className="flex flex-1 overflow-hidden">
+            {/* Video grid */}
             <div className="flex flex-1 flex-col overflow-hidden p-2 sm:p-3">
+              {myBreakoutRoom && (
+                <div className="mb-2 flex items-center gap-2 rounded-xl bg-blue-500/10 px-3 py-1.5">
+                  <DoorOpen className="h-3.5 w-3.5 text-blue-400" />
+                  <span className="text-xs font-semibold text-blue-300">{myBreakoutRoom.name} — breakout in progress</span>
+                </div>
+              )}
               {isDemoSession ? (
                 <VideoGrid {...videoGridProps} className="h-full rounded-2xl" />
               ) : (
@@ -462,21 +866,23 @@ export const LiveSessionPage: React.FC = () => {
               )}
             </div>
 
-            {showParticipants ? (
-              <aside className="w-64 shrink-0 overflow-hidden border-l border-white/10 xl:w-72">
-                <LiveParticipantsPanel
-                  participants={participants}
-                  isTeacher={isTeacher}
-                  onMuteParticipant={(p) => void muteParticipant(p)}
-                  onRemoveParticipant={(p) => void removeParticipant(p)}
-                  onMuteAll={() => void muteAllParticipants()}
-                />
-              </aside>
-            ) : null}
+            {sidebarContent}
           </div>
 
           {/* Bottom controls bar */}
-          <div className="flex h-20 shrink-0 items-center justify-center gap-3 border-t border-white/10 bg-gray-950/90 px-4 backdrop-blur">
+          <div className="flex h-20 shrink-0 items-center justify-center gap-2 border-t border-white/10 bg-gray-950/90 px-4 backdrop-blur sm:gap-3">
+            {/* Student: hand raise */}
+            {!isTeacher && (
+              <button
+                type="button"
+                onClick={() => void toggleHandRaise()}
+                title={myHandRaised ? 'Lower your hand' : 'Raise your hand'}
+                className={`flex h-12 w-12 items-center justify-center rounded-full transition active:scale-95 ${myHandRaised ? 'bg-amber-500 text-white' : 'bg-white/10 text-white hover:bg-white/20'}`}
+              >
+                <Hand className="h-5 w-5" />
+              </button>
+            )}
+
             <LiveControlsBar
               micOn={isMicOn}
               cameraOn={isCameraOn}
@@ -486,34 +892,36 @@ export const LiveSessionPage: React.FC = () => {
               onToggleScreenShare={() => void toggleScreenShare()}
               onLeave={() => void handleLeave()}
             />
-            {isTeacher ? (
+
+            {isTeacher && (
               <>
                 <div className="mx-1 h-8 w-px bg-white/15" />
                 <button
                   type="button"
                   onClick={() => void toggleRecording()}
                   disabled={isUploading}
-                  title={isRecording ? 'Stop recording' : 'Start recording'}
+                  title={isRecording ? 'Stop recording' : 'Record session'}
                   className={`flex h-12 w-12 items-center justify-center rounded-full transition active:scale-95 disabled:opacity-50 ${isRecording ? 'bg-rose-500/30 text-rose-400 ring-1 ring-rose-500/50' : 'bg-white/10 text-white hover:bg-white/20'}`}
                 >
                   <Radio className="h-5 w-5" />
                 </button>
               </>
-            ) : null}
-            {sessionError ? (
-              <p className="absolute bottom-20 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-rose-500/20 px-4 py-2 text-xs font-medium text-rose-400">
+            )}
+
+            {sessionError && (
+              <p className="absolute bottom-[5.5rem] left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-rose-500/20 px-4 py-2 text-xs font-medium text-rose-400">
                 {sessionError}
               </p>
-            ) : null}
+            )}
           </div>
         </>
       ) : (
 
-        /* ── Pre-join lobby ───────────────────────────────────────────────── */
+        /* ── Pre-join lobby ─────────────────────────────────────────────── */
         <div className="flex flex-1 items-start justify-center overflow-y-auto p-6 sm:items-center">
           <div className="w-full max-w-md space-y-4 py-4">
 
-            {/* Camera preview card */}
+            {/* Camera preview */}
             <div className="relative aspect-video w-full overflow-hidden rounded-3xl border border-white/10 bg-gray-900">
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="text-center">
@@ -524,37 +932,28 @@ export const LiveSessionPage: React.FC = () => {
                   <p className="mt-0.5 text-xs text-white/35">Camera preview</p>
                 </div>
               </div>
-              {/* Mic / camera status chips */}
               <div className="absolute bottom-3 left-3 flex gap-2">
                 <span className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${isMicOn ? 'bg-black/50 text-white/70' : 'bg-rose-500/80 text-white'}`}>
-                  {isMicOn ? <Mic className="h-3 w-3" /> : <MicOff className="h-3 w-3" />}
-                  Mic
+                  {isMicOn ? <Mic className="h-3 w-3" /> : <MicOff className="h-3 w-3" />} Mic
                 </span>
                 <span className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${isCameraOn ? 'bg-black/50 text-white/70' : 'bg-rose-500/80 text-white'}`}>
-                  {isCameraOn ? <Video className="h-3 w-3" /> : <VideoOff className="h-3 w-3" />}
-                  Camera
+                  {isCameraOn ? <Video className="h-3 w-3" /> : <VideoOff className="h-3 w-3" />} Camera
                 </span>
               </div>
             </div>
 
             {/* Device toggles */}
-            <div className="flex items-center justify-center gap-4">
+            <div className="flex items-center justify-center gap-6">
               <div className="text-center">
-                <button
-                  type="button"
-                  onClick={() => setIsMicOn((v) => !v)}
-                  className={`flex h-12 w-12 items-center justify-center rounded-full transition active:scale-95 ${isMicOn ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-rose-500 text-white hover:bg-rose-600'}`}
-                >
+                <button type="button" onClick={() => setIsMicOn((v) => !v)}
+                  className={`flex h-12 w-12 items-center justify-center rounded-full transition active:scale-95 ${isMicOn ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-rose-500 text-white hover:bg-rose-600'}`}>
                   {isMicOn ? <Mic className="h-5 w-5" /> : <MicOff className="h-5 w-5" />}
                 </button>
                 <p className="mt-1.5 text-[11px] text-white/35">{isMicOn ? 'Mic on' : 'Mic off'}</p>
               </div>
               <div className="text-center">
-                <button
-                  type="button"
-                  onClick={() => setIsCameraOn((v) => !v)}
-                  className={`flex h-12 w-12 items-center justify-center rounded-full transition active:scale-95 ${isCameraOn ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-rose-500 text-white hover:bg-rose-600'}`}
-                >
+                <button type="button" onClick={() => setIsCameraOn((v) => !v)}
+                  className={`flex h-12 w-12 items-center justify-center rounded-full transition active:scale-95 ${isCameraOn ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-rose-500 text-white hover:bg-rose-600'}`}>
                   {isCameraOn ? <Video className="h-5 w-5" /> : <VideoOff className="h-5 w-5" />}
                 </button>
                 <p className="mt-1.5 text-[11px] text-white/35">{isCameraOn ? 'Camera on' : 'Camera off'}</p>
@@ -565,49 +964,37 @@ export const LiveSessionPage: React.FC = () => {
             <div className="rounded-2xl border border-white/10 bg-white/5 px-5 py-4 text-center">
               <p className="font-semibold text-white">{lesson.title}</p>
               <p className="mt-1 text-sm text-white/40">{teacherClass.name} · {formatDateTime(lesson.scheduledAt)}</p>
-              {sessionMode === 'paid' && ticketPriceGBP > 0 ? (
-                <p className="mt-1.5 text-xs font-semibold text-emerald-400">
-                  Paid session · {currency} {ticketPriceGBP}
-                </p>
-              ) : null}
+              {sessionMode === 'paid' && ticketPriceGBP > 0 && (
+                <p className="mt-1.5 text-xs font-semibold text-emerald-400">Paid session · {currency} {ticketPriceGBP}</p>
+              )}
             </div>
 
-            {/* Payment success banner */}
             {paymentSuccess && (
               <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm font-semibold text-emerald-400">
                 Payment confirmed — click Join lesson below to enter.
               </div>
             )}
 
-            {/* Payment required prompt */}
             {paymentRequired ? (
               <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
                 <p className="text-xs font-semibold uppercase tracking-widest text-white/40">Paid session</p>
                 <p className="mt-2 text-2xl font-bold text-white">{formatMoney(paymentRequired.ticketPriceGBP)}</p>
                 <p className="mt-1 text-sm text-white/50">A one-off ticket is required to join this lesson.</p>
                 <div className="mt-4 flex gap-3">
-                  <button
-                    type="button"
-                    onClick={() => void handlePayForLesson()}
-                    disabled={isPayingForLesson || !hasSupabaseConfig}
-                    className="inline-flex flex-1 items-center justify-center gap-2 rounded-full bg-[color:var(--hub-primary)] py-2.5 text-sm font-semibold text-white disabled:opacity-60"
-                  >
+                  <button type="button" onClick={() => void handlePayForLesson()} disabled={isPayingForLesson || !hasSupabaseConfig}
+                    className="inline-flex flex-1 items-center justify-center gap-2 rounded-full bg-[color:var(--hub-primary)] py-2.5 text-sm font-semibold text-white disabled:opacity-60">
                     <CreditCard className="h-4 w-4" />
                     {isPayingForLesson ? 'Redirecting…' : `Pay ${formatMoney(paymentRequired.ticketPriceGBP)}`}
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => setPaymentRequired(null)}
-                    className="rounded-full border border-white/15 px-4 py-2.5 text-sm font-semibold text-white/60 transition hover:border-white/30 hover:text-white"
-                  >
+                  <button type="button" onClick={() => setPaymentRequired(null)}
+                    className="rounded-full border border-white/15 px-4 py-2.5 text-sm font-semibold text-white/60 transition hover:border-white/30 hover:text-white">
                     Cancel
                   </button>
                 </div>
               </div>
             ) : null}
 
-            {/* Teacher session settings */}
-            {isTeacher && !paymentRequired ? (
+            {isTeacher && !paymentRequired && (
               <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
                 <p className="mb-4 text-xs font-semibold uppercase tracking-widest text-white/40">Session settings</p>
                 <LiveSetupPanel
@@ -627,29 +1014,20 @@ export const LiveSessionPage: React.FC = () => {
                   isDisabled={false}
                 />
               </div>
-            ) : null}
+            )}
 
-            {/* Error */}
-            {sessionError ? (
+            {sessionError && (
               <div className="rounded-2xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-400">
                 {sessionError}
               </div>
-            ) : null}
+            )}
 
-            {/* Join button (students + teacher when no payment required) */}
-            {!paymentRequired && !isTeacher ? (
-              <button
-                type="button"
-                disabled={isJoining}
-                onClick={() => void handleJoin()}
-                className="w-full rounded-full bg-[color:var(--hub-primary)] py-3.5 text-sm font-semibold text-white shadow-[0_8px_24px_rgba(27,74,128,0.35)] transition hover:opacity-90 disabled:opacity-60"
-              >
+            {!paymentRequired && !isTeacher && (
+              <button type="button" disabled={isJoining} onClick={() => void handleJoin()}
+                className="w-full rounded-full bg-[color:var(--hub-primary)] py-3.5 text-sm font-semibold text-white shadow-[0_8px_24px_rgba(27,74,128,0.35)] transition hover:opacity-90 disabled:opacity-60">
                 {isJoining ? 'Connecting…' : 'Join lesson'}
               </button>
-            ) : null}
-
-            {/* Teacher join button is inside LiveSetupPanel above */}
-
+            )}
           </div>
         </div>
       )}
