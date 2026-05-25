@@ -7,6 +7,7 @@ export interface SWSessionConfig {
   userName: string;
   sessionMode: LiveSessionMode;
   ticketPriceGBP: number;
+  teacherUserId: string | null;
 }
 
 export interface SWParticipant {

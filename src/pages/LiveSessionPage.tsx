@@ -50,6 +50,8 @@ export const LiveSessionPage: React.FC = () => {
   const realtimeChRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   // Ref for sidePanel so the channel event handler always has the current value
   const sidePanelRef = useRef<SidePanelId | null>(null);
+  // Supabase user ID of the class teacher — used to verify broadcast sender authenticity
+  const teacherUserIdRef = useRef<string | null>(null);
 
   // ─── Core session state ───────────────────────────────────────────────────
   const [sessionConfig, setSessionConfig] = useState<SWSessionConfig | null>(null);
@@ -125,19 +127,34 @@ export const LiveSessionPage: React.FC = () => {
     });
 
     if (!isTeacher) {
+      // Verify a broadcast came from the legitimate class teacher.
+      // This prevents students from spoofing teacher commands via DevTools.
+      const isFromTeacher = (evt: any) =>
+        teacherUserIdRef.current !== null &&
+        (evt.payload as { _authorId?: string })?._authorId === teacherUserIdRef.current;
+
       // Students receive teacher commands + broadcast events
       ch.on('broadcast', { event: 'teacher:mute' }, (evt) => {
-        if ((evt.payload as { targetId?: string }).targetId === swMemberIdRef.current) {
-          swSessionRef.current?.audioMute().catch(() => undefined);
+        if (!isFromTeacher(evt)) return;
+        const { targetId } = evt.payload as { targetId?: string };
+        if (targetId === swMemberIdRef.current) {
+          // Do NOT call swSessionRef.current?.audioMute() here — the teacher's
+          // SignalWire moderator action (audioMute({ memberId })) is the authoritative
+          // server-side mute. The member.updated event will sync the UI state.
           setIsMicOn(false);
         }
       });
       ch.on('broadcast', { event: 'teacher:kick' }, (evt) => {
-        if ((evt.payload as { targetId?: string }).targetId === swMemberIdRef.current) {
-          void handleLeave();
+        if (!isFromTeacher(evt)) return;
+        const { targetId } = evt.payload as { targetId?: string };
+        if (targetId === swMemberIdRef.current) {
+          // Do NOT call handleLeave() here — the teacher's removeMember() call will
+          // close the WebRTC connection which fires room.left, triggering handleLeave().
+          addNotification({ type: 'info', title: 'Removed from session', message: 'The teacher has ended your session.', duration: 3000 });
         }
       });
       ch.on('broadcast', { event: 'poll:create' }, (evt) => {
+        if (!isFromTeacher(evt)) return;
         setActivePoll(evt.payload as Poll);
         setMyVote(null);
         setPollResults(null);
@@ -145,14 +162,17 @@ export const LiveSessionPage: React.FC = () => {
         addNotification({ type: 'info', title: 'New poll', message: 'Your teacher launched a poll.', duration: 2200 });
       });
       ch.on('broadcast', { event: 'poll:close' }, (evt) => {
+        if (!isFromTeacher(evt)) return;
         setPollResults((evt.payload as { results: PollResults }).results ?? {});
       });
-      ch.on('broadcast', { event: 'poll:clear' }, () => {
+      ch.on('broadcast', { event: 'poll:clear' }, (evt) => {
+        if (!isFromTeacher(evt)) return;
         setActivePoll(null);
         setPollResults(null);
         setMyVote(null);
       });
       ch.on('broadcast', { event: 'breakout:create' }, (evt) => {
+        if (!isFromTeacher(evt)) return;
         const rooms = (evt.payload as { rooms: BreakoutRoom[] }).rooms;
         setBreakoutRooms(rooms);
         const mine = rooms.find((r) => r.memberIds.includes(swMemberIdRef.current));
@@ -160,12 +180,14 @@ export const LiveSessionPage: React.FC = () => {
         setSidePanel('breakout');
         addNotification({ type: 'info', title: 'Breakout started', message: mine ? `You're in ${mine.name}.` : 'Breakout rooms are open.', duration: 3000 });
       });
-      ch.on('broadcast', { event: 'breakout:end' }, () => {
+      ch.on('broadcast', { event: 'breakout:end' }, (evt) => {
+        if (!isFromTeacher(evt)) return;
         setBreakoutRooms(null);
         setMyBreakoutRoom(null);
         addNotification({ type: 'info', title: 'Breakout ended', message: 'Everyone is back in the main session.', duration: 2200 });
       });
       ch.on('broadcast', { event: 'layout:change' }, (evt) => {
+        if (!isFromTeacher(evt)) return;
         const layout = (evt.payload as { layout: 'grid' | 'spotlight' }).layout;
         setSessionLayout(layout);
         if (layout === 'spotlight') {
@@ -173,9 +195,11 @@ export const LiveSessionPage: React.FC = () => {
         }
       });
       ch.on('broadcast', { event: 'room:lock' }, (evt) => {
+        if (!isFromTeacher(evt)) return;
         setIsRoomLocked((evt.payload as { locked: boolean }).locked ?? false);
       });
-      ch.on('broadcast', { event: 'hand:lower-all' }, () => {
+      ch.on('broadcast', { event: 'hand:lower-all' }, (evt) => {
+        if (!isFromTeacher(evt)) return;
         setMyHandRaised(false);
       });
     }
@@ -239,9 +263,10 @@ export const LiveSessionPage: React.FC = () => {
   }
 
   // ─── Broadcast helper (always uses the persistent channel) ───────────────
+  // _authorId is the sender's Supabase user ID — receivers validate it matches teacherUserId
   const broadcast = async (event: string, payload: Record<string, unknown>) => {
     if (isDemoSession || !realtimeChRef.current) return;
-    await realtimeChRef.current.send({ type: 'broadcast', event, payload });
+    await realtimeChRef.current.send({ type: 'broadcast', event, payload: { ...payload, _authorId: user?.id } });
   };
 
   // ─── Core session handlers ────────────────────────────────────────────────
@@ -307,6 +332,7 @@ export const LiveSessionPage: React.FC = () => {
       if (!config) { setIsJoining(false); return; }
       setSessionConfig(config);
       setSessionMode(config.sessionMode);
+      teacherUserIdRef.current = config.teacherUserId;
 
       const sw = await import('@signalwire/js');
       const roomSession = new sw.Video.RoomSession({
@@ -348,6 +374,16 @@ export const LiveSessionPage: React.FC = () => {
         setParticipants((prev) => prev.map((p) =>
           p.id === m.id ? { ...p, audioMuted: m.audio_muted ?? p.audioMuted, videoMuted: m.video_muted ?? p.videoMuted } : p,
         ));
+        // Keep local controls in sync when teacher server-side mutes this participant
+        if (m.id === swMemberIdRef.current) {
+          if (m.audio_muted !== undefined) setIsMicOn(!m.audio_muted);
+          if (m.video_muted !== undefined) setIsCameraOn(!m.video_muted);
+        }
+      });
+
+      // Fired when the teacher's removeMember() disconnects this client
+      roomSession.on('room.left', () => {
+        void handleLeave();
       });
 
       swSessionRef.current = roomSession;

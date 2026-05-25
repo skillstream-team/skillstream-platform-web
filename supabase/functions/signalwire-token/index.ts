@@ -148,6 +148,14 @@ Deno.serve(async (req) => {
     }
   }
 
+  // Look up the teacher for this class so clients can verify broadcast authenticity
+  const { data: classTeacherRow } = await supabaseAdmin
+    .from('class_members')
+    .select('user_id')
+    .eq('class_id', lesson.class_id)
+    .eq('member_role', 'teacher')
+    .maybeSingle();
+
   const isModerator = isTeacher || isAdmin;
   const userName = profile.full_name || user.email || 'Guest';
 
@@ -191,5 +199,6 @@ Deno.serve(async (req) => {
     userName,
     sessionMode: liveConfig.session_mode,
     ticketPriceGBP: Number(liveConfig.ticket_price_gbp || 0),
+    teacherUserId: classTeacherRow?.user_id ?? null,
   });
 });
