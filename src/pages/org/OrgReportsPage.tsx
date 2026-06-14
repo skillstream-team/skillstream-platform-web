@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Download, ShieldCheck, Star } from 'lucide-react';
 import { useOrgHubStore } from '../../store/orgHub';
-import { formatHubDateTime } from '../../lib/utils';
+import { cn, formatHubDateTime } from '../../lib/utils';
 
 const PAGE_SIZE = 50;
 
@@ -116,8 +116,8 @@ export const OrgReportsPage: React.FC = () => {
           { label: 'Compliance rate', value: complianceRate !== null ? `${complianceRate}%` : '—', sub: complianceRate !== null ? `${mandatoryCompleted.length}/${mandatoryEnrollments.length} required` : 'No mandatory courses', highlight: complianceRate !== null && complianceRate < 80 },
           { label: 'Overdue', value: overdueCount.toString(), sub: `${mandatoryOverdue.length} mandatory overdue`, highlight: overdueCount > 0 },
         ].map(({ label, value, sub, highlight }) => (
-          <div key={label} className={`rounded-[24px] border p-5 shadow-[0_8px_24px_rgba(15,23,42,0.04)] ${highlight ? 'border-red-200 bg-red-50' : 'border-[color:var(--hub-border)] bg-white'}`}>
-            <p className={`text-2xl font-semibold ${highlight ? 'text-red-600' : 'text-[color:var(--hub-text)]'}`}>{value}</p>
+          <div key={label} className={cn('rounded-[24px] border p-5 shadow-[0_8px_24px_rgba(15,23,42,0.04)]', highlight ? 'border-red-200 bg-red-50' : 'border-[color:var(--hub-border)] bg-white')}>
+            <p className={cn('text-2xl font-semibold', highlight ? 'text-red-600' : 'text-[color:var(--hub-text)]')}>{value}</p>
             <p className="mt-0.5 text-sm font-semibold text-[color:var(--hub-muted)]">{label}</p>
             <p className="mt-0.5 text-xs text-[color:var(--hub-muted)]">{sub}</p>
           </div>
@@ -127,7 +127,7 @@ export const OrgReportsPage: React.FC = () => {
       {/* Tabs */}
       <div className="flex gap-1 rounded-2xl bg-[color:var(--hub-soft)] p-1 w-fit">
         {([['enrollments', 'Enrollments'], ['compliance', 'Compliance'], ['quiz', 'Quiz Analytics'], ['ratings', 'Ratings']] as [Tab, string][]).map(([t, label]) => (
-          <button key={t} type="button" onClick={() => setTab(t)} className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${tab === t ? 'bg-white shadow-sm text-[color:var(--hub-text)]' : 'text-[color:var(--hub-muted)] hover:text-[color:var(--hub-text)]'}`}>
+          <button key={t} type="button" onClick={() => setTab(t)} className={cn('rounded-xl px-4 py-2 text-sm font-semibold transition', tab === t ? 'bg-white shadow-sm text-[color:var(--hub-text)]' : 'text-[color:var(--hub-muted)] hover:text-[color:var(--hub-text)]')}>
             {label}
           </button>
         ))}
@@ -160,9 +160,9 @@ export const OrgReportsPage: React.FC = () => {
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
                           <div className="h-1.5 w-20 rounded-full bg-[color:var(--hub-soft)]">
-                            <div className={`h-full rounded-full ${qs.passRate >= 80 ? 'bg-emerald-500' : qs.passRate >= 50 ? 'bg-amber-400' : 'bg-red-400'}`} style={{ width: `${qs.passRate}%` }} />
+                            <div className={cn('h-full rounded-full', qs.passRate >= 80 ? 'bg-emerald-500' : qs.passRate >= 50 ? 'bg-amber-400' : 'bg-red-400')} style={{ width: `${qs.passRate}%` }} />
                           </div>
-                          <span className={`text-xs font-semibold ${qs.passRate >= 80 ? 'text-emerald-600' : qs.passRate >= 50 ? 'text-amber-600' : 'text-red-600'}`}>{qs.passRate}%</span>
+                          <span className={cn('text-xs font-semibold', qs.passRate >= 80 ? 'text-emerald-600' : qs.passRate >= 50 ? 'text-amber-600' : 'text-red-600')}>{qs.passRate}%</span>
                         </div>
                       </td>
                       <td className="px-6 py-4">
@@ -197,7 +197,7 @@ export const OrgReportsPage: React.FC = () => {
                       </div>
                       <div className="flex shrink-0 items-center gap-1">
                         {Array.from({ length: 5 }).map((_, i) => (
-                          <Star key={i} className={`h-4 w-4 ${i < r.rating ? 'fill-amber-400 text-amber-400' : 'text-[color:var(--hub-border)]'}`} />
+                          <Star key={i} className={cn('h-4 w-4', i < r.rating ? 'fill-amber-400 text-amber-400' : 'text-[color:var(--hub-border)]')} />
                         ))}
                         <span className="ml-1 text-xs font-semibold text-[color:var(--hub-muted)]">{formatHubDateTime(r.createdAt)}</span>
                       </div>
@@ -258,21 +258,21 @@ export const OrgReportsPage: React.FC = () => {
                       </td>
                       <td className="px-6 py-4 text-[color:var(--hub-text)]">{e.courseTitle}</td>
                       <td className="px-6 py-4">
-                        <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${e.isMandatory ? 'bg-orange-100 text-orange-700' : 'bg-[color:var(--hub-soft)] text-[color:var(--hub-muted)]'}`}>
+                        <span className={cn('rounded-full px-2.5 py-0.5 text-xs font-semibold', e.isMandatory ? 'bg-orange-100 text-orange-700' : 'bg-[color:var(--hub-soft)] text-[color:var(--hub-muted)]')}>
                           {e.isMandatory ? 'Required' : 'Optional'}
                         </span>
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
                           <div className="h-1.5 w-20 rounded-full bg-[color:var(--hub-soft)]">
-                            <div className={`h-full rounded-full ${e.completedAt ? 'bg-emerald-500' : isOverdue ? 'bg-red-400' : 'bg-[color:var(--hub-primary)]'}`} style={{ width: `${e.completionPercent}%` }} />
+                            <div className={cn('h-full rounded-full', e.completedAt ? 'bg-emerald-500' : isOverdue ? 'bg-red-400' : 'bg-[color:var(--hub-primary)]')} style={{ width: `${e.completionPercent}%` }} />
                           </div>
                           <span className="text-xs font-semibold text-[color:var(--hub-text)]">{e.completionPercent}%</span>
                         </div>
                       </td>
                       <td className="px-6 py-4 text-[color:var(--hub-muted)]">{e.deadlineAt ? formatHubDateTime(e.deadlineAt) : '—'}</td>
                       <td className="px-6 py-4">
-                        <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${e.completedAt ? 'bg-emerald-100 text-emerald-700' : isOverdue ? 'bg-red-100 text-red-700' : 'bg-[color:var(--hub-soft)] text-[color:var(--hub-muted)]'}`}>
+                        <span className={cn('rounded-full px-2.5 py-0.5 text-xs font-semibold', e.completedAt ? 'bg-emerald-100 text-emerald-700' : isOverdue ? 'bg-red-100 text-red-700' : 'bg-[color:var(--hub-soft)] text-[color:var(--hub-muted)]')}>
                           {e.completedAt ? 'Completed' : isOverdue ? 'Overdue' : 'In progress'}
                         </span>
                       </td>
@@ -288,10 +288,10 @@ export const OrgReportsPage: React.FC = () => {
                 {enrollPage * PAGE_SIZE + 1}–{Math.min((enrollPage + 1) * PAGE_SIZE, filtered.length)} of {filtered.length}
               </p>
               <div className="flex gap-2">
-                <button type="button" onClick={() => setEnrollPage((p) => p - 1)} disabled={enrollPage === 0} className="flex h-8 w-8 items-center justify-center rounded-full border border-[color:var(--hub-border)] text-[color:var(--hub-muted)] hover:bg-[color:var(--hub-soft)] disabled:opacity-40">
+                <button type="button" aria-label="Previous page" onClick={() => setEnrollPage((p) => p - 1)} disabled={enrollPage === 0} className="flex h-8 w-8 items-center justify-center rounded-full border border-[color:var(--hub-border)] text-[color:var(--hub-muted)] hover:bg-[color:var(--hub-soft)] disabled:opacity-40">
                   <ChevronLeft className="h-4 w-4" />
                 </button>
-                <button type="button" onClick={() => setEnrollPage((p) => p + 1)} disabled={(enrollPage + 1) * PAGE_SIZE >= filtered.length} className="flex h-8 w-8 items-center justify-center rounded-full border border-[color:var(--hub-border)] text-[color:var(--hub-muted)] hover:bg-[color:var(--hub-soft)] disabled:opacity-40">
+                <button type="button" aria-label="Next page" onClick={() => setEnrollPage((p) => p + 1)} disabled={(enrollPage + 1) * PAGE_SIZE >= filtered.length} className="flex h-8 w-8 items-center justify-center rounded-full border border-[color:var(--hub-border)] text-[color:var(--hub-muted)] hover:bg-[color:var(--hub-soft)] disabled:opacity-40">
                   <ChevronRight className="h-4 w-4" />
                 </button>
               </div>
@@ -323,10 +323,10 @@ export const OrgReportsPage: React.FC = () => {
                             {overdue.length > 0 ? <span className="font-semibold text-red-600">{overdue.length} overdue</span> : null}
                           </div>
                           <div className="h-2 rounded-full bg-[color:var(--hub-soft)]">
-                            <div className={`h-full rounded-full transition-all ${rate === 100 ? 'bg-emerald-500' : (rate ?? 0) < 50 ? 'bg-red-400' : 'bg-amber-400'}`} style={{ width: `${rate ?? 0}%` }} />
+                            <div className={cn('h-full rounded-full transition-all', rate === 100 ? 'bg-emerald-500' : (rate ?? 0) < 50 ? 'bg-red-400' : 'bg-amber-400')} style={{ width: `${rate ?? 0}%` }} />
                           </div>
                         </div>
-                        <span className={`w-12 shrink-0 text-right text-sm font-semibold ${rate === 100 ? 'text-emerald-600' : (rate ?? 0) < 50 ? 'text-red-600' : 'text-amber-600'}`}>{rate !== null ? `${rate}%` : '—'}</span>
+                        <span className={cn('w-12 shrink-0 text-right text-sm font-semibold', rate === 100 ? 'text-emerald-600' : (rate ?? 0) < 50 ? 'text-red-600' : 'text-amber-600')}>{rate !== null ? `${rate}%` : '—'}</span>
                       </div>
                     ))}
                   </div>
@@ -347,7 +347,7 @@ export const OrgReportsPage: React.FC = () => {
                     </thead>
                     <tbody className="divide-y divide-[color:var(--hub-border)]">
                       {learnerCompliance.filter((lc) => lc.mandatory.length > 0).map(({ member, mandatory, completed, overdue, rate, memberTeams }) => (
-                        <tr key={member.userId} className={`hover:bg-[color:var(--hub-soft)] ${overdue.length > 0 ? 'bg-red-50/40' : ''}`}>
+                        <tr key={member.userId} className={cn('hover:bg-[color:var(--hub-soft)]', overdue.length > 0 && 'bg-red-50/40')}>
                           <td className="px-6 py-4">
                             <p className="font-semibold text-[color:var(--hub-text)]">{member.name}</p>
                             <p className="text-xs text-[color:var(--hub-muted)]">{member.email}</p>
@@ -370,9 +370,9 @@ export const OrgReportsPage: React.FC = () => {
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-2">
                               <div className="h-1.5 w-20 rounded-full bg-[color:var(--hub-soft)]">
-                                <div className={`h-full rounded-full ${rate === 100 ? 'bg-emerald-500' : overdue.length > 0 ? 'bg-red-400' : 'bg-amber-400'}`} style={{ width: `${rate ?? 0}%` }} />
+                                <div className={cn('h-full rounded-full', rate === 100 ? 'bg-emerald-500' : overdue.length > 0 ? 'bg-red-400' : 'bg-amber-400')} style={{ width: `${rate ?? 0}%` }} />
                               </div>
-                              <span className={`text-xs font-semibold ${rate === 100 ? 'text-emerald-600' : overdue.length > 0 ? 'text-red-600' : 'text-[color:var(--hub-muted)]'}`}>{rate !== null ? `${rate}%` : '—'}</span>
+                              <span className={cn('text-xs font-semibold', rate === 100 ? 'text-emerald-600' : overdue.length > 0 ? 'text-red-600' : 'text-[color:var(--hub-muted)]')}>{rate !== null ? `${rate}%` : '—'}</span>
                             </div>
                           </td>
                         </tr>

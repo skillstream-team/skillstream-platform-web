@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Copy, RefreshCw, Sparkles } from 'lucide-react';
 import { hasSupabaseConfig, supabase } from '../../lib/supabase';
+import { cn } from '../../lib/utils';
 
 interface QuizQuestion {
   type: 'mcq' | 'short';
@@ -81,7 +82,7 @@ export const AiPanel: React.FC<AiPanelProps> = ({
 
   if (!hasSupabaseConfig) {
     return (
-      <div className={`mt-4 ${className}`}>
+      <div className={cn('mt-4', className)}>
         <button
           type="button"
           disabled
@@ -97,7 +98,7 @@ export const AiPanel: React.FC<AiPanelProps> = ({
   }
 
   return (
-    <div className={`mt-4 ${className}`}>
+    <div className={cn('mt-4', className)}>
       {promptInput ? (
         <div className="mb-3">
           <label className="mb-1 block text-xs font-semibold text-[color:var(--hub-muted)]">
@@ -119,7 +120,7 @@ export const AiPanel: React.FC<AiPanelProps> = ({
         disabled={isLoading}
         className="inline-flex items-center gap-2 rounded-full bg-[color:var(--hub-primary)] px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
       >
-        <Sparkles className={`h-4 w-4 ${isLoading ? 'animate-pulse' : ''}`} />
+        <Sparkles className={cn('h-4 w-4', isLoading && 'animate-pulse')} />
         {isLoading ? 'Generating…' : label}
       </button>
 
@@ -205,7 +206,7 @@ const QuizOutput: React.FC<QuizOutputProps> = ({ raw }) => {
                 return (
                   <li
                     key={oi}
-                    className={`rounded-xl px-3 py-1.5 text-sm ${isCorrect ? 'bg-green-50 font-semibold text-green-700' : 'text-[color:var(--hub-text)]'}`}
+                    className={cn('rounded-xl px-3 py-1.5 text-sm', isCorrect ? 'bg-green-50 font-semibold text-green-700' : 'text-[color:var(--hub-text)]')}
                   >
                     {opt}
                   </li>

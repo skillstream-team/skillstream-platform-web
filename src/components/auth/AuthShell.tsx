@@ -1,6 +1,7 @@
 import React from 'react';
 import { BookOpen, CalendarDays, CreditCard, Video } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
+import { cn } from '../../lib/utils';
 import { SkillStreamLogo } from '../branding/SkillStreamLogo';
 
 export function AuthShell({
@@ -23,8 +24,8 @@ export function AuthShell({
   return (
     <div className="min-h-screen bg-[linear-gradient(180deg,#fafafe_0%,#f4f5fb_100%)] dark:bg-[linear-gradient(180deg,#0d1117_0%,#010409_100%)] px-4 py-6 sm:px-6 lg:px-8">
       <ThemeToggle />
-      <div className={`mx-auto grid max-w-6xl gap-6 ${showAside ? 'lg:grid-cols-2' : ''}`}>
-        <div className={`edu-hero hidden lg:flex lg:flex-col lg:justify-between ${showAside ? '' : 'lg:hidden'}`}>
+      <div className={cn('mx-auto grid max-w-6xl gap-6', showAside && 'lg:grid-cols-2')}>
+        <div className={cn('edu-hero hidden lg:flex lg:flex-col lg:justify-between', !showAside && 'lg:hidden')}>
           <div className="relative z-10 space-y-6">
             <SkillStreamLogo to="/login" light subtitle="Education platform" />
 

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Award, BookOpen, ChevronRight, Clock, Lock, Route } from 'lucide-react';
 import { useAuthStore } from '../../store/auth';
 import { useLearnerHubStore } from '../../store/learnerHub';
-import { formatHubDateTime } from '../../lib/utils';
+import { cn, formatHubDateTime } from '../../lib/utils';
 import { LearnerCourse, LearnerPath } from '../../data/orgHub';
 
 export const LearnPage: React.FC = () => {
@@ -120,12 +120,12 @@ const PathCard: React.FC<{ path: LearnerPath; onNavigate: (courseId: string, enr
         <p className="font-semibold text-[color:var(--hub-text)]">{path.title}</p>
         {path.description ? <p className="mt-0.5 text-xs text-[color:var(--hub-muted)]">{path.description}</p> : null}
       </div>
-      <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold ${path.completedAt ? 'bg-emerald-100 text-emerald-700' : 'bg-[color:var(--hub-soft)] text-[color:var(--hub-muted)]'}`}>
+      <span className={cn('shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold', path.completedAt ? 'bg-emerald-100 text-emerald-700' : 'bg-[color:var(--hub-soft)] text-[color:var(--hub-muted)]')}>
         {path.completionPercent}%
       </span>
     </div>
     <div className="mt-2 h-1.5 rounded-full bg-[color:var(--hub-soft)]">
-      <div className={`h-full rounded-full transition-all ${path.completedAt ? 'bg-emerald-500' : 'bg-[color:var(--hub-primary)]'}`} style={{ width: `${path.completionPercent}%` }} />
+      <div className={cn('h-full rounded-full transition-all', path.completedAt ? 'bg-emerald-500' : 'bg-[color:var(--hub-primary)]')} style={{ width: `${path.completionPercent}%` }} />
     </div>
     <div className="mt-3 space-y-1.5">
       {path.courses.map((c) => (
@@ -153,7 +153,7 @@ const CourseCard: React.FC<{ course: LearnerCourse; onOpen: () => void }> = ({ c
     <div className="rounded-[32px] border border-[color:var(--hub-border)] bg-white p-6 shadow-[0_18px_48px_rgba(15,23,42,0.05)]">
       <div className="flex items-start justify-between gap-3">
         <div className="flex gap-1.5">
-          <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${course.completedAt ? 'bg-emerald-100 text-emerald-700' : isOverdue ? 'bg-red-100 text-red-700' : 'bg-[color:var(--hub-soft)] text-[color:var(--hub-muted)]'}`}>
+          <span className={cn('rounded-full px-2.5 py-0.5 text-xs font-semibold', course.completedAt ? 'bg-emerald-100 text-emerald-700' : isOverdue ? 'bg-red-100 text-red-700' : 'bg-[color:var(--hub-soft)] text-[color:var(--hub-muted)]')}>
             {course.completedAt ? 'Completed' : isOverdue ? 'Overdue' : 'In progress'}
           </span>
           {course.isMandatory ? <span className="rounded-full bg-orange-100 px-2.5 py-0.5 text-xs font-semibold text-orange-700">Required</span> : null}
@@ -175,15 +175,15 @@ const CourseCard: React.FC<{ course: LearnerCourse; onOpen: () => void }> = ({ c
           <span>{course.completionPercent}%</span>
         </div>
         <div className="mt-1.5 h-1.5 rounded-full bg-[color:var(--hub-soft)]">
-          <div className={`h-full rounded-full transition-all ${course.completedAt ? 'bg-emerald-500' : 'bg-[color:var(--hub-primary)]'}`} style={{ width: `${course.completionPercent}%` }} />
+          <div className={cn('h-full rounded-full transition-all', course.completedAt ? 'bg-emerald-500' : 'bg-[color:var(--hub-primary)]')} style={{ width: `${course.completionPercent}%` }} />
         </div>
       </div>
 
       {course.deadlineAt && !course.completedAt ? (
-        <p className={`mt-2 text-xs ${isOverdue ? 'font-semibold text-red-600' : 'text-[color:var(--hub-muted)]'}`}>Due {formatHubDateTime(course.deadlineAt)}</p>
+        <p className={cn('mt-2 text-xs', isOverdue ? 'font-semibold text-red-600' : 'text-[color:var(--hub-muted)]')}>Due {formatHubDateTime(course.deadlineAt)}</p>
       ) : null}
 
-      <button type="button" onClick={onOpen} className={`mt-4 w-full rounded-full py-2 text-sm font-semibold transition ${course.completedAt ? 'border border-[color:var(--hub-border)] text-[color:var(--hub-text)] hover:bg-[color:var(--hub-soft)]' : 'bg-[color:var(--hub-primary)] text-white'}`}>
+      <button type="button" onClick={onOpen} className={cn('mt-4 w-full rounded-full py-2 text-sm font-semibold transition', course.completedAt ? 'border border-[color:var(--hub-border)] text-[color:var(--hub-text)] hover:bg-[color:var(--hub-soft)]' : 'bg-[color:var(--hub-primary)] text-white')}>
         {course.completedAt ? 'Review course' : course.completionPercent > 0 ? 'Continue' : 'Start course'}
       </button>
     </div>

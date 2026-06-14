@@ -3,6 +3,7 @@ import { ArrowUpRight, Check, Copy, Loader2, Tag, Users } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { PaymentTable } from '../components/hub/PaymentTable';
 import { useNotifications } from '../components/notifications/NotificationToast';
+import { cn } from '../lib/utils';
 import { hasSupabaseConfig, supabase } from '../lib/supabase';
 import { useAuthStore } from '../store/auth';
 import { useTeacherHubStore } from '../store/teacherHub';
@@ -13,7 +14,10 @@ type PlanId = 'creator' | 'studio' | 'academy';
 interface PlanTier {
   id: PlanId;
   name: string;
+  tagline: string;
   monthlyFee: number;
+  maxStudents: number | null;
+  maxLiveParticipants: number;
   includedParticipantMinutes: number;
   overagePerMinute: number;
   transactionFeePercent: number;
@@ -22,9 +26,43 @@ interface PlanTier {
 }
 
 const PLAN_TIERS: PlanTier[] = [
-  { id: 'creator', name: 'Creator', monthlyFee: 39, includedParticipantMinutes: 10_000, overagePerMinute: 0.002, transactionFeePercent: 8, aiTokens: '150k' },
-  { id: 'studio', name: 'Studio', monthlyFee: 89, includedParticipantMinutes: 40_000, overagePerMinute: 0.002, transactionFeePercent: 6, aiTokens: '600k', popular: true },
-  { id: 'academy', name: 'Academy', monthlyFee: 199, includedParticipantMinutes: 150_000, overagePerMinute: 0.002, transactionFeePercent: 5, aiTokens: '2.5M' },
+  {
+    id: 'creator',
+    name: 'Creator',
+    tagline: 'Solo tutors, music teachers & local coaches.',
+    monthlyFee: 29,
+    maxStudents: 15,
+    maxLiveParticipants: 5,
+    includedParticipantMinutes: 5_000,
+    overagePerMinute: 0.002,
+    transactionFeePercent: 10,
+    aiTokens: '100k',
+  },
+  {
+    id: 'studio',
+    name: 'Studio',
+    tagline: 'Growing academies and full-time independent educators.',
+    monthlyFee: 99,
+    maxStudents: 100,
+    maxLiveParticipants: 50,
+    includedParticipantMinutes: 40_000,
+    overagePerMinute: 0.002,
+    transactionFeePercent: 6,
+    aiTokens: '600k',
+    popular: true,
+  },
+  {
+    id: 'academy',
+    name: 'Academy',
+    tagline: 'Training organisations, corporate L&D, multi-teacher operations.',
+    monthlyFee: 249,
+    maxStudents: null,
+    maxLiveParticipants: 200,
+    includedParticipantMinutes: 150_000,
+    overagePerMinute: 0.002,
+    transactionFeePercent: 5,
+    aiTokens: '2.5M',
+  },
 ];
 
 const formatMinutes = (value: number) => new Intl.NumberFormat('en-US').format(value);
@@ -235,9 +273,11 @@ export const PaymentsPage: React.FC = () => {
               <div className="h-2.5 rounded-full bg-[color:var(--hub-soft)]">
                 <div className="h-2.5 rounded-full bg-[color:var(--hub-primary)] transition-all" style={{ width: `${usagePercentage}%` }} />
               </div>
-              <div className="mt-3 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
+              <div className="mt-3 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
                 {[
                   { label: 'Base fee', value: formatMoney(activePlan.monthlyFee) },
+                  { label: 'Student cap', value: activePlan.maxStudents !== null ? String(activePlan.maxStudents) : 'Unlimited' },
+                  { label: 'Max per session', value: String(activePlan.maxLiveParticipants) },
                   { label: 'Included minutes', value: formatMinutes(includedMinutes) },
                   { label: 'Overage minutes', value: formatMinutes(overageMinutes) },
                   { label: 'Overage charge', value: formatMoney(overageAmount) },
@@ -307,11 +347,7 @@ export const PaymentsPage: React.FC = () => {
                 return (
                   <div
                     key={plan.id}
-                    className={`relative rounded-3xl border p-5 transition ${
-                      active
-                        ? 'border-[color:var(--hub-primary)] bg-[color:var(--hub-soft)]'
-                        : 'border-[color:var(--hub-border)]'
-                    }`}
+                    className={cn('relative rounded-3xl border p-5 transition', active ? 'border-[color:var(--hub-primary)] bg-[color:var(--hub-soft)]' : 'border-[color:var(--hub-border)]')}
                   >
                     {plan.popular ? (
                       <span className="absolute right-4 top-4 rounded-full bg-[color:var(--hub-primary)] px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
@@ -329,7 +365,9 @@ export const PaymentsPage: React.FC = () => {
                       ) : null}
                     </div>
 
-                    <div className="mt-2 flex flex-wrap items-baseline gap-2">
+                    <p className="mt-1 text-xs text-[color:var(--hub-muted)]">{plan.tagline}</p>
+
+                    <div className="mt-3 flex flex-wrap items-baseline gap-2">
                       <p className="text-2xl font-semibold text-[color:var(--hub-text)]">
                         {formatMoney(discountedFee(plan))}
                         <span className="text-sm font-medium text-[color:var(--hub-muted)]"> /month</span>
@@ -339,10 +377,12 @@ export const PaymentsPage: React.FC = () => {
                       ) : null}
                     </div>
 
-                    <ul className="mt-3 space-y-1 text-sm text-[color:var(--hub-muted)]">
-                      <li>{formatMinutes(plan.includedParticipantMinutes)} participant-minutes</li>
+                    <ul className="mt-3 space-y-1.5 text-sm text-[color:var(--hub-muted)]">
+                      <li>{plan.maxStudents !== null ? `Up to ${plan.maxStudents} active students` : 'Unlimited students'}</li>
+                      <li>Up to {plan.maxLiveParticipants} per live session</li>
+                      <li>{formatMinutes(plan.includedParticipantMinutes)} live minutes/month</li>
                       <li>{formatMoneyPrecise(plan.overagePerMinute)} per extra minute</li>
-                      <li>{plan.transactionFeePercent}% platform fee on paid events</li>
+                      <li>{plan.transactionFeePercent}% platform fee on paid lessons</li>
                       <li>{plan.aiTokens} AI tokens / month</li>
                     </ul>
 

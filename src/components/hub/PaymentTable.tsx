@@ -1,6 +1,7 @@
 import React from 'react';
 import { PaymentRecord } from '../../data/teacherHub';
 import { useCurrencyFormatter } from '../../lib/currency';
+import { cn } from '../../lib/utils';
 
 const toneClasses: Record<PaymentRecord['status'], string> = {
   paid: 'bg-emerald-100 text-emerald-700',
@@ -37,7 +38,7 @@ export const PaymentTable: React.FC<{ payments: PaymentRecord[] }> = ({ payments
                 <td className="px-5 py-4 text-sm text-[color:var(--hub-text)]">{formatMoney(payment.amount)}</td>
                 <td className="px-5 py-4 text-sm text-[color:var(--hub-muted)]">{formatDate(payment.dueAt)}</td>
                 <td className="px-5 py-4 text-sm">
-                  <span className={`rounded-full px-3 py-1 text-xs font-semibold ${toneClasses[payment.status]}`}>{payment.status}</span>
+                  <span className={cn('rounded-full px-3 py-1 text-xs font-semibold', toneClasses[payment.status])}>{payment.status}</span>
                 </td>
               </tr>
             ))}

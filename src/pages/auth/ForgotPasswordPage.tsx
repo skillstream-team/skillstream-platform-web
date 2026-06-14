@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Mail } from 'lucide-react';
 import { AuthShell } from '../../components/auth/AuthShell';
 import { useAuthStore } from '../../store/auth';
+import { cn } from '../../lib/utils';
 
 export const ForgotPasswordPage: React.FC = () => {
   const requestPasswordReset = useAuthStore((state) => state.requestPasswordReset);
@@ -48,11 +49,7 @@ export const ForgotPasswordPage: React.FC = () => {
       <form onSubmit={handleSubmit} className="space-y-5">
         {message || error ? (
           <div
-            className={`rounded-2xl border p-4 text-sm ${
-              status === 'success'
-                ? 'border-[rgba(31,157,115,0.24)] bg-[rgba(31,157,115,0.08)] text-[color:var(--edu-success)]'
-                : 'border-[rgba(200,95,73,0.24)] bg-[rgba(200,95,73,0.08)] text-[color:var(--edu-danger)]'
-            }`}
+            className={cn('rounded-2xl border p-4 text-sm', status === 'success' ? 'border-[rgba(31,157,115,0.24)] bg-[rgba(31,157,115,0.08)] text-[color:var(--edu-success)]' : 'border-[rgba(200,95,73,0.24)] bg-[rgba(200,95,73,0.08)] text-[color:var(--edu-danger)]')}
           >
             {message || error}
           </div>

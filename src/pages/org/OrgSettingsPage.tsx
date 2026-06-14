@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { Bell, Building2, Calendar, KeyRound, Shield } from 'lucide-react';
 import { useNotifications } from '../../components/notifications/NotificationToast';
 import { useOrgHubStore } from '../../store/orgHub';
+import { cn } from '../../lib/utils';
 
 export const OrgSettingsPage: React.FC = () => {
   const { orgId = '' } = useParams();
@@ -108,8 +109,8 @@ export const OrgSettingsPage: React.FC = () => {
         <p className="mb-4 text-sm text-[color:var(--hub-muted)]">Automatically email learners before their course deadlines. Reminders are sent once per learner per course.</p>
         <form onSubmit={(e) => { e.preventDefault(); void save('reminders', { remindersEnabled, reminderDaysBefore: parseInt(reminderDays) || 3 }); }} className="grid max-w-lg gap-4">
           <label className="flex cursor-pointer items-center gap-3">
-            <div className={`relative h-6 w-11 rounded-full transition ${remindersEnabled ? 'bg-[color:var(--hub-primary)]' : 'bg-[color:var(--hub-border)]'}`} onClick={() => setRemindersEnabled((v) => !v)}>
-              <div className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${remindersEnabled ? 'translate-x-5' : 'translate-x-0.5'}`} />
+            <div className={cn('relative h-6 w-11 rounded-full transition', remindersEnabled ? 'bg-[color:var(--hub-primary)]' : 'bg-[color:var(--hub-border)]')} onClick={() => setRemindersEnabled((v) => !v)}>
+              <div className={cn('absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform', remindersEnabled ? 'translate-x-5' : 'translate-x-0.5')} />
             </div>
             <span className="text-sm font-semibold text-[color:var(--hub-text)]">{remindersEnabled ? 'Reminders enabled' : 'Reminders disabled'}</span>
           </label>
@@ -136,8 +137,8 @@ export const OrgSettingsPage: React.FC = () => {
         <p className="mb-5 text-sm text-[color:var(--hub-muted)]">Automatically email a completion and compliance summary to an inbox on a regular schedule.</p>
         <form onSubmit={(e) => { e.preventDefault(); void save('reports', { reportScheduleEnabled: reportEnabled, reportScheduleFrequency: reportFrequency, reportScheduleEmail: reportEmail }); }} className="grid max-w-lg gap-4">
           <label className="flex cursor-pointer items-center gap-3">
-            <div className={`relative h-6 w-11 rounded-full transition ${reportEnabled ? 'bg-[color:var(--hub-primary)]' : 'bg-[color:var(--hub-border)]'}`} onClick={() => setReportEnabled((v) => !v)}>
-              <div className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${reportEnabled ? 'translate-x-5' : 'translate-x-0.5'}`} />
+            <div className={cn('relative h-6 w-11 rounded-full transition', reportEnabled ? 'bg-[color:var(--hub-primary)]' : 'bg-[color:var(--hub-border)]')} onClick={() => setReportEnabled((v) => !v)}>
+              <div className={cn('absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform', reportEnabled ? 'translate-x-5' : 'translate-x-0.5')} />
             </div>
             <span className="text-sm font-semibold text-[color:var(--hub-text)]">{reportEnabled ? 'Scheduled reports enabled' : 'Scheduled reports disabled'}</span>
           </label>

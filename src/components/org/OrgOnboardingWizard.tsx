@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ArrowRight, CheckCircle, Plus, X } from 'lucide-react';
+import { cn } from '../../lib/utils';
 import { useOrgHubStore } from '../../store/orgHub';
 import { OrgRole } from '../../data/orgHub';
 
@@ -54,7 +55,7 @@ export const OrgOnboardingWizard: React.FC<Props> = ({ onDismiss }) => {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
       <div className="relative w-full max-w-lg rounded-[32px] bg-white p-8 shadow-[0_24px_64px_rgba(15,23,42,0.18)]">
-        <button type="button" onClick={handleDismiss} className="absolute right-5 top-5 rounded-full p-1 text-[color:var(--hub-muted)] hover:bg-[color:var(--hub-soft)]">
+        <button type="button" onClick={handleDismiss} aria-label="Dismiss" className="absolute right-5 top-5 rounded-full p-1 text-[color:var(--hub-muted)] hover:bg-[color:var(--hub-soft)]">
           <X className="h-4 w-4" />
         </button>
 
@@ -62,11 +63,11 @@ export const OrgOnboardingWizard: React.FC<Props> = ({ onDismiss }) => {
         <div className="mb-8 flex items-center gap-2">
           {steps.map((s, i) => (
             <React.Fragment key={s}>
-              <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold transition-colors ${i < step ? 'bg-emerald-500 text-white' : i === step ? 'bg-[color:var(--hub-primary)] text-white' : 'bg-[color:var(--hub-soft)] text-[color:var(--hub-muted)]'}`}>
+              <div className={cn('flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold transition-colors', i < step ? 'bg-emerald-500 text-white' : i === step ? 'bg-[color:var(--hub-primary)] text-white' : 'bg-[color:var(--hub-soft)] text-[color:var(--hub-muted)]')}>
                 {i < step ? <CheckCircle className="h-4 w-4" /> : i + 1}
               </div>
               {i < steps.length - 1 ? (
-                <div className={`h-0.5 flex-1 transition-colors ${i < step ? 'bg-emerald-400' : 'bg-[color:var(--hub-soft)]'}`} />
+                <div className={cn('h-0.5 flex-1 transition-colors', i < step ? 'bg-emerald-400' : 'bg-[color:var(--hub-soft)]')} />
               ) : null}
             </React.Fragment>
           ))}

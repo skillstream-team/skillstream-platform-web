@@ -93,6 +93,15 @@ process.on('SIGTERM', () => {
   process.exit();
 });
 
+// Security headers
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  next();
+});
+
 // Serve the built bundle files from root (for bundle.css and bundle.js)
 app.use(express.static('dist'));
 
@@ -132,6 +141,7 @@ const ctx = await esbuild.context({
     'process.env.REACT_APP_ENABLE_DEMO_ACCOUNTS': JSON.stringify(process.env.REACT_APP_ENABLE_DEMO_ACCOUNTS || 'true'),
     'process.env.REACT_APP_SUPABASE_URL': JSON.stringify(process.env.REACT_APP_SUPABASE_URL || ''),
     'process.env.REACT_APP_SUPABASE_ANON_KEY': JSON.stringify(process.env.REACT_APP_SUPABASE_ANON_KEY || ''),
+    'process.env.REACT_APP_SENTRY_DSN': JSON.stringify(process.env.REACT_APP_SENTRY_DSN || ''),
   },
   external: ['markmap-common', 'html2canvas', 'dompurify', 'canvg'],
   sourcemap: true,

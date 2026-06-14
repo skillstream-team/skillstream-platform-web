@@ -3,9 +3,9 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Plus, Route, Search, Trash2, Upload, Users } from 'lucide-react';
 import { ActionModal } from '../../components/common/ActionModal';
 import { useNotifications } from '../../components/notifications/NotificationToast';
+import { cn, parseCsv } from '../../lib/utils';
 import { useOrgHubStore } from '../../store/orgHub';
 import { OrgRole } from '../../data/orgHub';
-import { parseCsv } from '../../lib/utils';
 
 type Tab = 'learners' | 'teams';
 
@@ -318,7 +318,7 @@ export const OrgLearnersPage: React.FC = () => {
       {/* Tabs */}
       <div className="flex gap-1 rounded-2xl bg-[color:var(--hub-soft)] p-1 w-fit">
         {(['learners', 'teams'] as Tab[]).map((t) => (
-          <button key={t} type="button" onClick={() => setTab(t)} className={`rounded-xl px-4 py-2 text-sm font-semibold capitalize transition ${tab === t ? 'bg-white shadow-sm text-[color:var(--hub-text)]' : 'text-[color:var(--hub-muted)] hover:text-[color:var(--hub-text)]'}`}>
+          <button key={t} type="button" onClick={() => setTab(t)} className={cn('rounded-xl px-4 py-2 text-sm font-semibold capitalize transition', tab === t ? 'bg-white shadow-sm text-[color:var(--hub-text)]' : 'text-[color:var(--hub-muted)] hover:text-[color:var(--hub-text)]')}>
             {t}
           </button>
         ))}
@@ -383,10 +383,10 @@ export const OrgLearnersPage: React.FC = () => {
                       <option value="instructor">Instructor</option>
                     </select>
                   </div>
-                  <button type="button" onClick={() => navigate(`/org/${orgId}/learners/${member.userId}`)} className="hidden rounded-full border border-[color:var(--hub-border)] px-3 py-1 text-xs font-semibold text-[color:var(--hub-text)] hover:bg-[color:var(--hub-soft)] sm:block">
+                  <button type="button" aria-label={`View ${member.name}'s profile`} onClick={() => navigate(`/org/${orgId}/learners/${member.userId}`)} className="hidden rounded-full border border-[color:var(--hub-border)] px-3 py-1 text-xs font-semibold text-[color:var(--hub-text)] hover:bg-[color:var(--hub-soft)] sm:block">
                     <ChevronRight className="h-4 w-4" />
                   </button>
-                  <button type="button" onClick={() => handleRemove(member.userId, member.name)} className="shrink-0 rounded-full p-2 text-[color:var(--hub-muted)] hover:text-red-500">
+                  <button type="button" aria-label={`Remove ${member.name}`} onClick={() => handleRemove(member.userId, member.name)} className="shrink-0 rounded-full p-2 text-[color:var(--hub-muted)] hover:text-red-500">
                     <Trash2 className="h-4 w-4" />
                   </button>
                 </div>
@@ -399,10 +399,10 @@ export const OrgLearnersPage: React.FC = () => {
                 {learnerPage * PAGE_SIZE + 1}–{Math.min((learnerPage + 1) * PAGE_SIZE, filteredLearners.length)} of {filteredLearners.length} learners
               </p>
               <div className="flex gap-2">
-                <button type="button" onClick={() => setLearnerPage((p) => p - 1)} disabled={learnerPage === 0} className="rounded-full border border-[color:var(--hub-border)] p-1.5 hover:bg-[color:var(--hub-soft)] disabled:opacity-40">
+                <button type="button" aria-label="Previous page" onClick={() => setLearnerPage((p) => p - 1)} disabled={learnerPage === 0} className="rounded-full border border-[color:var(--hub-border)] p-1.5 hover:bg-[color:var(--hub-soft)] disabled:opacity-40">
                   <ChevronLeft className="h-4 w-4" />
                 </button>
-                <button type="button" onClick={() => setLearnerPage((p) => p + 1)} disabled={(learnerPage + 1) * PAGE_SIZE >= filteredLearners.length} className="rounded-full border border-[color:var(--hub-border)] p-1.5 hover:bg-[color:var(--hub-soft)] disabled:opacity-40">
+                <button type="button" aria-label="Next page" onClick={() => setLearnerPage((p) => p + 1)} disabled={(learnerPage + 1) * PAGE_SIZE >= filteredLearners.length} className="rounded-full border border-[color:var(--hub-border)] p-1.5 hover:bg-[color:var(--hub-soft)] disabled:opacity-40">
                   <ChevronRight className="h-4 w-4" />
                 </button>
               </div>
@@ -440,7 +440,7 @@ export const OrgLearnersPage: React.FC = () => {
                     {managingTeamId === team.id ? 'Done' : 'Members'}
                   </button>
                   <button type="button" onClick={() => { setRenamingTeamId(team.id); setRenameValue(team.name); }} className="rounded-full border border-[color:var(--hub-border)] px-3 py-1.5 text-xs font-semibold text-[color:var(--hub-text)] hover:bg-[color:var(--hub-soft)]">Rename</button>
-                  <button type="button" onClick={() => handleDeleteTeam(team.id, team.name)} className="rounded-full p-1.5 text-[color:var(--hub-muted)] hover:bg-red-50 hover:text-red-600">
+                  <button type="button" aria-label={`Delete team ${team.name}`} onClick={() => handleDeleteTeam(team.id, team.name)} className="rounded-full p-1.5 text-[color:var(--hub-muted)] hover:bg-red-50 hover:text-red-600">
                     <Trash2 className="h-4 w-4" />
                   </button>
                 </div>

@@ -1,11 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, ClipboardList, Download } from 'lucide-react';
+import { cn, formatHubDateTime } from '../../lib/utils';
 
 const PAGE_SIZE = 50;
 import { useOrgHubStore } from '../../store/orgHub';
 import { AuditAction } from '../../data/orgHub';
-import { formatHubDateTime } from '../../lib/utils';
 
 const ACTION_LABELS: Record<AuditAction, string> = {
   enroll: 'Enrolled learner',
@@ -88,7 +88,7 @@ export const OrgAuditPage: React.FC = () => {
         <button
           type="button"
           onClick={() => setFilterAction('all')}
-          className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${filterAction === 'all' ? 'bg-[color:var(--hub-primary)] text-white' : 'border border-[color:var(--hub-border)] bg-white text-[color:var(--hub-text)] hover:bg-[color:var(--hub-soft)]'}`}
+          className={cn('rounded-full px-3 py-1.5 text-xs font-semibold transition-colors', filterAction === 'all' ? 'bg-[color:var(--hub-primary)] text-white' : 'border border-[color:var(--hub-border)] bg-white text-[color:var(--hub-text)] hover:bg-[color:var(--hub-soft)]')}
         >
           All actions
         </button>
@@ -97,7 +97,7 @@ export const OrgAuditPage: React.FC = () => {
             key={action}
             type="button"
             onClick={() => setFilterAction(action)}
-            className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${filterAction === action ? 'bg-[color:var(--hub-primary)] text-white' : 'border border-[color:var(--hub-border)] bg-white text-[color:var(--hub-text)] hover:bg-[color:var(--hub-soft)]'}`}
+            className={cn('rounded-full px-3 py-1.5 text-xs font-semibold transition-colors', filterAction === action ? 'bg-[color:var(--hub-primary)] text-white' : 'border border-[color:var(--hub-border)] bg-white text-[color:var(--hub-text)] hover:bg-[color:var(--hub-soft)]')}
           >
             {ACTION_LABELS[action]}
           </button>
@@ -137,7 +137,7 @@ export const OrgAuditPage: React.FC = () => {
                   <td className="whitespace-nowrap px-6 py-4 text-xs text-[color:var(--hub-muted)]">{formatHubDateTime(event.createdAt)}</td>
                   <td className="px-6 py-4 font-medium text-[color:var(--hub-text)]">{event.actorName}</td>
                   <td className="px-6 py-4">
-                    <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${ACTION_COLORS[event.action]}`}>
+                    <span className={cn('rounded-full px-2.5 py-0.5 text-xs font-semibold', ACTION_COLORS[event.action])}>
                       {ACTION_LABELS[event.action]}
                     </span>
                   </td>
@@ -153,10 +153,10 @@ export const OrgAuditPage: React.FC = () => {
               {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, sorted.length)} of {sorted.length}
             </p>
             <div className="flex gap-2">
-              <button type="button" onClick={() => setPage((p) => p - 1)} disabled={page === 0} className="flex h-8 w-8 items-center justify-center rounded-full border border-[color:var(--hub-border)] text-[color:var(--hub-muted)] hover:bg-[color:var(--hub-soft)] disabled:opacity-40">
+              <button type="button" aria-label="Previous page" onClick={() => setPage((p) => p - 1)} disabled={page === 0} className="flex h-8 w-8 items-center justify-center rounded-full border border-[color:var(--hub-border)] text-[color:var(--hub-muted)] hover:bg-[color:var(--hub-soft)] disabled:opacity-40">
                 <ChevronLeft className="h-4 w-4" />
               </button>
-              <button type="button" onClick={() => setPage((p) => p + 1)} disabled={(page + 1) * PAGE_SIZE >= sorted.length} className="flex h-8 w-8 items-center justify-center rounded-full border border-[color:var(--hub-border)] text-[color:var(--hub-muted)] hover:bg-[color:var(--hub-soft)] disabled:opacity-40">
+              <button type="button" aria-label="Next page" onClick={() => setPage((p) => p + 1)} disabled={(page + 1) * PAGE_SIZE >= sorted.length} className="flex h-8 w-8 items-center justify-center rounded-full border border-[color:var(--hub-border)] text-[color:var(--hub-muted)] hover:bg-[color:var(--hub-soft)] disabled:opacity-40">
                 <ChevronRight className="h-4 w-4" />
               </button>
             </div>

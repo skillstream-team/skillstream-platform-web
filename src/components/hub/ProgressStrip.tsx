@@ -1,5 +1,6 @@
 import React from 'react';
 import { TopicInsight } from '../../data/teacherHub';
+import { cn } from '../../lib/utils';
 
 const toneClasses: Record<TopicInsight['tone'], string> = {
   strong: 'bg-emerald-500',
@@ -20,7 +21,7 @@ export const ProgressStrip: React.FC<{ items: TopicInsight[] }> = ({ items }) =>
             <span className="text-sm font-semibold text-[color:var(--hub-text)]">{item.mastery}%</span>
           </div>
           <div className="mt-3 h-2 rounded-full bg-[color:var(--hub-soft)]">
-            <div className={`h-2 rounded-full ${toneClasses[item.tone]}`} style={{ width: `${item.mastery}%` }} />
+            <div className={cn('h-2 rounded-full', toneClasses[item.tone])} style={{ width: `${item.mastery}%` }} />
           </div>
         </div>
       ))}

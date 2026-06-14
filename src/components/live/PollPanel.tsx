@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { BarChart2, Plus, Trash2 } from 'lucide-react';
 import { Poll, PollResults } from '../../lib/liveFeatures';
+import { cn } from '../../lib/utils';
 
 interface PollPanelProps {
   isTeacher: boolean;
@@ -72,7 +73,7 @@ export const PollPanel: React.FC<PollPanelProps> = ({
               return (
                 <div key={i}>
                   <div className="flex items-center justify-between mb-1">
-                    <span className={`text-sm ${isMyAnswer ? 'font-semibold text-white' : 'text-white/70'}`}>
+                    <span className={cn('text-sm', isMyAnswer ? 'font-semibold text-white' : 'text-white/70')}>
                       {option}
                       {isMyAnswer ? <span className="ml-1 text-[10px] text-[color:var(--hub-primary)]">✓ Your answer</span> : null}
                     </span>
@@ -107,11 +108,7 @@ export const PollPanel: React.FC<PollPanelProps> = ({
                         setPendingVote([i]);
                       }
                     }}
-                    className={`w-full rounded-2xl border px-4 py-3 text-left text-sm transition ${
-                      selected
-                        ? 'border-[color:var(--hub-primary)] bg-[color:var(--hub-primary)]/20 text-white'
-                        : 'border-white/15 bg-white/5 text-white/70 hover:border-white/30 hover:text-white'
-                    }`}
+                    className={cn('w-full rounded-2xl border px-4 py-3 text-left text-sm transition', selected ? 'border-[color:var(--hub-primary)] bg-[color:var(--hub-primary)]/20 text-white' : 'border-white/15 bg-white/5 text-white/70 hover:border-white/30 hover:text-white')}
                   >
                     {option}
                   </button>

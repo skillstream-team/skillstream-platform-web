@@ -3,8 +3,8 @@ import { CalendarRange, ChevronLeft, ChevronRight, Clock3, Download } from 'luci
 import { useNavigate } from 'react-router-dom';
 import { ActionModal } from '../components/common/ActionModal';
 import { useNotifications } from '../components/notifications/NotificationToast';
+import { cn, formatHubDateTime, toDateTimeLocalMin } from '../lib/utils';
 import { downloadIcal } from '../lib/ical';
-import { formatHubDateTime, toDateTimeLocalMin } from '../lib/utils';
 import { useAuthStore } from '../store/auth';
 import { useSessionUiStore } from '../store/sessionUi';
 import { useTeacherHubStore } from '../store/teacherHub';
@@ -154,13 +154,7 @@ export const SchedulePage: React.FC = () => {
                 return (
                   <div
                     key={index}
-                    className={`flex aspect-square items-center justify-center rounded-2xl text-sm ${
-                      day
-                        ? hasLesson
-                          ? 'bg-[color:var(--hub-accent)] font-semibold text-white'
-                          : 'bg-white dark:bg-[#1c2333] text-[color:var(--hub-muted)]'
-                        : 'bg-transparent'
-                    }`}
+                    className={cn('flex aspect-square items-center justify-center rounded-2xl text-sm', day ? hasLesson ? 'bg-[color:var(--hub-accent)] font-semibold text-white' : 'bg-white dark:bg-[#1c2333] text-[color:var(--hub-muted)]' : 'bg-transparent')}
                   >
                     {day || ''}
                   </div>

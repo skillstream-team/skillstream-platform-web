@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, BookOpen, Check, ChevronRight, Clock, GripVertical, Plus, Trash2, Users, X } from 'lucide-react';
 import { useNotifications } from '../../components/notifications/NotificationToast';
 import { useOrgHubStore } from '../../store/orgHub';
+import { cn } from '../../lib/utils';
 
 export const OrgPathDetailPage: React.FC = () => {
   const { orgId = '', pathId = '' } = useParams();
@@ -96,7 +97,7 @@ export const OrgPathDetailPage: React.FC = () => {
             </div>
           </div>
           <div className="flex shrink-0 gap-2">
-            <button type="button" onClick={handlePublishToggle} className={`rounded-full px-4 py-2 text-sm font-semibold transition ${path.isPublished ? 'border border-[color:var(--hub-border)] text-[color:var(--hub-text)] hover:bg-[color:var(--hub-soft)]' : 'bg-[color:var(--hub-primary)] text-white'}`}>
+            <button type="button" onClick={handlePublishToggle} className={cn('rounded-full px-4 py-2 text-sm font-semibold transition', path.isPublished ? 'border border-[color:var(--hub-border)] text-[color:var(--hub-text)] hover:bg-[color:var(--hub-soft)]' : 'bg-[color:var(--hub-primary)] text-white')}>
               {path.isPublished ? 'Unpublish' : 'Publish'}
             </button>
             <button type="button" onClick={() => setShowEnroll(true)} className="flex items-center gap-2 rounded-full border border-[color:var(--hub-border)] px-4 py-2 text-sm font-semibold text-[color:var(--hub-text)] hover:bg-[color:var(--hub-soft)]">
@@ -145,7 +146,7 @@ export const OrgPathDetailPage: React.FC = () => {
                   </div>
                 </div>
                 {index < path.courses.length - 1 ? <ChevronRight className="h-4 w-4 shrink-0 text-[color:var(--hub-muted)]" /> : <Check className="h-4 w-4 shrink-0 text-emerald-500" />}
-                <button type="button" onClick={() => handleRemoveCourse(pc.id)} className="shrink-0 rounded-full p-1.5 text-[color:var(--hub-muted)] hover:bg-red-50 hover:text-red-600">
+                <button type="button" aria-label="Remove course from path" onClick={() => handleRemoveCourse(pc.id)} className="shrink-0 rounded-full p-1.5 text-[color:var(--hub-muted)] hover:bg-red-50 hover:text-red-600">
                   <Trash2 className="h-3.5 w-3.5" />
                 </button>
               </div>
@@ -161,13 +162,13 @@ export const OrgPathDetailPage: React.FC = () => {
           <div className="relative w-full max-w-md rounded-[32px] bg-white p-6 shadow-xl">
             <div className="mb-4 flex items-center justify-between">
               <p className="text-base font-semibold text-[color:var(--hub-text)]">Enrol learners in path</p>
-              <button type="button" onClick={() => setShowEnroll(false)} className="rounded-full p-1.5 text-[color:var(--hub-muted)] hover:bg-[color:var(--hub-soft)]"><X className="h-4 w-4" /></button>
+              <button type="button" onClick={() => setShowEnroll(false)} aria-label="Close" className="rounded-full p-1.5 text-[color:var(--hub-muted)] hover:bg-[color:var(--hub-soft)]"><X className="h-4 w-4" /></button>
             </div>
             <p className="mb-3 text-xs text-[color:var(--hub-muted)]">Learners will be enrolled in all {path.courses.length} courses in this path.</p>
             <div className="max-h-60 space-y-1.5 overflow-y-auto">
               {learners.map((m) => (
                 <button key={m.userId} type="button" onClick={() => toggleUser(m.userId)}
-                  className={`flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left text-sm transition ${selectedUsers.includes(m.userId) ? 'bg-[color:var(--hub-primary)] text-white' : 'bg-[color:var(--hub-soft)] text-[color:var(--hub-text)] hover:bg-[color:var(--hub-border)]'}`}>
+                  className={cn('flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left text-sm transition', selectedUsers.includes(m.userId) ? 'bg-[color:var(--hub-primary)] text-white' : 'bg-[color:var(--hub-soft)] text-[color:var(--hub-text)] hover:bg-[color:var(--hub-border)]')}>
                   <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/20 text-xs font-bold">{m.name.slice(0, 2).toUpperCase()}</div>
                   <div className="min-w-0">
                     <p className="truncate font-semibold">{m.name}</p>

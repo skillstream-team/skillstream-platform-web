@@ -1,5 +1,6 @@
 import React, { useEffect, useId, useRef } from 'react';
 import { AlertTriangle, X } from 'lucide-react';
+import { cn } from '../../lib/utils';
 
 interface ConfirmDialogProps {
   isOpen: boolean;
@@ -101,7 +102,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
       >
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-start gap-3">
-            <span className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border ${tone}`}>
+            <span className={cn('inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border', tone)}>
               <AlertTriangle className="h-5 w-5" />
             </span>
             <div>
@@ -122,7 +123,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
           >
             {cancelText}
           </button>
-          <button type="button" onClick={onConfirm} className={`rounded-full px-4 py-2.5 text-sm font-semibold text-white ${confirmClass}`}>
+          <button type="button" onClick={onConfirm} className={cn('rounded-full px-4 py-2.5 text-sm font-semibold text-white', confirmClass)}>
             {confirmText}
           </button>
         </div>

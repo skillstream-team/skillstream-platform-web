@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { DoorOpen, X } from 'lucide-react';
 import { BreakoutRoom } from '../../lib/liveFeatures';
 import { SWParticipant } from '../../lib/signalwireLive';
-import { getInitials } from '../../lib/utils';
+import { cn, getInitials } from '../../lib/utils';
 
 interface BreakoutPanelProps {
   isTeacher: boolean;
@@ -151,11 +151,7 @@ export const BreakoutPanel: React.FC<BreakoutPanelProps> = ({
                 key={n}
                 type="button"
                 onClick={() => { setRoomCount(n); setAssignments({}); }}
-                className={`flex-1 rounded-xl py-2 text-sm font-semibold transition ${
-                  roomCount === n
-                    ? 'bg-[color:var(--hub-primary)] text-white'
-                    : 'bg-white/10 text-white/60 hover:text-white'
-                }`}
+                className={cn('flex-1 rounded-xl py-2 text-sm font-semibold transition', roomCount === n ? 'bg-[color:var(--hub-primary)] text-white' : 'bg-white/10 text-white/60 hover:text-white')}
               >
                 {n}
               </button>

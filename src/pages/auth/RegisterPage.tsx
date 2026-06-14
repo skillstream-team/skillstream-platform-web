@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, BookOpen, Check, GraduationCap, Mail, User as UserIcon } from 'lucide-react';
 import { useAuthStore } from '../../store/auth';
 import { useCurrencyFormatter } from '../../lib/currency';
+import { cn } from '../../lib/utils';
 import { PasswordStrengthMeter } from '../../components/auth/PasswordStrengthMeter';
 import { AuthShell } from '../../components/auth/AuthShell';
 
@@ -21,27 +22,27 @@ const PLANS: Array<{
   {
     id: 'creator',
     name: 'Creator',
-    monthlyFee: 39,
-    minutes: '10,000',
-    txFee: 8,
-    description: 'Perfect for solo tutors just getting started.',
+    monthlyFee: 29,
+    minutes: '5,000',
+    txFee: 10,
+    description: 'Solo tutors, music teachers & local coaches.',
   },
   {
     id: 'studio',
     name: 'Studio',
-    monthlyFee: 89,
+    monthlyFee: 99,
     minutes: '40,000',
     txFee: 6,
-    description: 'For growing teachers with regular classes.',
+    description: 'Growing academies and full-time independent educators.',
     popular: true,
   },
   {
     id: 'academy',
     name: 'Academy',
-    monthlyFee: 199,
+    monthlyFee: 249,
     minutes: '150,000',
     txFee: 5,
-    description: 'Full-scale education businesses and academies.',
+    description: 'Training organisations, corporate L&D & multi-teacher operations.',
   },
 ];
 
@@ -164,11 +165,7 @@ export const RegisterPage: React.FC = () => {
                 key={plan.id}
                 type="button"
                 onClick={() => setSelectedPlan(plan.id)}
-                className={`relative rounded-[24px] border p-5 text-left transition-all ${
-                  selectedPlan === plan.id
-                    ? 'border-[rgba(15,139,131,0.45)] bg-[rgba(15,139,131,0.07)] ring-1 ring-[rgba(15,139,131,0.25)]'
-                    : 'border-[color:var(--edu-border)] bg-white hover:border-[color:var(--edu-border-strong)]'
-                }`}
+                className={cn('relative rounded-[24px] border p-5 text-left transition-all', selectedPlan === plan.id ? 'border-[rgba(15,139,131,0.45)] bg-[rgba(15,139,131,0.07)] ring-1 ring-[rgba(15,139,131,0.25)]' : 'border-[color:var(--edu-border)] bg-white hover:border-[color:var(--edu-border-strong)]')}
               >
                 {plan.popular ? (
                   <span className="absolute right-4 top-4 rounded-full bg-[color:var(--edu-primary)] px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
@@ -279,11 +276,7 @@ export const RegisterPage: React.FC = () => {
             <button
               key={role.id}
               type="button"
-              className={`rounded-[24px] border p-5 text-left transition-all ${
-                formData.role === role.id
-                  ? 'border-[rgba(15,139,131,0.35)] bg-[rgba(15,139,131,0.08)]'
-                  : 'border-[color:var(--edu-border)] bg-white'
-              }`}
+              className={cn('rounded-[24px] border p-5 text-left transition-all', formData.role === role.id ? 'border-[rgba(15,139,131,0.35)] bg-[rgba(15,139,131,0.08)]' : 'border-[color:var(--edu-border)] bg-white')}
               onClick={() => setFormData((c) => ({ ...c, role: invitedRole ? 'TEACHER' : role.id }))}
               disabled={invitedRole && role.id === 'STUDENT'}
             >

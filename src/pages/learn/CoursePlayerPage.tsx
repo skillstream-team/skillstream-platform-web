@@ -5,6 +5,7 @@ import { useLearnerHubStore } from '../../store/learnerHub';
 import { useOrgHubStore } from '../../store/orgHub';
 import { useAuthStore } from '../../store/auth';
 import type { CourseLesson, CourseLessonKind, QuizQuestion as QuizQuestionData } from '../../data/orgHub';
+import { cn } from '../../lib/utils';
 
 const KIND_ICONS: Record<CourseLessonKind, React.ElementType> = {
   text: FileText,
@@ -95,11 +96,11 @@ export const CoursePlayerPage: React.FC = () => {
                         key={lesson.id}
                         type="button"
                         onClick={() => setActiveLesson(lesson.id)}
-                        className={`flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left transition ${isActive ? 'bg-[color:var(--hub-primary)] text-white' : 'hover:bg-[color:var(--hub-soft)]'}`}
+                        className={cn('flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left transition', isActive ? 'bg-[color:var(--hub-primary)] text-white' : 'hover:bg-[color:var(--hub-soft)]')}
                       >
                         {isDone
-                          ? <CheckCircle className={`h-4 w-4 shrink-0 ${isActive ? 'text-white' : 'text-emerald-500'}`} />
-                          : <Circle className={`h-4 w-4 shrink-0 ${isActive ? 'text-white/60' : 'text-[color:var(--hub-muted)]'}`} />}
+                          ? <CheckCircle className={cn('h-4 w-4 shrink-0', isActive ? 'text-white' : 'text-emerald-500')} />
+                          : <Circle className={cn('h-4 w-4 shrink-0', isActive ? 'text-white/60' : 'text-[color:var(--hub-muted)]')} />}
                         <LIcon className="h-3.5 w-3.5 shrink-0" />
                         <span className="truncate text-sm">{lesson.title}</span>
                       </button>
@@ -140,7 +141,7 @@ export const CoursePlayerPage: React.FC = () => {
             <div className="mt-5 flex justify-center gap-2">
               {[1, 2, 3, 4, 5].map((star) => (
                 <button key={star} type="button" onClick={() => setRatingStars(star)} className="rounded-full p-1 transition hover:scale-110">
-                  <Star className={`h-8 w-8 transition ${star <= ratingStars ? 'fill-amber-400 text-amber-400' : 'text-[color:var(--hub-border)]'}`} />
+                  <Star className={cn('h-8 w-8 transition', star <= ratingStars ? 'fill-amber-400 text-amber-400' : 'text-[color:var(--hub-border)]')} />
                 </button>
               ))}
             </div>
@@ -227,7 +228,7 @@ const LessonViewer: React.FC<LessonViewerProps> = ({ lesson, moduleTitle, isComp
             />
           ))}
           {quizSubmitted ? (
-            <div className={`rounded-2xl p-4 text-sm font-semibold ${quizPassed ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>
+            <div className={cn('rounded-2xl p-4 text-sm font-semibold', quizPassed ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700')}>
               {quizPassed ? `Quiz passed! Well done.` : `Not quite — you need ${lesson.quizPassScore ?? 80}% to pass. Review the material and try again.`}
             </div>
           ) : (
@@ -280,7 +281,7 @@ const QuizQuestion: React.FC<{
               type="button"
               onClick={() => onSelect(oi)}
               disabled={submitted}
-              className={`w-full rounded-2xl border border-[color:var(--hub-border)] px-4 py-3 text-left text-sm transition ${bg}`}
+              className={cn('w-full rounded-2xl border border-[color:var(--hub-border)] px-4 py-3 text-left text-sm transition', bg)}
             >
               {opt}
             </button>

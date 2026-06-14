@@ -3,8 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { BookOpen, Eye, EyeOff, Plus, Search } from 'lucide-react';
 import { ActionModal } from '../../components/common/ActionModal';
 import { useNotifications } from '../../components/notifications/NotificationToast';
+import { cn, formatHubDateTime } from '../../lib/utils';
 import { useOrgHubStore } from '../../store/orgHub';
-import { formatHubDateTime } from '../../lib/utils';
 import { Course, CourseCategory } from '../../data/orgHub';
 
 export const OrgCoursesPage: React.FC = () => {
@@ -115,7 +115,7 @@ export const OrgCoursesPage: React.FC = () => {
               <div key={course.id} className="rounded-[32px] border border-[color:var(--hub-border)] bg-white p-6 shadow-[0_18px_48px_rgba(15,23,42,0.05)]">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex flex-wrap items-center gap-1.5">
-                    <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${course.isPublished ? 'bg-emerald-100 text-emerald-700' : 'bg-[color:var(--hub-soft)] text-[color:var(--hub-muted)]'}`}>
+                    <span className={cn('rounded-full px-2.5 py-0.5 text-xs font-semibold', course.isPublished ? 'bg-emerald-100 text-emerald-700' : 'bg-[color:var(--hub-soft)] text-[color:var(--hub-muted)]')}>
                       {course.isPublished ? 'Published' : 'Draft'}
                     </span>
                     {course.category ? (
@@ -124,7 +124,7 @@ export const OrgCoursesPage: React.FC = () => {
                       </span>
                     ) : null}
                     {course.difficulty ? (
-                      <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${course.difficulty === 'beginner' ? 'bg-teal-50 text-teal-700' : course.difficulty === 'intermediate' ? 'bg-amber-50 text-amber-700' : 'bg-purple-50 text-purple-700'}`}>
+                      <span className={cn('rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize', course.difficulty === 'beginner' ? 'bg-teal-50 text-teal-700' : course.difficulty === 'intermediate' ? 'bg-amber-50 text-amber-700' : 'bg-purple-50 text-purple-700')}>
                         {course.difficulty}
                       </span>
                     ) : null}

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { CheckCircle, CreditCard, Download, Zap } from 'lucide-react';
 import { useOrgHubStore } from '../../store/orgHub';
+import { cn } from '../../lib/utils';
 
 const PLANS = [
   {
@@ -63,11 +64,11 @@ export const OrgBillingPage: React.FC = () => {
           <div className="flex-1">
             <div className="mb-2 flex items-center justify-between text-sm">
               <span className="text-[color:var(--hub-muted)]">{seatUsage} of {seatLimit} seats used</span>
-              <span className={`font-semibold ${seatPct >= 90 ? 'text-red-600' : seatPct >= 70 ? 'text-amber-600' : 'text-emerald-600'}`}>{seatPct}%</span>
+              <span className={cn('font-semibold', seatPct >= 90 ? 'text-red-600' : seatPct >= 70 ? 'text-amber-600' : 'text-emerald-600')}>{seatPct}%</span>
             </div>
             <div className="h-3 overflow-hidden rounded-full bg-[color:var(--hub-soft)]">
               <div
-                className={`h-full rounded-full transition-all ${seatPct >= 90 ? 'bg-red-500' : seatPct >= 70 ? 'bg-amber-500' : 'bg-emerald-500'}`}
+                className={cn('h-full rounded-full transition-all', seatPct >= 90 ? 'bg-red-500' : seatPct >= 70 ? 'bg-amber-500' : 'bg-emerald-500')}
                 style={{ width: `${seatPct}%` }}
               />
             </div>
@@ -87,7 +88,7 @@ export const OrgBillingPage: React.FC = () => {
             return (
               <div
                 key={plan.key}
-                className={`relative rounded-[28px] border p-6 shadow-[0_8px_24px_rgba(15,23,42,0.04)] transition-all ${isCurrent ? 'border-[color:var(--hub-primary)] bg-[rgba(27,74,128,0.03)]' : 'border-[color:var(--hub-border)] bg-white'}`}
+                className={cn('relative rounded-[28px] border p-6 shadow-[0_8px_24px_rgba(15,23,42,0.04)] transition-all', isCurrent ? 'border-[color:var(--hub-primary)] bg-[rgba(27,74,128,0.03)]' : 'border-[color:var(--hub-border)] bg-white')}
               >
                 {isCurrent ? (
                   <span className="absolute right-4 top-4 rounded-full bg-[color:var(--hub-primary)] px-2.5 py-0.5 text-xs font-semibold text-white">Current plan</span>
@@ -119,7 +120,7 @@ export const OrgBillingPage: React.FC = () => {
                 <button
                   type="button"
                   disabled={isCurrent}
-                  className={`mt-6 w-full rounded-2xl py-2.5 text-sm font-semibold transition-colors ${isCurrent ? 'cursor-default bg-[color:var(--hub-soft)] text-[color:var(--hub-muted)]' : plan.key === 'enterprise' ? 'border border-[color:var(--hub-primary)] text-[color:var(--hub-primary)] hover:bg-[rgba(27,74,128,0.06)]' : 'bg-[color:var(--hub-primary)] text-white hover:opacity-90'}`}
+                  className={cn('mt-6 w-full rounded-2xl py-2.5 text-sm font-semibold transition-colors', isCurrent ? 'cursor-default bg-[color:var(--hub-soft)] text-[color:var(--hub-muted)]' : plan.key === 'enterprise' ? 'border border-[color:var(--hub-primary)] text-[color:var(--hub-primary)] hover:bg-[rgba(27,74,128,0.06)]' : 'bg-[color:var(--hub-primary)] text-white hover:opacity-90')}
                 >
                   {isCurrent ? 'Active' : plan.key === 'enterprise' ? 'Contact sales' : `Upgrade to ${plan.name}`}
                 </button>

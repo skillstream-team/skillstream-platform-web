@@ -3,6 +3,7 @@ import { Link2, Plus } from 'lucide-react';
 import { ClassCard } from '../components/hub/ClassCard';
 import { ActionModal } from '../components/common/ActionModal';
 import { useNotifications } from '../components/notifications/NotificationToast';
+import { cn } from '../lib/utils';
 import { useAuthStore } from '../store/auth';
 import { useTeacherHubStore } from '../store/teacherHub';
 
@@ -127,9 +128,7 @@ export const ClassesPage: React.FC = () => {
                 setName(event.target.value);
                 if (nameError && event.target.value.trim()) setNameError('');
               }}
-              className={`rounded-2xl border px-4 py-3 outline-none ${
-                nameError ? 'border-[color:var(--edu-danger)] bg-[rgba(200,95,73,0.06)]' : 'border-[color:var(--hub-border)]'
-              }`}
+              className={cn('rounded-2xl border px-4 py-3 outline-none', nameError ? 'border-[color:var(--edu-danger)] bg-[rgba(200,95,73,0.06)]' : 'border-[color:var(--hub-border)]')}
             />
             {nameError ? <span className="text-xs text-[color:var(--edu-danger)]">{nameError}</span> : null}
           </label>
@@ -144,9 +143,7 @@ export const ClassesPage: React.FC = () => {
                 if (overviewError && event.target.value.trim()) setOverviewError('');
               }}
               rows={4}
-              className={`rounded-2xl border px-4 py-3 outline-none ${
-                overviewError ? 'border-[color:var(--edu-danger)] bg-[rgba(200,95,73,0.06)]' : 'border-[color:var(--hub-border)]'
-              }`}
+              className={cn('rounded-2xl border px-4 py-3 outline-none', overviewError ? 'border-[color:var(--edu-danger)] bg-[rgba(200,95,73,0.06)]' : 'border-[color:var(--hub-border)]')}
             />
             {overviewError ? <span className="text-xs text-[color:var(--edu-danger)]">{overviewError}</span> : null}
           </label>

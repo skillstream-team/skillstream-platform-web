@@ -17,7 +17,7 @@ import { useNotifications } from '../components/notifications/NotificationToast'
 import { BreakoutRoom, ChatMessage, Poll, PollResults, RaisedHand, SidePanelId } from '../lib/liveFeatures';
 import { LiveSessionMode, SWParticipant, SWSessionConfig } from '../lib/signalwireLive';
 import { hasSupabaseConfig, supabase } from '../lib/supabase';
-import { formatDateTime, getInitials } from '../lib/utils';
+import { cn, formatDateTime, getInitials } from '../lib/utils';
 import { useAuthStore } from '../store/auth';
 import { useTeacherHubStore } from '../store/teacherHub';
 import { useCurrencyFormatter } from '../lib/currency';
@@ -762,7 +762,7 @@ export const LiveSessionPage: React.FC = () => {
 
   // ─── Render ───────────────────────────────────────────────────────────────
   return (
-    <div className={`flex flex-col bg-gray-950 ${isJoined ? 'h-screen overflow-hidden' : 'min-h-screen'}`}>
+    <div className={cn('flex flex-col bg-gray-950', isJoined ? 'h-screen overflow-hidden' : 'min-h-screen')}>
 
       {/* ── Top bar ──────────────────────────────────────────────────────── */}
       <header className="flex h-14 shrink-0 items-center gap-2 border-b border-white/10 px-4">
@@ -807,7 +807,7 @@ export const LiveSessionPage: React.FC = () => {
                     type="button"
                     onClick={() => void toggleLayout()}
                     title={sessionLayout === 'spotlight' ? 'Switch to grid view' : 'Spotlight view'}
-                    className={`flex h-8 w-8 items-center justify-center rounded-full transition ${sessionLayout === 'spotlight' ? 'bg-blue-500/30 text-blue-300' : 'text-white/40 hover:bg-white/10 hover:text-white'}`}
+                    className={cn('flex h-8 w-8 items-center justify-center rounded-full transition', sessionLayout === 'spotlight' ? 'bg-blue-500/30 text-blue-300' : 'text-white/40 hover:bg-white/10 hover:text-white')}
                   >
                     {sessionLayout === 'spotlight' ? <LayoutGrid className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
                   </button>
@@ -815,7 +815,7 @@ export const LiveSessionPage: React.FC = () => {
                     type="button"
                     onClick={() => void toggleRoomLock()}
                     title={isRoomLocked ? 'Unlock room' : 'Lock room — prevent new joiners'}
-                    className={`flex h-8 w-8 items-center justify-center rounded-full transition ${isRoomLocked ? 'bg-amber-500/30 text-amber-300' : 'text-white/40 hover:bg-white/10 hover:text-white'}`}
+                    className={cn('flex h-8 w-8 items-center justify-center rounded-full transition', isRoomLocked ? 'bg-amber-500/30 text-amber-300' : 'text-white/40 hover:bg-white/10 hover:text-white')}
                   >
                     {isRoomLocked ? <Lock className="h-4 w-4" /> : <Unlock className="h-4 w-4" />}
                   </button>
@@ -828,7 +828,7 @@ export const LiveSessionPage: React.FC = () => {
                 type="button"
                 onClick={() => openPanel('participants')}
                 title="Participants"
-                className={`flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-xs font-semibold transition ${sidePanel === 'participants' ? 'bg-white/15 text-white' : 'text-white/50 hover:bg-white/10 hover:text-white'}`}
+                className={cn('flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-xs font-semibold transition', sidePanel === 'participants' ? 'bg-white/15 text-white' : 'text-white/50 hover:bg-white/10 hover:text-white')}
               >
                 <Users className="h-3.5 w-3.5" />
                 {participants.length}
@@ -843,7 +843,7 @@ export const LiveSessionPage: React.FC = () => {
                 type="button"
                 onClick={() => openPanel('chat')}
                 title="Chat"
-                className={`relative flex h-8 w-8 items-center justify-center rounded-full transition ${sidePanel === 'chat' ? 'bg-white/15 text-white' : 'text-white/50 hover:bg-white/10 hover:text-white'}`}
+                className={cn('relative flex h-8 w-8 items-center justify-center rounded-full transition', sidePanel === 'chat' ? 'bg-white/15 text-white' : 'text-white/50 hover:bg-white/10 hover:text-white')}
               >
                 <MessageSquare className="h-4 w-4" />
                 {unreadChat > 0 && (
@@ -857,7 +857,7 @@ export const LiveSessionPage: React.FC = () => {
                 type="button"
                 onClick={() => openPanel('polls')}
                 title="Polls"
-                className={`relative flex h-8 w-8 items-center justify-center rounded-full transition ${sidePanel === 'polls' ? 'bg-white/15 text-white' : 'text-white/50 hover:bg-white/10 hover:text-white'}`}
+                className={cn('relative flex h-8 w-8 items-center justify-center rounded-full transition', sidePanel === 'polls' ? 'bg-white/15 text-white' : 'text-white/50 hover:bg-white/10 hover:text-white')}
               >
                 <BarChart2 className="h-4 w-4" />
                 {activePoll && pollResults === null && (
@@ -870,7 +870,7 @@ export const LiveSessionPage: React.FC = () => {
                   type="button"
                   onClick={() => openPanel('breakout')}
                   title="Breakout rooms"
-                  className={`relative flex h-8 w-8 items-center justify-center rounded-full transition ${sidePanel === 'breakout' ? 'bg-white/15 text-white' : 'text-white/50 hover:bg-white/10 hover:text-white'}`}
+                  className={cn('relative flex h-8 w-8 items-center justify-center rounded-full transition', sidePanel === 'breakout' ? 'bg-white/15 text-white' : 'text-white/50 hover:bg-white/10 hover:text-white')}
                 >
                   <DoorOpen className="h-4 w-4" />
                   {breakoutRooms && (
@@ -913,7 +913,7 @@ export const LiveSessionPage: React.FC = () => {
                 type="button"
                 onClick={() => void toggleHandRaise()}
                 title={myHandRaised ? 'Lower your hand' : 'Raise your hand'}
-                className={`flex h-12 w-12 items-center justify-center rounded-full transition active:scale-95 ${myHandRaised ? 'bg-amber-500 text-white' : 'bg-white/10 text-white hover:bg-white/20'}`}
+                className={cn('flex h-12 w-12 items-center justify-center rounded-full transition active:scale-95', myHandRaised ? 'bg-amber-500 text-white' : 'bg-white/10 text-white hover:bg-white/20')}
               >
                 <Hand className="h-5 w-5" />
               </button>
@@ -937,7 +937,7 @@ export const LiveSessionPage: React.FC = () => {
                   onClick={() => void toggleRecording()}
                   disabled={isUploading}
                   title={isRecording ? 'Stop recording' : 'Record session'}
-                  className={`flex h-12 w-12 items-center justify-center rounded-full transition active:scale-95 disabled:opacity-50 ${isRecording ? 'bg-rose-500/30 text-rose-400 ring-1 ring-rose-500/50' : 'bg-white/10 text-white hover:bg-white/20'}`}
+                  className={cn('flex h-12 w-12 items-center justify-center rounded-full transition active:scale-95 disabled:opacity-50', isRecording ? 'bg-rose-500/30 text-rose-400 ring-1 ring-rose-500/50' : 'bg-white/10 text-white hover:bg-white/20')}
                 >
                   <Radio className="h-5 w-5" />
                 </button>
@@ -969,10 +969,10 @@ export const LiveSessionPage: React.FC = () => {
                 </div>
               </div>
               <div className="absolute bottom-3 left-3 flex gap-2">
-                <span className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${isMicOn ? 'bg-black/50 text-white/70' : 'bg-rose-500/80 text-white'}`}>
+                <span className={cn('flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold', isMicOn ? 'bg-black/50 text-white/70' : 'bg-rose-500/80 text-white')}>
                   {isMicOn ? <Mic className="h-3 w-3" /> : <MicOff className="h-3 w-3" />} Mic
                 </span>
-                <span className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${isCameraOn ? 'bg-black/50 text-white/70' : 'bg-rose-500/80 text-white'}`}>
+                <span className={cn('flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold', isCameraOn ? 'bg-black/50 text-white/70' : 'bg-rose-500/80 text-white')}>
                   {isCameraOn ? <Video className="h-3 w-3" /> : <VideoOff className="h-3 w-3" />} Camera
                 </span>
               </div>
@@ -982,14 +982,14 @@ export const LiveSessionPage: React.FC = () => {
             <div className="flex items-center justify-center gap-6">
               <div className="text-center">
                 <button type="button" onClick={() => setIsMicOn((v) => !v)}
-                  className={`flex h-12 w-12 items-center justify-center rounded-full transition active:scale-95 ${isMicOn ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-rose-500 text-white hover:bg-rose-600'}`}>
+                  className={cn('flex h-12 w-12 items-center justify-center rounded-full transition active:scale-95', isMicOn ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-rose-500 text-white hover:bg-rose-600')}>
                   {isMicOn ? <Mic className="h-5 w-5" /> : <MicOff className="h-5 w-5" />}
                 </button>
                 <p className="mt-1.5 text-[11px] text-white/35">{isMicOn ? 'Mic on' : 'Mic off'}</p>
               </div>
               <div className="text-center">
                 <button type="button" onClick={() => setIsCameraOn((v) => !v)}
-                  className={`flex h-12 w-12 items-center justify-center rounded-full transition active:scale-95 ${isCameraOn ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-rose-500 text-white hover:bg-rose-600'}`}>
+                  className={cn('flex h-12 w-12 items-center justify-center rounded-full transition active:scale-95', isCameraOn ? 'bg-white/10 text-white hover:bg-white/20' : 'bg-rose-500 text-white hover:bg-rose-600')}>
                   {isCameraOn ? <Video className="h-5 w-5" /> : <VideoOff className="h-5 w-5" />}
                 </button>
                 <p className="mt-1.5 text-[11px] text-white/35">{isCameraOn ? 'Camera on' : 'Camera off'}</p>

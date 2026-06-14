@@ -45,7 +45,15 @@ const defaultPreferences: WorkspacePreferences = {
   studentTheme: 'navy',
 };
 
-const toPreferences = (row: any): WorkspacePreferences => ({
+type PreferencesRow = {
+  message_alerts: boolean | null;
+  homework_alerts: boolean | null;
+  weekly_reminder: boolean | null;
+  private_workspace: boolean | null;
+  student_theme: string | null;
+};
+
+const toPreferences = (row: PreferencesRow): WorkspacePreferences => ({
   messageAlerts: Boolean(row?.message_alerts),
   homeworkAlerts: Boolean(row?.homework_alerts),
   weeklyReminder: Boolean(row?.weekly_reminder),

@@ -4,7 +4,7 @@ import { Award, Bell, BookOpen, BookOpenCheck, ChevronDown, ClipboardList, Credi
 import { useAuthStore } from '../../store/auth';
 import { useThemeStore } from '../../store/theme';
 import { useOrgHubStore } from '../../store/orgHub';
-import { getInitials } from '../../lib/utils';
+import { cn, getInitials } from '../../lib/utils';
 import { SkillStreamLogo } from '../branding/SkillStreamLogo';
 
 interface OrgLayoutProps {
@@ -91,7 +91,7 @@ export const OrgLayout: React.FC<OrgLayoutProps> = ({ children }) => {
                       key={m.orgId}
                       type="button"
                       onClick={() => { setActiveOrgId(m.orgId); setShowOrgSwitcher(false); }}
-                      className={`w-full rounded-xl px-3 py-2 text-left text-sm font-semibold ${m.orgId === user?.activeOrgId ? 'bg-[color:var(--hub-primary)] text-white' : 'text-[color:var(--hub-text)] hover:bg-[color:var(--hub-soft)]'}`}
+                      className={cn('w-full rounded-xl px-3 py-2 text-left text-sm font-semibold', m.orgId === user?.activeOrgId ? 'bg-[color:var(--hub-primary)] text-white' : 'text-[color:var(--hub-text)] hover:bg-[color:var(--hub-soft)]')}
                     >
                       {m.orgName}
                     </button>
@@ -184,7 +184,7 @@ export const OrgLayout: React.FC<OrgLayoutProps> = ({ children }) => {
               <div className="absolute inset-0 bg-black/40" onClick={() => setShowMobileMenu(false)} />
               <div className="absolute left-0 top-0 h-full w-[280px] p-4">
                 <div className="mb-3 flex justify-end">
-                  <button type="button" onClick={() => setShowMobileMenu(false)} className="rounded-xl p-2 text-[color:var(--hub-muted)] hover:bg-[color:var(--hub-soft)]">
+                  <button type="button" aria-label="Close menu" onClick={() => setShowMobileMenu(false)} className="rounded-xl p-2 text-[color:var(--hub-muted)] hover:bg-[color:var(--hub-soft)]">
                     <X className="h-5 w-5" />
                   </button>
                 </div>

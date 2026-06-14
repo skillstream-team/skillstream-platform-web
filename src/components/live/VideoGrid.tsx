@@ -1,7 +1,7 @@
 import React from 'react';
 import { Mic, MicOff, Pin, Video, VideoOff } from 'lucide-react';
 import { SWParticipant } from '../../lib/signalwireLive';
-import { getInitials } from '../../lib/utils';
+import { cn, getInitials } from '../../lib/utils';
 
 interface TileProps {
   participant: SWParticipant;
@@ -16,7 +16,7 @@ interface TileProps {
 const Tile: React.FC<TileProps> = ({
   participant, isTeacher, pinned, compact, onPin, onMute, onRemove,
 }) => (
-  <div className={`group relative overflow-hidden rounded-xl bg-gray-900${compact ? ' h-[116px] flex-shrink-0' : ''}`}>
+  <div className={cn('group relative overflow-hidden rounded-xl bg-gray-900', compact && 'h-[116px] flex-shrink-0')}>
     {/* Avatar tile (demo mode always shows avatars) */}
     <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-slate-700 to-slate-800">
       <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[color:var(--hub-primary)] text-xs font-bold text-white">
@@ -45,11 +45,7 @@ const Tile: React.FC<TileProps> = ({
         type="button"
         aria-label={pinned ? 'Unpin' : 'Pin to spotlight'}
         onClick={() => onPin(pinned ? null : participant.id)}
-        className={`absolute right-2 top-2 z-[2] rounded-full p-1 transition-opacity${
-          pinned
-            ? ' bg-[color:var(--hub-primary)] opacity-100'
-            : ' bg-black/50 opacity-0 group-hover:opacity-100'
-        }`}
+        className={cn('absolute right-2 top-2 z-[2] rounded-full p-1 transition-opacity', pinned ? 'bg-[color:var(--hub-primary)] opacity-100' : 'bg-black/50 opacity-0 group-hover:opacity-100')}
       >
         <Pin className="h-3 w-3 text-white" />
       </button>
@@ -100,7 +96,7 @@ export const VideoGrid: React.FC<VideoGridProps> = ({
 }) => {
   if (participants.length === 0) {
     return (
-      <div className={`flex items-center justify-center rounded-xl bg-gray-900 ${className}`}>
+      <div className={cn('flex items-center justify-center rounded-xl bg-gray-900', className)}>
         <p className="text-xs text-white/30">Waiting for participants…</p>
       </div>
     );
@@ -108,7 +104,7 @@ export const VideoGrid: React.FC<VideoGridProps> = ({
 
   if (stripMode) {
     return (
-      <div className={`flex flex-col gap-2 overflow-y-auto ${className}`}>
+      <div className={cn('flex flex-col gap-2 overflow-y-auto', className)}>
         {participants.map((p) => (
           <Tile
             key={p.id}
@@ -129,7 +125,7 @@ export const VideoGrid: React.FC<VideoGridProps> = ({
     const pinned = participants.find((p) => p.id === pinnedId);
     const rest = participants.filter((p) => p.id !== pinnedId);
     return (
-      <div className={`grid h-full gap-2 ${className}`} style={{ gridTemplateColumns: '1fr 156px' }}>
+      <div className={cn('grid h-full gap-2', className)} style={{ gridTemplateColumns: '1fr 156px' }}>
         {pinned ? (
           <Tile
             participant={pinned}
@@ -168,7 +164,7 @@ export const VideoGrid: React.FC<VideoGridProps> = ({
     'grid-cols-4';
 
   return (
-    <div className={`grid auto-rows-fr gap-2 ${cols} h-full ${className}`}>
+    <div className={cn('grid auto-rows-fr gap-2 h-full', cols, className)}>
       {participants.map((p) => (
         <Tile
           key={p.id}

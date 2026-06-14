@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { BookOpen, ChevronRight, Clock, Plus, Route, Trash2, Users, X } from 'lucide-react';
 import { ActionModal } from '../../components/common/ActionModal';
 import { useNotifications } from '../../components/notifications/NotificationToast';
+import { cn } from '../../lib/utils';
 import { useOrgHubStore } from '../../store/orgHub';
 import { LearningPath } from '../../data/orgHub';
 
@@ -70,7 +71,7 @@ export const OrgPathsPage: React.FC = () => {
         <div className="rounded-[32px] border border-[color:var(--hub-border)] bg-white p-6 shadow-[0_18px_48px_rgba(15,23,42,0.05)]">
           <div className="mb-4 flex items-center justify-between">
             <p className="text-sm font-semibold text-[color:var(--hub-text)]">New learning path</p>
-            <button type="button" onClick={() => setShowCreate(false)} className="rounded-full p-1.5 text-[color:var(--hub-muted)] hover:bg-[color:var(--hub-soft)]"><X className="h-4 w-4" /></button>
+            <button type="button" onClick={() => setShowCreate(false)} aria-label="Close" className="rounded-full p-1.5 text-[color:var(--hub-muted)] hover:bg-[color:var(--hub-soft)]"><X className="h-4 w-4" /></button>
           </div>
           <form onSubmit={handleCreate} className="grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
             <input value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder="Path title" required className="rounded-2xl border border-[color:var(--hub-border)] bg-[color:var(--hub-soft)] px-4 py-3 text-sm outline-none" />
@@ -94,10 +95,10 @@ export const OrgPathsPage: React.FC = () => {
             return (
               <div key={path.id} className="rounded-[32px] border border-[color:var(--hub-border)] bg-white p-6 shadow-[0_18px_48px_rgba(15,23,42,0.05)]">
                 <div className="flex items-start justify-between gap-3">
-                  <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${path.isPublished ? 'bg-emerald-100 text-emerald-700' : 'bg-[color:var(--hub-soft)] text-[color:var(--hub-muted)]'}`}>
+                  <span className={cn('rounded-full px-2.5 py-0.5 text-xs font-semibold', path.isPublished ? 'bg-emerald-100 text-emerald-700' : 'bg-[color:var(--hub-soft)] text-[color:var(--hub-muted)]')}>
                     {path.isPublished ? 'Published' : 'Draft'}
                   </span>
-                  <button type="button" onClick={() => handleDelete(path)} className="shrink-0 rounded-full p-1.5 text-[color:var(--hub-muted)] hover:bg-red-50 hover:text-red-600">
+                  <button type="button" aria-label={`Delete path ${path.title}`} onClick={() => handleDelete(path)} className="shrink-0 rounded-full p-1.5 text-[color:var(--hub-muted)] hover:bg-red-50 hover:text-red-600">
                     <Trash2 className="h-4 w-4" />
                   </button>
                 </div>

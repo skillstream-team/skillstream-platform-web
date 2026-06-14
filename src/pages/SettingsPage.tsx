@@ -3,7 +3,7 @@ import { BellRing, Camera, Eye, EyeOff, KeyRound, Mail, Palette, ShieldCheck, Ta
 import { useAuthStore } from '../store/auth';
 import { WorkspacePreferences, usePreferencesStore } from '../store/preferences';
 import { useNotifications } from '../components/notifications/NotificationToast';
-import { getInitials } from '../lib/utils';
+import { cn, getInitials } from '../lib/utils';
 import { STUDENT_THEMES } from '../data/studentThemes';
 
 const ToggleRow: React.FC<{
@@ -22,9 +22,9 @@ const ToggleRow: React.FC<{
       onClick={() => onChange(!checked)}
       aria-pressed={checked}
       aria-label={title}
-      className={`relative h-7 w-12 shrink-0 rounded-full transition ${checked ? 'bg-[color:var(--hub-primary)]' : 'bg-[rgba(100,116,139,0.35)]'}`}
+      className={cn('relative h-7 w-12 shrink-0 rounded-full transition', checked ? 'bg-[color:var(--hub-primary)]' : 'bg-[rgba(100,116,139,0.35)]')}
     >
-      <span className={`absolute top-1 h-5 w-5 rounded-full bg-white transition-all ${checked ? 'left-6' : 'left-1'}`} />
+      <span className={cn('absolute top-1 h-5 w-5 rounded-full bg-white transition-all', checked ? 'left-6' : 'left-1')} />
     </button>
   </div>
 );

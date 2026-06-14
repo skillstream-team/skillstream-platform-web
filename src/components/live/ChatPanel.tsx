@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Send } from 'lucide-react';
 import { ChatMessage } from '../../lib/liveFeatures';
+import { cn } from '../../lib/utils';
 
 interface ChatPanelProps {
   messages: ChatMessage[];
@@ -28,14 +29,10 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ messages, onSend }) => {
           <p className="mt-8 text-center text-sm text-white/30">No messages yet. Say hello!</p>
         ) : (
           messages.map((msg) => (
-            <div key={msg.id} className={`flex flex-col gap-0.5 ${msg.isLocal ? 'items-end' : 'items-start'}`}>
+            <div key={msg.id} className={cn('flex flex-col gap-0.5', msg.isLocal ? 'items-end' : 'items-start')}>
               <span className="text-[11px] text-white/30">{msg.isLocal ? 'You' : msg.name}</span>
               <div
-                className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm leading-relaxed ${
-                  msg.isLocal
-                    ? 'bg-[color:var(--hub-primary)] text-white'
-                    : 'bg-white/10 text-white'
-                }`}
+                className={cn('max-w-[85%] rounded-2xl px-3 py-2 text-sm leading-relaxed', msg.isLocal ? 'bg-[color:var(--hub-primary)] text-white' : 'bg-white/10 text-white')}
               >
                 {msg.text}
               </div>

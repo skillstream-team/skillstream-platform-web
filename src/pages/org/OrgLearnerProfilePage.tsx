@@ -2,7 +2,7 @@ import React, { useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Award, BookOpen, CheckCircle, Clock, ShieldCheck } from 'lucide-react';
 import { useOrgHubStore } from '../../store/orgHub';
-import { formatHubDateTime } from '../../lib/utils';
+import { cn, formatHubDateTime } from '../../lib/utils';
 
 export const OrgLearnerProfilePage: React.FC = () => {
   const { orgId = '', userId = '' } = useParams();
@@ -78,7 +78,7 @@ export const OrgLearnerProfilePage: React.FC = () => {
           { label: 'Compliance rate', value: complianceRate !== null ? `${complianceRate}%` : '—', icon: ShieldCheck, color: overdue.length > 0 ? 'text-red-600 bg-red-50' : 'text-emerald-600 bg-emerald-50' },
         ].map(({ label, value, icon: Icon, color }) => (
           <div key={label} className="rounded-[28px] border border-[color:var(--hub-border)] bg-white p-5 shadow-[0_8px_24px_rgba(15,23,42,0.04)]">
-            <div className={`inline-flex h-10 w-10 items-center justify-center rounded-2xl ${color}`}><Icon className="h-5 w-5" /></div>
+            <div className={cn('inline-flex h-10 w-10 items-center justify-center rounded-2xl', color)}><Icon className="h-5 w-5" /></div>
             <p className="mt-3 text-2xl font-semibold text-[color:var(--hub-text)]">{value}</p>
             <p className="mt-0.5 text-xs font-semibold text-[color:var(--hub-muted)]">{label}</p>
           </div>
@@ -112,7 +112,7 @@ export const OrgLearnerProfilePage: React.FC = () => {
                     {course?.category ? <p className="mt-0.5 text-xs capitalize text-[color:var(--hub-muted)]">{course.category.replace('-', ' ')}</p> : null}
                     <div className="mt-2 flex items-center gap-3">
                       <div className="h-1.5 flex-1 rounded-full bg-[color:var(--hub-soft)]">
-                        <div className={`h-full rounded-full transition-all ${enroll.completedAt ? 'bg-emerald-500' : isOverdue ? 'bg-red-400' : 'bg-[color:var(--hub-primary)]'}`} style={{ width: `${enroll.completionPercent}%` }} />
+                        <div className={cn('h-full rounded-full transition-all', enroll.completedAt ? 'bg-emerald-500' : isOverdue ? 'bg-red-400' : 'bg-[color:var(--hub-primary)]')} style={{ width: `${enroll.completionPercent}%` }} />
                       </div>
                       <span className="text-xs font-semibold text-[color:var(--hub-muted)]">{enroll.completionPercent}%</span>
                     </div>
@@ -121,7 +121,7 @@ export const OrgLearnerProfilePage: React.FC = () => {
                     {enroll.completedAt ? (
                       <div className="flex items-center gap-1 text-xs font-semibold text-emerald-600"><Award className="h-3.5 w-3.5" /> Completed</div>
                     ) : enroll.deadlineAt ? (
-                      <p className={`text-xs font-semibold ${isOverdue ? 'text-red-600' : 'text-[color:var(--hub-muted)]'}`}>Due {formatHubDateTime(enroll.deadlineAt)}</p>
+                      <p className={cn('text-xs font-semibold', isOverdue ? 'text-red-600' : 'text-[color:var(--hub-muted)]')}>Due {formatHubDateTime(enroll.deadlineAt)}</p>
                     ) : (
                       <p className="text-xs text-[color:var(--hub-muted)]">In progress</p>
                     )}
@@ -170,7 +170,7 @@ export const OrgLearnerProfilePage: React.FC = () => {
           <div className="space-y-3">
             {activityTimeline.map((event, i) => (
               <div key={i} className="flex items-start gap-3">
-                <div className={`mt-1 h-2 w-2 shrink-0 rounded-full ${event.type === 'completed' ? 'bg-emerald-500' : 'bg-[color:var(--hub-primary)]'}`} />
+                <div className={cn('mt-1 h-2 w-2 shrink-0 rounded-full', event.type === 'completed' ? 'bg-emerald-500' : 'bg-[color:var(--hub-primary)]')} />
                 <div>
                   <p className="text-sm text-[color:var(--hub-text)]">{event.label}</p>
                   <p className="text-xs text-[color:var(--hub-muted)]">{formatHubDateTime(event.date)}</p>

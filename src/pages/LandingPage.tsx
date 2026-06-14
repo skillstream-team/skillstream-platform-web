@@ -70,27 +70,33 @@ const PLANS = [
   {
     id: 'creator',
     name: 'Creator',
-    price: 39,
-    minutes: 10_000,
-    fee: 8,
-    description: 'Great for independent tutors starting out.',
+    price: 29,
+    minutes: 5_000,
+    fee: 10,
+    maxStudents: 15,
+    maxLiveParticipants: 5,
+    description: 'Solo tutors, music teachers & local coaches.',
   },
   {
     id: 'studio',
     name: 'Studio',
-    price: 89,
+    price: 99,
     minutes: 40_000,
     fee: 6,
-    description: 'For educators running multiple classes.',
+    maxStudents: 100,
+    maxLiveParticipants: 50,
+    description: 'Growing academies and full-time independent educators.',
     popular: true,
   },
   {
     id: 'academy',
     name: 'Academy',
-    price: 199,
+    price: 249,
     minutes: 150_000,
     fee: 5,
-    description: 'Full power for established teaching businesses.',
+    maxStudents: null,
+    maxLiveParticipants: 200,
+    description: 'Training organisations, corporate L&D & multi-teacher operations.',
   },
 ];
 
@@ -494,9 +500,10 @@ export const LandingPage: React.FC = () => {
 
                 <ul className="space-y-3">
                   {[
+                    plan.maxStudents !== null ? `Up to ${plan.maxStudents} active students` : 'Unlimited students',
+                    `Up to ${plan.maxLiveParticipants} per live session`,
                     `${formatNum(plan.minutes)} live participant-minutes`,
                     `${plan.fee}% fee on paid sessions`,
-                    'Unlimited classes & students',
                     'Live video sessions',
                     'Assignments & scheduling',
                     'Payments & billing',

@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { AlertTriangle, Award, BookOpen, CheckCircle, Route, ShieldCheck, Star, TrendingUp, Trophy, Users } from 'lucide-react';
 import { useAuthStore } from '../../store/auth';
 import { useOrgHubStore } from '../../store/orgHub';
-import { formatHubDateTime } from '../../lib/utils';
+import { cn, formatHubDateTime } from '../../lib/utils';
 import { OrgOnboardingWizard, shouldShowOnboarding } from '../../components/org/OrgOnboardingWizard';
 
 export const OrgDashboardPage: React.FC = () => {
@@ -109,7 +109,7 @@ export const OrgDashboardPage: React.FC = () => {
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {metrics.map(({ label, value, sub, icon: Icon, color }) => (
           <div key={label} className="rounded-[28px] border border-[color:var(--hub-border)] bg-white p-6 shadow-[0_8px_24px_rgba(15,23,42,0.04)]">
-            <div className={`inline-flex h-10 w-10 items-center justify-center rounded-2xl ${color}`}><Icon className="h-5 w-5" /></div>
+            <div className={cn('inline-flex h-10 w-10 items-center justify-center rounded-2xl', color)}><Icon className="h-5 w-5" /></div>
             <p className="mt-4 text-2xl font-semibold text-[color:var(--hub-text)]">{value}</p>
             <p className="mt-0.5 text-sm font-semibold text-[color:var(--hub-muted)]">{label}</p>
             <p className="mt-0.5 text-xs text-[color:var(--hub-muted)]">{sub}</p>
@@ -132,7 +132,7 @@ export const OrgDashboardPage: React.FC = () => {
                     <span className="ml-2 shrink-0 font-semibold text-[color:var(--hub-muted)]">{s.done}/{s.total}</span>
                   </div>
                   <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-[color:var(--hub-soft)]">
-                    <div className={`h-full rounded-full transition-all ${s.rate === 100 ? 'bg-emerald-500' : 'bg-[color:var(--hub-primary)]'}`} style={{ width: `${s.rate}%` }} />
+                    <div className={cn('h-full rounded-full transition-all', s.rate === 100 ? 'bg-emerald-500' : 'bg-[color:var(--hub-primary)]')} style={{ width: `${s.rate}%` }} />
                   </div>
                 </div>
               ))}
@@ -198,7 +198,7 @@ export const OrgDashboardPage: React.FC = () => {
           <div className="space-y-2">
             {leaderboard.map((entry, i) => (
               <div key={entry.userId} className="flex items-center gap-4 rounded-[20px] bg-[color:var(--hub-soft)] px-4 py-3">
-                <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ${i === 0 ? 'bg-amber-400 text-white' : i === 1 ? 'bg-slate-300 text-white' : i === 2 ? 'bg-orange-400 text-white' : 'bg-[color:var(--hub-border)] text-[color:var(--hub-muted)]'}`}>
+                <div className={cn('flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold', i === 0 ? 'bg-amber-400 text-white' : i === 1 ? 'bg-slate-300 text-white' : i === 2 ? 'bg-orange-400 text-white' : 'bg-[color:var(--hub-border)] text-[color:var(--hub-muted)]')}>
                   {i + 1}
                 </div>
                 <div className="min-w-0 flex-1">

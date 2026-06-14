@@ -95,6 +95,7 @@ esbuild.build({
     'process.env.REACT_APP_ENABLE_DEMO_ACCOUNTS': JSON.stringify(process.env.REACT_APP_ENABLE_DEMO_ACCOUNTS || 'true'),
     'process.env.REACT_APP_SUPABASE_URL': JSON.stringify(process.env.REACT_APP_SUPABASE_URL || ''),
     'process.env.REACT_APP_SUPABASE_ANON_KEY': JSON.stringify(process.env.REACT_APP_SUPABASE_ANON_KEY || ''),
+    'process.env.REACT_APP_SENTRY_DSN': JSON.stringify(process.env.REACT_APP_SENTRY_DSN || ''),
   },
   external: ['markmap-common', 'html2canvas', 'dompurify', 'canvg'],
   minify: true,

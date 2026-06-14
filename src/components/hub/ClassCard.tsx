@@ -2,6 +2,7 @@ import React from 'react';
 import { ArrowRight, Calendar, Link2, Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { TeacherClass } from '../../data/teacherHub';
+import { cn } from '../../lib/utils';
 
 const formatSessionTime = (dateString: string) =>
   new Intl.DateTimeFormat('en-GB', {
@@ -18,7 +19,7 @@ export const ClassCard: React.FC<{ teacherClass: TeacherClass }> = ({ teacherCla
       to={`/class/${teacherClass.id}`}
       className="group rounded-[28px] border border-[color:var(--hub-border)] bg-white p-5 shadow-[0_16px_40px_rgba(15,23,42,0.05)] transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_22px_48px_rgba(15,23,42,0.08)]"
     >
-      <div className={`rounded-[22px] bg-gradient-to-br ${teacherClass.accent} p-4`}>
+      <div className={cn('rounded-[22px] bg-gradient-to-br p-4', teacherClass.accent)}>
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--hub-muted)]">Class</p>

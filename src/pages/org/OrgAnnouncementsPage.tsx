@@ -3,8 +3,8 @@ import { useParams } from 'react-router-dom';
 import { Bell, Plus, Trash2, X } from 'lucide-react';
 import { ActionModal } from '../../components/common/ActionModal';
 import { useNotifications } from '../../components/notifications/NotificationToast';
+import { cn, formatHubDateTime } from '../../lib/utils';
 import { useOrgHubStore } from '../../store/orgHub';
-import { formatHubDateTime } from '../../lib/utils';
 
 export const OrgAnnouncementsPage: React.FC = () => {
   const { orgId = '' } = useParams();
@@ -73,7 +73,7 @@ export const OrgAnnouncementsPage: React.FC = () => {
         <div className="rounded-[32px] border border-[color:var(--hub-border)] bg-white p-6 shadow-[0_18px_48px_rgba(15,23,42,0.05)]">
           <div className="mb-4 flex items-center justify-between">
             <p className="text-sm font-semibold text-[color:var(--hub-text)]">New announcement</p>
-            <button type="button" onClick={() => setShowCreate(false)} className="rounded-full p-1.5 text-[color:var(--hub-muted)] hover:bg-[color:var(--hub-soft)]"><X className="h-4 w-4" /></button>
+            <button type="button" onClick={() => setShowCreate(false)} aria-label="Close" className="rounded-full p-1.5 text-[color:var(--hub-muted)] hover:bg-[color:var(--hub-soft)]"><X className="h-4 w-4" /></button>
           </div>
           <form onSubmit={handleCreate} className="grid gap-3">
             <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title" required className="rounded-2xl border border-[color:var(--hub-border)] bg-[color:var(--hub-soft)] px-4 py-3 text-sm outline-none" />
@@ -100,12 +100,12 @@ export const OrgAnnouncementsPage: React.FC = () => {
       ) : (
         <div className="space-y-3">
           {announcements.map((ann) => (
-            <div key={ann.id} className={`rounded-[28px] border bg-white p-5 shadow-[0_8px_24px_rgba(15,23,42,0.04)] ${ann.isActive ? 'border-[color:var(--hub-border)]' : 'border-[color:var(--hub-border)] opacity-60'}`}>
+            <div key={ann.id} className={cn('rounded-[28px] border bg-white p-5 shadow-[0_8px_24px_rgba(15,23,42,0.04)] border-[color:var(--hub-border)]', !ann.isActive && 'opacity-60')}>
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                     <p className="text-sm font-semibold text-[color:var(--hub-text)]">{ann.title}</p>
-                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${ann.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-[color:var(--hub-soft)] text-[color:var(--hub-muted)]'}`}>
+                    <span className={cn('rounded-full px-2 py-0.5 text-[10px] font-semibold', ann.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-[color:var(--hub-soft)] text-[color:var(--hub-muted)]')}>
                       {ann.isActive ? 'Active' : 'Hidden'}
                     </span>
                   </div>
@@ -119,7 +119,7 @@ export const OrgAnnouncementsPage: React.FC = () => {
                   <button type="button" onClick={() => handleToggleActive(ann.id, ann.isActive)} className="rounded-full border border-[color:var(--hub-border)] px-3 py-1.5 text-xs font-semibold text-[color:var(--hub-text)] hover:bg-[color:var(--hub-soft)]">
                     {ann.isActive ? 'Hide' : 'Show'}
                   </button>
-                  <button type="button" onClick={() => handleDelete(ann.id)} className="rounded-full p-1.5 text-[color:var(--hub-muted)] hover:bg-red-50 hover:text-red-600">
+                  <button type="button" aria-label="Delete announcement" onClick={() => handleDelete(ann.id)} className="rounded-full p-1.5 text-[color:var(--hub-muted)] hover:bg-red-50 hover:text-red-600">
                     <Trash2 className="h-4 w-4" />
                   </button>
                 </div>

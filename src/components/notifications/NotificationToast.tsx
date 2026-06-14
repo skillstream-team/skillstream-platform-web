@@ -92,6 +92,7 @@ export const NotificationToast: React.FC<NotificationToastProps> = ({
             setIsVisible(false);
             setTimeout(() => onClose(notification.id), 300);
           }}
+          aria-label="Dismiss notification"
           className="flex-shrink-0 p-1 rounded-full hover:bg-black/8 dark:hover:bg-white/10 transition-colors"
         >
           <X className="w-4 h-4" />

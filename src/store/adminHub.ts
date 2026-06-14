@@ -203,9 +203,9 @@ const buildDemoAdminState = () => {
   ];
 
   const demoBillingPlans: BillingPlan[] = [
-    { id: 'plan-creator', code: 'creator', name: 'Creator', monthlyFeeGbp: 39, includedParticipantMinutes: 10000, overagePerParticipantMinuteGbp: 0.002, oneOffPlatformFeePercent: 8, aiMonthlyTokenLimit: 150000, isActive: true },
-    { id: 'plan-studio', code: 'studio', name: 'Studio', monthlyFeeGbp: 89, includedParticipantMinutes: 40000, overagePerParticipantMinuteGbp: 0.002, oneOffPlatformFeePercent: 6, aiMonthlyTokenLimit: 600000, isActive: true },
-    { id: 'plan-academy', code: 'academy', name: 'Academy', monthlyFeeGbp: 199, includedParticipantMinutes: 150000, overagePerParticipantMinuteGbp: 0.002, oneOffPlatformFeePercent: 5, aiMonthlyTokenLimit: 2500000, isActive: true },
+    { id: 'plan-creator', code: 'creator', name: 'Creator', monthlyFeeGbp: 29, includedParticipantMinutes: 5000, overagePerParticipantMinuteGbp: 0.002, oneOffPlatformFeePercent: 10, aiMonthlyTokenLimit: 100000, isActive: true },
+    { id: 'plan-studio', code: 'studio', name: 'Studio', monthlyFeeGbp: 99, includedParticipantMinutes: 40000, overagePerParticipantMinuteGbp: 0.002, oneOffPlatformFeePercent: 6, aiMonthlyTokenLimit: 600000, isActive: true },
+    { id: 'plan-academy', code: 'academy', name: 'Academy', monthlyFeeGbp: 249, includedParticipantMinutes: 150000, overagePerParticipantMinuteGbp: 0.002, oneOffPlatformFeePercent: 5, aiMonthlyTokenLimit: 2500000, isActive: true },
   ];
 
   const demoTeacherSubscriptions: AdminTeacherSubscription[] = [

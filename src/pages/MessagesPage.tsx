@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { ChevronLeft, Plus, Search, SendHorizonal } from 'lucide-react';
 import { ActionModal } from '../components/common/ActionModal';
 import { useNotifications } from '../components/notifications/NotificationToast';
-import { formatHubDateTime } from '../lib/utils';
+import { cn, formatHubDateTime } from '../lib/utils';
 import { useAuthStore } from '../store/auth';
 import { useTeacherHubStore } from '../store/teacherHub';
 
@@ -138,7 +138,7 @@ export const MessagesPage: React.FC = () => {
   };
 
   const renderConversationList = () => (
-    <div className={`flex h-full flex-col ${hasMobileThreadOpen ? 'hidden md:flex' : 'flex'}`}>
+    <div className={cn('flex h-full flex-col', hasMobileThreadOpen ? 'hidden md:flex' : 'flex')}>
       <div className="flex items-center justify-between gap-3 border-b border-[color:var(--hub-border)] px-4 py-4">
         <p className="text-sm font-semibold uppercase tracking-[0.14em] text-[color:var(--hub-primary)]">Recent chats</p>
         <button
@@ -174,9 +174,7 @@ export const MessagesPage: React.FC = () => {
                 key={conversation.id}
                 type="button"
                 onClick={() => setSelectedConversationId(conversation.id)}
-                className={`w-full rounded-2xl px-3 py-3 text-left transition ${
-                  selected ? 'bg-[color:var(--hub-soft)]' : 'hover:bg-[color:var(--hub-soft)]'
-                }`}
+                className={cn('w-full rounded-2xl px-3 py-3 text-left transition', selected ? 'bg-[color:var(--hub-soft)]' : 'hover:bg-[color:var(--hub-soft)]')}
               >
                 <div className="flex items-start justify-between gap-3">
                   <div>
@@ -199,7 +197,7 @@ export const MessagesPage: React.FC = () => {
   );
 
   const renderThread = () => (
-    <div className={`h-full flex-col ${hasMobileThreadOpen ? 'flex' : 'hidden md:flex'}`}>
+    <div className={cn('h-full flex-col', hasMobileThreadOpen ? 'flex' : 'hidden md:flex')}>
       {activeConversation ? (
         <>
           <div className="flex items-center gap-3 border-b border-[color:var(--hub-border)] px-4 py-4">
@@ -226,15 +224,11 @@ export const MessagesPage: React.FC = () => {
               activeConversation.messages.map((message) => {
                 const isOwn = message.senderUserId === user?.id;
                 return (
-                  <div key={message.id} className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}>
-                    <div
-                      className={`max-w-[82%] rounded-2xl px-4 py-3 text-sm ${
-                        isOwn ? 'bg-[color:var(--hub-primary)] text-white' : 'bg-white text-[color:var(--hub-text)]'
-                      }`}
-                    >
+                  <div key={message.id} className={cn('flex', isOwn ? 'justify-end' : 'justify-start')}>
+                    <div className={cn('max-w-[82%] rounded-2xl px-4 py-3 text-sm', isOwn ? 'bg-[color:var(--hub-primary)] text-white' : 'bg-white text-[color:var(--hub-text)]')}>
                       {!isOwn ? <p className="mb-1 text-xs font-semibold text-[color:var(--hub-muted)]">{message.senderName}</p> : null}
                       <p>{message.body}</p>
-                      <p className={`mt-1 text-[11px] ${isOwn ? 'text-white/80' : 'text-[color:var(--hub-muted)]'}`}>
+                      <p className={cn('mt-1 text-[11px]', isOwn ? 'text-white/80' : 'text-[color:var(--hub-muted)]')}>
                         {formatHubDateTime(message.sentAt)}
                       </p>
                     </div>

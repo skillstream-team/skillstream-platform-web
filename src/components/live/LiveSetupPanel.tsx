@@ -2,6 +2,7 @@ import React from 'react';
 import { Ticket, Users } from 'lucide-react';
 import { LiveSessionMode } from '../../lib/signalwireLive';
 import { useCurrencyStore } from '../../store/currency';
+import { cn } from '../../lib/utils';
 
 interface LiveSetupPanelProps {
   isTeacher: boolean;
@@ -38,7 +39,7 @@ export const LiveSetupPanel: React.FC<LiveSetupPanelProps> = ({
             <button
               type="button"
               onClick={() => onSessionModeChange('free')}
-              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold transition ${sessionMode === 'free' ? 'bg-[color:var(--hub-primary)] text-white' : 'text-white/50 hover:text-white'}`}
+              className={cn('inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold transition', sessionMode === 'free' ? 'bg-[color:var(--hub-primary)] text-white' : 'text-white/50 hover:text-white')}
             >
               <Users className="h-4 w-4" />
               Free session
@@ -46,7 +47,7 @@ export const LiveSetupPanel: React.FC<LiveSetupPanelProps> = ({
             <button
               type="button"
               onClick={() => onSessionModeChange('paid')}
-              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold transition ${sessionMode === 'paid' ? 'bg-[color:var(--hub-primary)] text-white' : 'text-white/50 hover:text-white'}`}
+              className={cn('inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold transition', sessionMode === 'paid' ? 'bg-[color:var(--hub-primary)] text-white' : 'text-white/50 hover:text-white')}
             >
               <Ticket className="h-4 w-4" />
               Paid one-off

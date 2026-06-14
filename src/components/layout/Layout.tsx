@@ -5,7 +5,7 @@ import { SkillStreamLogo } from '../branding/SkillStreamLogo';
 import { OnboardingTour } from '../tour/OnboardingTour';
 import { useRealtimeMessages } from '../../hooks/useRealtimeMessages';
 import { useAuthStore } from '../../store/auth';
-import { getInitials } from '../../lib/utils';
+import { cn, getInitials } from '../../lib/utils';
 import { useTeacherHubStore } from '../../store/teacherHub';
 import { useThemeStore } from '../../store/theme';
 
@@ -86,11 +86,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, className }) => {
                   key={to}
                   to={to}
                   className={({ isActive }) =>
-                    `flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold transition ${
-                      isActive
-                        ? 'bg-[color:var(--hub-primary)] text-white shadow-[0_12px_24px_rgba(27,74,128,0.24)]'
-                        : 'text-[color:var(--hub-muted)] hover:bg-white hover:text-[color:var(--hub-text)]'
-                    }`
+                    cn('flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-semibold transition', isActive ? 'bg-[color:var(--hub-primary)] text-white shadow-[0_12px_24px_rgba(27,74,128,0.24)]' : 'text-[color:var(--hub-muted)] hover:bg-white hover:text-[color:var(--hub-text)]')
                   }
                 >
                   <Icon className="h-4 w-4" />
@@ -156,14 +152,14 @@ export const Layout: React.FC<LayoutProps> = ({ children, className }) => {
             </header>
           ) : null}
 
-          <main className={`flex-1 px-4 pb-24 pt-6 sm:px-6 lg:px-8 lg:pb-10 ${className || ''}`}>{children}</main>
+          <main className={cn('flex-1 px-4 pb-24 pt-6 sm:px-6 lg:px-8 lg:pb-10', className)}>{children}</main>
 
           <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-[color:var(--hub-border)] bg-[color:var(--hub-panel)] px-3 pb-[calc(0.85rem+env(safe-area-inset-bottom))] pt-3 backdrop-blur-xl lg:hidden">
             {showMobileMore ? (
               <div className="mx-auto mb-2 max-w-xl rounded-[26px] border border-[color:var(--hub-border)] bg-white p-3 shadow-[0_-8px_24px_rgba(15,23,42,0.12)]">
                 <div className="mb-2 flex items-center justify-between">
                   <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[color:var(--hub-muted)]">More</p>
-                  <button type="button" onClick={() => setShowMobileMore(false)} className="rounded-full p-1.5 text-[color:var(--hub-muted)]">
+                  <button type="button" onClick={() => setShowMobileMore(false)} aria-label="Close menu" className="rounded-full p-1.5 text-[color:var(--hub-muted)]">
                     <X className="h-4 w-4" />
                   </button>
                 </div>
@@ -173,9 +169,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, className }) => {
                       key={to}
                       to={to}
                       className={({ isActive }) =>
-                        `flex items-center gap-2 rounded-2xl px-3 py-2.5 text-sm font-semibold ${
-                          isActive ? 'bg-[color:var(--hub-primary)] text-white' : 'bg-[color:var(--hub-soft)] text-[color:var(--hub-text)]'
-                        }`
+                        cn('flex items-center gap-2 rounded-2xl px-3 py-2.5 text-sm font-semibold', isActive ? 'bg-[color:var(--hub-primary)] text-white' : 'bg-[color:var(--hub-soft)] text-[color:var(--hub-text)]')
                       }
                     >
                       <Icon className="h-4 w-4" />
@@ -193,19 +187,13 @@ export const Layout: React.FC<LayoutProps> = ({ children, className }) => {
                 </button>
               </div>
             ) : null}
-            <div
-              className={`mx-auto grid max-w-xl gap-1 rounded-[28px] bg-[color:var(--hub-panel)] p-2 shadow-[0_-12px_28px_rgba(15,23,42,0.08)] ${
-                mobileOverflowItems.length > 0 ? 'grid-cols-5' : 'grid-cols-5'
-              }`}
-            >
+            <div className="mx-auto grid max-w-xl grid-cols-5 gap-1 rounded-[28px] bg-[color:var(--hub-panel)] p-2 shadow-[0_-12px_28px_rgba(15,23,42,0.08)]">
               {mobilePrimaryItems.map(({ to, label, icon: Icon }) => (
                 <NavLink
                   key={to}
                   to={to}
                   className={({ isActive }) =>
-                    `flex flex-col items-center gap-1 rounded-2xl px-2 py-2.5 text-[11px] font-semibold transition ${
-                      isActive ? 'bg-[color:var(--hub-primary)] text-white' : 'text-[color:var(--hub-muted)]'
-                    }`
+                    cn('flex flex-col items-center gap-1 rounded-2xl px-2 py-2.5 text-[11px] font-semibold transition', isActive ? 'bg-[color:var(--hub-primary)] text-white' : 'text-[color:var(--hub-muted)]')
                   }
                 >
                   <Icon className="h-5 w-5" />
@@ -216,9 +204,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, className }) => {
                 <button
                   type="button"
                   onClick={() => setShowMobileMore((current) => !current)}
-                  className={`flex flex-col items-center gap-1 rounded-2xl px-2 py-2.5 text-[11px] font-semibold transition ${
-                    isMoreActive || showMobileMore ? 'bg-[color:var(--hub-primary)] text-white' : 'text-[color:var(--hub-muted)]'
-                  }`}
+                  className={cn('flex flex-col items-center gap-1 rounded-2xl px-2 py-2.5 text-[11px] font-semibold transition', (isMoreActive || showMobileMore) ? 'bg-[color:var(--hub-primary)] text-white' : 'text-[color:var(--hub-muted)]')}
                 >
                   <MoreHorizontal className="h-5 w-5" />
                   <span>More</span>

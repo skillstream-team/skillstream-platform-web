@@ -3,6 +3,25 @@
     "playwright": {
       "command": "npx",
       "args": ["@playwright/mcp@latest", "--headless"]
+    },
+    "supabase": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@supabase/mcp-server-supabase",
+        "--project-ref",
+        "ebxztvjtjwnymfoasdta"
+      ],
+      "env": {
+        "SUPABASE_ACCESS_TOKEN": "PASTE_YOUR_SUPABASE_PERSONAL_ACCESS_TOKEN_HERE"
+      }
+    },
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "PASTE_YOUR_GITHUB_PAT_HERE"
+      }
     }
   }
 }
