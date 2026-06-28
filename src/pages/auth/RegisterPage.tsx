@@ -63,7 +63,7 @@ export const RegisterPage: React.FC = () => {
     password: '',
     confirmPassword: '',
     role: invitedRole ? ('TEACHER' as Role) : ('STUDENT' as Role),
-    teacherInviteCode: invitedCode,
+    classJoinCode: invitedCode,
   });
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [formError, setFormError] = useState('');
@@ -81,8 +81,8 @@ export const RegisterPage: React.FC = () => {
       setFormError('Passwords do not match.');
       return false;
     }
-    if (formData.role === 'TEACHER' && !formData.teacherInviteCode.trim()) {
-      setFormError('Teacher invite code is required.');
+    if (formData.role === 'STUDENT' && !formData.classJoinCode.trim()) {
+      setFormError('A class join code is required. Ask your teacher for the code.');
       return false;
     }
     if (!agreedToTerms) {
@@ -114,7 +114,7 @@ export const RegisterPage: React.FC = () => {
   const submitRegistration = async (plan?: PlanId) => {
     try {
       await register(formData.name, formData.email, formData.password, formData.role, {
-        teacherInviteCode: formData.teacherInviteCode,
+        classJoinCode: formData.classJoinCode,
         selectedPlan: plan,
       });
       if (useAuthStore.getState().isAuthenticated) {
@@ -219,7 +219,7 @@ export const RegisterPage: React.FC = () => {
   return (
     <AuthShell
       title="Create your account"
-      subtitle={invitedRole ? 'Teacher onboarding via admin invite.' : 'Join as a student or teacher.'}
+      subtitle="Join as a student or teacher."
       showAside={false}
       footer={
         <p className="text-sm edu-muted">
@@ -287,16 +287,20 @@ export const RegisterPage: React.FC = () => {
           ))}
         </div>
 
-        {formData.role === 'TEACHER' ? (
+        {formData.role === 'STUDENT' ? (
           <div className="space-y-2">
-            <label className="text-sm font-semibold text-[color:var(--edu-text)]">Teacher invite code</label>
+            <label className="text-sm font-semibold text-[color:var(--edu-text)]">
+              Class join code <span className="font-normal text-[color:var(--edu-muted)]">(from your teacher)</span>
+            </label>
             <input
-              className="edu-input"
-              placeholder="Enter your assigned invite code"
-              value={formData.teacherInviteCode}
-              onChange={(e) => setFormData((c) => ({ ...c, teacherInviteCode: e.target.value }))}
+              className="edu-input font-mono uppercase tracking-widest"
+              placeholder="e.g. ABC12345"
+              value={formData.classJoinCode}
+              onChange={(e) => setFormData((c) => ({ ...c, classJoinCode: e.target.value.toUpperCase() }))}
               readOnly={Boolean(invitedCode)}
+              maxLength={20}
             />
+            <p className="text-xs text-[color:var(--edu-muted)]">You'll be enrolled in your teacher's class automatically.</p>
           </div>
         ) : null}
 

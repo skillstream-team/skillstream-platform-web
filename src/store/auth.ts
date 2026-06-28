@@ -19,7 +19,7 @@ interface AuthActions {
     email: string,
     password: string,
     role: 'STUDENT' | 'TEACHER',
-    options?: { teacherInviteCode?: string; selectedPlan?: string }
+    options?: { classJoinCode?: string; selectedPlan?: string }
   ) => Promise<void>;
   resendConfirmation: (email: string) => Promise<void>;
   requestPasswordReset: (email: string) => Promise<void>;
@@ -77,11 +77,8 @@ const normalizeAuthError = (error: unknown): string => {
   if (lower.includes('user already registered') || lower.includes('user_already_exists')) {
     return 'An account with this email already exists. Sign in instead.';
   }
-  if (
-    lower.includes('teacher invite is invalid or expired')
-    || lower.includes('database error saving new user')
-  ) {
-    return 'Teacher invite code is invalid or expired. Request a valid code from admin.';
+  if (lower.includes('database error saving new user')) {
+    return 'Account could not be created. Please try again.';
   }
   return message;
 };
@@ -383,17 +380,24 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     }
   },
 
-  register: async (name: string, email: string, password: string, role: 'STUDENT' | 'TEACHER', options?: { teacherInviteCode?: string; selectedPlan?: string }) => {
+  register: async (name: string, email: string, password: string, role: 'STUDENT' | 'TEACHER', options?: { classJoinCode?: string; selectedPlan?: string }) => {
     ensureSupabaseConfig();
     set({ isLoading: true, error: null, notice: null });
     try {
       const passwordError = validatePassword(password.trim());
       if (passwordError) throw new Error(passwordError);
-      const inviteCode = options?.teacherInviteCode?.trim() || '';
+      const classJoinCode = options?.classJoinCode?.trim().toUpperCase() || '';
 
-      if (role === 'TEACHER') {
-        if (!inviteCode) {
-          throw new Error('Teacher invite code is required.');
+      // Students must provide a class join code — validate it exists before creating the account.
+      if (role === 'STUDENT' && classJoinCode) {
+        const { data: classRow, error: classErr } = await supabase
+          .from('classes')
+          .select('id')
+          .eq('invite_code', classJoinCode)
+          .is('archived_at', null)
+          .maybeSingle();
+        if (classErr || !classRow) {
+          throw new Error('Class code not found. Check with your teacher and try again.');
         }
       }
 
@@ -404,7 +408,6 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
           data: {
             full_name: name.trim(),
             role: role.toLowerCase(),
-            teacher_invite_code: role === 'TEACHER' ? inviteCode : undefined,
           },
           emailRedirectTo: `${window.location.origin}/login`,
         },
@@ -434,6 +437,23 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         fullName: name.trim(),
         role: role.toLowerCase() as 'student' | 'teacher' | 'admin',
       });
+
+      // Auto-enroll student into the class they used the join code for.
+      if (role === 'STUDENT' && classJoinCode) {
+        const { data: classRow } = await supabase
+          .from('classes')
+          .select('id')
+          .eq('invite_code', classJoinCode)
+          .is('archived_at', null)
+          .maybeSingle();
+        if (classRow) {
+          await supabase.from('class_members').insert({
+            class_id: classRow.id,
+            user_id: data.user.id,
+            member_role: 'student',
+          });
+        }
+      }
 
       // Create subscription row for teachers who selected a plan during sign-up.
       if (role === 'TEACHER' && options?.selectedPlan) {
