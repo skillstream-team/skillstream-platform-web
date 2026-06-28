@@ -22,7 +22,7 @@ export function subscribeToMessages(
           sender_user_id: string;
           sender_display_name: string;
           body: string;
-          created_at: string;
+          sent_at: string;
         };
         if (row.sender_user_id === userId) return; // own messages are added optimistically
         onDirect(row.conversation_id, {
@@ -31,7 +31,7 @@ export function subscribeToMessages(
           senderUserId: row.sender_user_id,
           senderName: row.sender_display_name || 'Unknown',
           body: row.body,
-          sentAt: row.created_at || new Date().toISOString(),
+          sentAt: row.sent_at || new Date().toISOString(),
           syncStatus: 'synced',
         });
       },
@@ -47,7 +47,7 @@ export function subscribeToMessages(
           sender_display_name: string;
           sender_role: 'teacher' | 'student' | 'system';
           body: string;
-          created_at: string;
+          sent_at: string;
         };
         if (row.sender_user_id === userId) return;
         onClass(row.class_id, {
@@ -55,7 +55,7 @@ export function subscribeToMessages(
           sender: row.sender_display_name || 'Unknown',
           role: row.sender_role || 'teacher',
           body: row.body,
-          sentAt: row.created_at || new Date().toISOString(),
+          sentAt: row.sent_at || new Date().toISOString(),
           syncStatus: 'synced',
         });
       },

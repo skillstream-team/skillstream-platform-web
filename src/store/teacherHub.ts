@@ -229,6 +229,15 @@ type ActivityRow = {
   created_at: string;
 };
 
+type LessonPurchaseRow = {
+  id: string;
+  lesson_id: string;
+  student_user_id: string;
+  amount_gbp: number;
+  status: string;
+  created_at: string;
+};
+
 const accentOptions = [
   'from-sky-500/20 via-blue-500/10 to-white',
   'from-emerald-500/20 via-green-500/10 to-white',
@@ -995,6 +1004,15 @@ export const useTeacherHubStore = create<TeacherHubStore>((set, get) => ({
       if (insightsRes.error) throw insightsRes.error;
       if (directMessagesRes.error) throw directMessagesRes.error;
 
+      // Load lesson purchase records so teachers can see student payment history.
+      const lessonIds = ((lessonsRes.data || []) as LessonRow[]).map((r) => r.id);
+      const purchasesRes = (user.role === 'TEACHER' || user.role === 'ADMIN') && lessonIds.length > 0
+        ? await supabase
+          .from('lesson_live_purchases')
+          .select('id, lesson_id, student_user_id, amount_gbp, status, created_at')
+          .in('lesson_id', lessonIds)
+        : { data: [] as LessonPurchaseRow[], error: null };
+
       const assignmentSubmissionUrlByPath = new Map<string, string>();
       const assignmentSubmissionFilePaths = Array.from(new Set(
         assignmentSubmissionRows.map((row) => row.file_path).filter((value): value is string => Boolean(value))
@@ -1040,12 +1058,35 @@ export const useTeacherHubStore = create<TeacherHubStore>((set, get) => ({
         activityRows: (activityRes.data || []) as ActivityRow[],
       });
 
+      // Build the profile lookup and class-name lookup for mapping purchases.
+      const profileMap = new Map((profilesRes.data || []).map((p) => [p.id as string, p.full_name as string]));
+      const lessonClassMap = new Map(
+        ((lessonsRes.data || []) as LessonRow[]).map((l) => [
+          l.id,
+          (classesRes.data || []).find((c) => (c as ClassRow).id === l.class_id) as ClassRow | undefined,
+        ])
+      );
+      const payments: PaymentRecord[] = ((purchasesRes.data || []) as LessonPurchaseRow[]).map((row) => {
+        const cls = lessonClassMap.get(row.lesson_id);
+        const rawStatus = row.status;
+        const status: PaymentStatus = rawStatus === 'paid' ? 'paid' : rawStatus === 'overdue' ? 'overdue' : 'pending';
+        return {
+          id: row.id,
+          studentId: row.student_user_id,
+          studentName: profileMap.get(row.student_user_id) || 'Unknown',
+          className: cls?.name || 'Unknown class',
+          amount: Number(row.amount_gbp),
+          dueAt: row.created_at,
+          status,
+        };
+      });
+
       set((state) => ({
         classes: hubData.classes,
         directConversations: hubData.directConversations,
         students: hubData.students,
         tasks: hubData.tasks,
-        payments: [],
+        payments,
         isHydrated: true,
         isSyncing: false,
         error: null,

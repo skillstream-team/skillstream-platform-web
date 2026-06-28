@@ -16,6 +16,7 @@ import { VideoGrid } from '../components/live/VideoGrid';
 import { useNotifications } from '../components/notifications/NotificationToast';
 import { BreakoutRoom, ChatMessage, Poll, PollResults, RaisedHand, SidePanelId } from '../lib/liveFeatures';
 import { LiveSessionMode, SWParticipant, SWSessionConfig } from '../lib/signalwireLive';
+import type { VideoRoomSession, RoomSessionScreenShare } from '@signalwire/js';
 import { hasSupabaseConfig, supabase } from '../lib/supabase';
 import { cn, formatDateTime, getInitials } from '../lib/utils';
 import { useAuthStore } from '../store/auth';
@@ -41,7 +42,8 @@ export const LiveSessionPage: React.FC = () => {
   const setLessonAiRecap = useTeacherHubStore((state) => state.setLessonAiRecap);
 
   // ─── Refs ─────────────────────────────────────────────────────────────────
-  const swSessionRef = useRef<any>(null);
+  const swSessionRef = useRef<VideoRoomSession | null>(null);
+  const screenShareRef = useRef<RoomSessionScreenShare | null>(null);
   const swMemberIdRef = useRef<string>('');
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordingChunksRef = useRef<Blob[]>([]);
@@ -457,10 +459,12 @@ export const LiveSessionPage: React.FC = () => {
     if (isDemoSession) { setIsScreenSharingOn((c) => !c); return; }
     try {
       if (isScreenSharingOn) {
-        await swSessionRef.current?.stopScreenShare();
+        await screenShareRef.current?.leave();
+        screenShareRef.current = null;
         setIsScreenSharingOn(false);
       } else {
-        await swSessionRef.current?.startScreenShare({ audio: true });
+        const share = await swSessionRef.current?.startScreenShare({ audio: true });
+        if (share) screenShareRef.current = share;
         setIsScreenSharingOn(true);
       }
     } catch {

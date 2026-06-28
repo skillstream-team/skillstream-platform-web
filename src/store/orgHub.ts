@@ -11,8 +11,9 @@ type OrgRow = {
   id: string; name: string; slug: string; logo_url: string | null; seat_limit: number; created_at: string;
   sso_provider: string | null; sso_idp_url: string | null; sso_entity_id: string | null; sso_certificate: string | null;
   reminders_enabled: boolean; reminder_days_before: number;
+  report_schedule_enabled: boolean; report_schedule_frequency: 'weekly' | 'monthly'; report_schedule_email: string;
 };
-type OrgMemberRow = { user_id: string; org_role: string; joined_at: string; job_title: string | null; department: string | null; profiles: { full_name: string; email: string } };
+type OrgMemberRow = { user_id: string; org_role: string; joined_at: string; job_title: string | null; department: string | null; manager_user_id: string | null; profiles: { full_name: string; email: string } };
 type RatingRow = { id: string; course_id: string; enrollment_id: string; user_id: string; rating: number; comment: string | null; created_at: string; profiles: { full_name: string } };
 type CourseRow = {
   id: string; org_id: string | null; created_by_user_id: string; title: string;
@@ -293,7 +294,7 @@ export const useOrgHubStore = create<OrgHubStore>((set, get) => ({
     try {
       const [orgRes, membersRes, coursesRes, enrollmentsRes, teamsRes, pathsRes, announcementsRes] = await Promise.all([
         supabase.from('organizations').select('*').eq('id', orgId).single(),
-        supabase.from('org_members').select('user_id, org_role, joined_at, profiles(full_name, email)').eq('org_id', orgId),
+        supabase.from('org_members').select('user_id, org_role, joined_at, job_title, department, manager_user_id, profiles(full_name, email)').eq('org_id', orgId),
         supabase.from('courses').select('*').eq('org_id', orgId),
         supabase.from('course_enrollments').select('id, course_id, user_id, org_id, is_mandatory, enrolled_at, deadline_at, completed_at, profiles(full_name, email), courses(title), lesson_completions(lesson_id)').eq('org_id', orgId),
         supabase.from('org_teams').select('id, org_id, name, created_at, org_team_members(user_id)').eq('org_id', orgId),
@@ -310,12 +311,13 @@ export const useOrgHubStore = create<OrgHubStore>((set, get) => ({
         ssoProvider: orgRow.sso_provider || undefined, ssoIdpUrl: orgRow.sso_idp_url || undefined,
         ssoEntityId: orgRow.sso_entity_id || undefined, ssoCertificate: orgRow.sso_certificate || undefined,
         remindersEnabled: orgRow.reminders_enabled ?? false, reminderDaysBefore: orgRow.reminder_days_before ?? 3,
-        reportScheduleEnabled: (orgRow as Record<string, unknown>).report_schedule_enabled as boolean ?? false,
-        reportScheduleFrequency: ((orgRow as Record<string, unknown>).report_schedule_frequency as 'weekly' | 'monthly') ?? 'weekly',
-        reportScheduleEmail: ((orgRow as Record<string, unknown>).report_schedule_email as string) ?? '',
+        reportScheduleEnabled: orgRow.report_schedule_enabled ?? false,
+        reportScheduleFrequency: orgRow.report_schedule_frequency ?? 'weekly',
+        reportScheduleEmail: orgRow.report_schedule_email ?? '',
       };
 
-      const members: OrgMember[] = ((membersRes.data || []) as unknown as OrgMemberRow[]).map((row) => ({
+      const memberRows2 = (membersRes.data || []) as unknown as OrgMemberRow[];
+      const members: OrgMember[] = memberRows2.map((row) => ({
         userId: row.user_id,
         name: (row.profiles as { full_name: string })?.full_name || '',
         email: (row.profiles as { email: string })?.email || '',
@@ -323,6 +325,7 @@ export const useOrgHubStore = create<OrgHubStore>((set, get) => ({
         joinedAt: row.joined_at,
         jobTitle: row.job_title || undefined,
         department: row.department || undefined,
+        managedUserIds: memberRows2.filter((r) => r.manager_user_id === row.user_id).map((r) => r.user_id),
       }));
 
       const teams: OrgTeam[] = ((teamsRes.data || []) as unknown as (TeamRow & { org_team_members: TeamMemberRow[] })[]).map((row) => ({
@@ -756,7 +759,25 @@ export const useOrgHubStore = create<OrgHubStore>((set, get) => ({
   },
 
   updateMemberManages: async (userId, managedUserIds) => {
-    set((s) => ({ members: s.members.map((m) => m.userId === userId ? { ...m, managedUserIds } : m) }));
+    const { org } = get();
+    if (org && org.id !== 'demo-org' && hasSupabaseConfig) {
+      // Clear previous reports for this manager, then assign new ones.
+      await supabase.from('org_members').update({ manager_user_id: null }).eq('org_id', org.id).eq('manager_user_id', userId);
+      if (managedUserIds.length > 0) {
+        await supabase.from('org_members').update({ manager_user_id: userId }).eq('org_id', org.id).in('user_id', managedUserIds);
+      }
+    }
+    set((s) => ({
+      members: s.members.map((m) =>
+        m.userId === userId
+          ? { ...m, managedUserIds }
+          : managedUserIds.includes(m.userId)
+            ? m
+            : m.managedUserIds
+              ? { ...m }
+              : m
+      ),
+    }));
   },
 
   logAuditEvent: (action, targetType, targetId, targetName) => {

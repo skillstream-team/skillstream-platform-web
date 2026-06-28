@@ -52,7 +52,10 @@ export const RegisterPage: React.FC = () => {
   const { register, isLoading, error, notice, clearError, clearNotice } = useAuthStore();
   const invitedRole = (searchParams.get('role') || '').toLowerCase() === 'teacher';
   const invitedEmail = (searchParams.get('email') || '').trim();
-  const invitedCode = (searchParams.get('invite') || '').trim();
+  // classCode comes from the /invite/:code redirect; invite is the legacy email-invite token (INV-XXXX)
+  const invitedCode = (searchParams.get('classCode') || searchParams.get('invite') || '').trim();
+  // classId is the direct class UUID from email invite links (?class=UUID&invite=INV-XXXX)
+  const invitedClassId = (searchParams.get('class') || '').trim();
 
   const { format: formatPrice } = useCurrencyFormatter();
   const [step, setStep] = useState<1 | 2>(1);
@@ -64,6 +67,7 @@ export const RegisterPage: React.FC = () => {
     confirmPassword: '',
     role: invitedRole ? ('TEACHER' as Role) : ('STUDENT' as Role),
     classJoinCode: invitedCode,
+    classId: invitedClassId,
   });
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [formError, setFormError] = useState('');
@@ -81,7 +85,7 @@ export const RegisterPage: React.FC = () => {
       setFormError('Passwords do not match.');
       return false;
     }
-    if (formData.role === 'STUDENT' && !formData.classJoinCode.trim()) {
+    if (formData.role === 'STUDENT' && !formData.classJoinCode.trim() && !formData.classId.trim()) {
       setFormError('A class join code is required. Ask your teacher for the code.');
       return false;
     }
@@ -115,10 +119,17 @@ export const RegisterPage: React.FC = () => {
     try {
       await register(formData.name, formData.email, formData.password, formData.role, {
         classJoinCode: formData.classJoinCode,
+        classId: formData.classId,
         selectedPlan: plan,
       });
-      if (useAuthStore.getState().isAuthenticated) {
-        navigate('/dashboard');
+      const user = useAuthStore.getState().user;
+      if (user) {
+        if (user.activeOrgId) {
+          const orgRole = user.orgMemberships.find((m) => m.orgId === user.activeOrgId)?.orgRole;
+          navigate(orgRole === 'admin' || orgRole === 'instructor' ? `/org/${user.activeOrgId}/dashboard` : '/learn', { replace: true });
+        } else {
+          navigate('/dashboard', { replace: true });
+        }
       }
     } catch {
       // store populates error
@@ -287,20 +298,24 @@ export const RegisterPage: React.FC = () => {
           ))}
         </div>
 
-        {formData.role === 'STUDENT' ? (
+        {formData.role === 'STUDENT' && !formData.classId ? (
           <div className="space-y-2">
             <label className="text-sm font-semibold text-[color:var(--edu-text)]">
               Class join code <span className="font-normal text-[color:var(--edu-muted)]">(from your teacher)</span>
             </label>
             <input
               className="edu-input font-mono uppercase tracking-widest"
-              placeholder="e.g. ABC12345"
+              placeholder="e.g. CLS-XXXXXX"
               value={formData.classJoinCode}
               onChange={(e) => setFormData((c) => ({ ...c, classJoinCode: e.target.value.toUpperCase() }))}
               readOnly={Boolean(invitedCode)}
               maxLength={20}
             />
             <p className="text-xs text-[color:var(--edu-muted)]">You'll be enrolled in your teacher's class automatically.</p>
+          </div>
+        ) : formData.role === 'STUDENT' && formData.classId ? (
+          <div className="rounded-[20px] border border-[color:var(--edu-border)] bg-[rgba(27,74,128,0.03)] px-4 py-3 text-sm text-[color:var(--edu-muted)]">
+            You'll be enrolled automatically via your teacher's invite link.
           </div>
         ) : null}
 

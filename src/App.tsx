@@ -43,6 +43,7 @@ import { LandingPage } from './pages/LandingPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { PrivacyPolicyPage } from './pages/legal/PrivacyPolicyPage';
 import { TermsPage } from './pages/legal/TermsPage';
+import { InviteRedirectPage } from './pages/InviteRedirectPage';
 import { LearnPage } from './pages/learn/LearnPage';
 import { CoursePlayerPage } from './pages/learn/CoursePlayerPage';
 import { CertificatesPage } from './pages/learn/CertificatesPage';
@@ -73,6 +74,13 @@ const RoleRoute: React.FC<{ children: React.ReactNode; allow: Array<'TEACHER' | 
   const { user } = useAuthStore();
   if (!user) return <Navigate to="/login" replace />;
   return allow.includes(user.role) ? <>{children}</> : <Navigate to="/dashboard" replace />;
+};
+
+const OrgRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user } = useAuthStore();
+  if (!user) return <Navigate to="/login" replace />;
+  if (!user.activeOrgId) return <Navigate to="/dashboard" replace />;
+  return <>{children}</>;
 };
 
 const OAuthDisabledPage: React.FC = () => {
@@ -180,8 +188,9 @@ function App() {
                 </PublicRoute>
               }
             />
-            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-            <Route path="/reset-password" element={<ResetPasswordPage />} />
+            <Route path="/forgot-password" element={<PublicRoute><ForgotPasswordPage /></PublicRoute>} />
+            <Route path="/reset-password" element={<PublicRoute><ResetPasswordPage /></PublicRoute>} />
+            <Route path="/invite/:code" element={<InviteRedirectPage />} />
 
             <Route
               path="/dashboard"
@@ -293,24 +302,24 @@ function App() {
             />
 
             {/* B2B Org Admin Routes */}
-            <Route path="/org/:orgId/dashboard" element={<ProtectedRoute><OrgLayout><OrgDashboardPage /></OrgLayout></ProtectedRoute>} />
-            <Route path="/org/:orgId/courses" element={<ProtectedRoute><OrgLayout><OrgCoursesPage /></OrgLayout></ProtectedRoute>} />
-            <Route path="/org/:orgId/courses/:courseId/build" element={<ProtectedRoute><OrgLayout><OrgCourseBuilderPage /></OrgLayout></ProtectedRoute>} />
-            <Route path="/org/:orgId/paths" element={<ProtectedRoute><OrgLayout><OrgPathsPage /></OrgLayout></ProtectedRoute>} />
-            <Route path="/org/:orgId/paths/:pathId" element={<ProtectedRoute><OrgLayout><OrgPathDetailPage /></OrgLayout></ProtectedRoute>} />
-            <Route path="/org/:orgId/learners" element={<ProtectedRoute><OrgLayout><OrgLearnersPage /></OrgLayout></ProtectedRoute>} />
-            <Route path="/org/:orgId/learners/:userId" element={<ProtectedRoute><OrgLayout><OrgLearnerProfilePage /></OrgLayout></ProtectedRoute>} />
-            <Route path="/org/:orgId/reports" element={<ProtectedRoute><OrgLayout><OrgReportsPage /></OrgLayout></ProtectedRoute>} />
-            <Route path="/org/:orgId/announcements" element={<ProtectedRoute><OrgLayout><OrgAnnouncementsPage /></OrgLayout></ProtectedRoute>} />
-            <Route path="/org/:orgId/settings" element={<ProtectedRoute><OrgLayout><OrgSettingsPage /></OrgLayout></ProtectedRoute>} />
-            <Route path="/org/:orgId/billing" element={<ProtectedRoute><OrgLayout><OrgBillingPage /></OrgLayout></ProtectedRoute>} />
-            <Route path="/org/:orgId/certificates" element={<ProtectedRoute><OrgLayout><OrgCertificatesPage /></OrgLayout></ProtectedRoute>} />
-            <Route path="/org/:orgId/audit" element={<ProtectedRoute><OrgLayout><OrgAuditPage /></OrgLayout></ProtectedRoute>} />
+            <Route path="/org/:orgId/dashboard" element={<OrgRoute><OrgLayout><OrgDashboardPage /></OrgLayout></OrgRoute>} />
+            <Route path="/org/:orgId/courses" element={<OrgRoute><OrgLayout><OrgCoursesPage /></OrgLayout></OrgRoute>} />
+            <Route path="/org/:orgId/courses/:courseId/build" element={<OrgRoute><OrgLayout><OrgCourseBuilderPage /></OrgLayout></OrgRoute>} />
+            <Route path="/org/:orgId/paths" element={<OrgRoute><OrgLayout><OrgPathsPage /></OrgLayout></OrgRoute>} />
+            <Route path="/org/:orgId/paths/:pathId" element={<OrgRoute><OrgLayout><OrgPathDetailPage /></OrgLayout></OrgRoute>} />
+            <Route path="/org/:orgId/learners" element={<OrgRoute><OrgLayout><OrgLearnersPage /></OrgLayout></OrgRoute>} />
+            <Route path="/org/:orgId/learners/:userId" element={<OrgRoute><OrgLayout><OrgLearnerProfilePage /></OrgLayout></OrgRoute>} />
+            <Route path="/org/:orgId/reports" element={<OrgRoute><OrgLayout><OrgReportsPage /></OrgLayout></OrgRoute>} />
+            <Route path="/org/:orgId/announcements" element={<OrgRoute><OrgLayout><OrgAnnouncementsPage /></OrgLayout></OrgRoute>} />
+            <Route path="/org/:orgId/settings" element={<OrgRoute><OrgLayout><OrgSettingsPage /></OrgLayout></OrgRoute>} />
+            <Route path="/org/:orgId/billing" element={<OrgRoute><OrgLayout><OrgBillingPage /></OrgLayout></OrgRoute>} />
+            <Route path="/org/:orgId/certificates" element={<OrgRoute><OrgLayout><OrgCertificatesPage /></OrgLayout></OrgRoute>} />
+            <Route path="/org/:orgId/audit" element={<OrgRoute><OrgLayout><OrgAuditPage /></OrgLayout></OrgRoute>} />
 
             {/* Learner Portal Routes */}
-            <Route path="/learn" element={<ProtectedRoute><OrgLayout><LearnPage /></OrgLayout></ProtectedRoute>} />
-            <Route path="/learn/course/:courseId" element={<ProtectedRoute><OrgLayout><CoursePlayerPage /></OrgLayout></ProtectedRoute>} />
-            <Route path="/learn/certificates" element={<ProtectedRoute><OrgLayout><CertificatesPage /></OrgLayout></ProtectedRoute>} />
+            <Route path="/learn" element={<OrgRoute><OrgLayout><LearnPage /></OrgLayout></OrgRoute>} />
+            <Route path="/learn/course/:courseId" element={<OrgRoute><OrgLayout><CoursePlayerPage /></OrgLayout></OrgRoute>} />
+            <Route path="/learn/certificates" element={<OrgRoute><OrgLayout><CertificatesPage /></OrgLayout></OrgRoute>} />
 
             <Route
               path="/"

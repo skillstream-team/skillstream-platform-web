@@ -307,7 +307,7 @@ const toStatusLabel = (value: string): PlatformUserSummary['status'] => {
 
 const createAudit = async (action: string, target: string) => {
   const user = getCurrentAdmin();
-  if (!user) return;
+  if (!user || !hasSupabaseConfig) return;
   await supabase.from('admin_audit_events').insert({
     actor_user_id: user.id,
     actor_display_name: user.name || user.email,

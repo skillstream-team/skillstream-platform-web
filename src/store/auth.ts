@@ -19,7 +19,7 @@ interface AuthActions {
     email: string,
     password: string,
     role: 'STUDENT' | 'TEACHER',
-    options?: { classJoinCode?: string; selectedPlan?: string }
+    options?: { classJoinCode?: string; classId?: string; selectedPlan?: string }
   ) => Promise<void>;
   resendConfirmation: (email: string) => Promise<void>;
   requestPasswordReset: (email: string) => Promise<void>;
@@ -380,15 +380,17 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     }
   },
 
-  register: async (name: string, email: string, password: string, role: 'STUDENT' | 'TEACHER', options?: { classJoinCode?: string; selectedPlan?: string }) => {
+  register: async (name: string, email: string, password: string, role: 'STUDENT' | 'TEACHER', options?: { classJoinCode?: string; classId?: string; selectedPlan?: string }) => {
     ensureSupabaseConfig();
     set({ isLoading: true, error: null, notice: null });
     try {
       const passwordError = validatePassword(password.trim());
       if (passwordError) throw new Error(passwordError);
       const classJoinCode = options?.classJoinCode?.trim().toUpperCase() || '';
+      const directClassId = options?.classId?.trim() || '';
 
-      // Students must provide a class join code — validate it exists before creating the account.
+      // Students must provide a class join code (or arrive via a direct email invite with a class UUID).
+      // Validate the join code exists before creating the account.
       if (role === 'STUDENT' && classJoinCode) {
         const { data: classRow, error: classErr } = await supabase
           .from('classes')
@@ -453,6 +455,15 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
             member_role: 'student',
           });
         }
+      }
+
+      // Auto-enroll student arriving from an email invite (class UUID provided directly).
+      if (role === 'STUDENT' && directClassId && !classJoinCode) {
+        await supabase.from('class_members').insert({
+          class_id: directClassId,
+          user_id: data.user.id,
+          member_role: 'student',
+        });
       }
 
       // Create subscription row for teachers who selected a plan during sign-up.
