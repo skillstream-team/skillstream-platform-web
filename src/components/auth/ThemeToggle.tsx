@@ -26,14 +26,23 @@ export const ThemeToggle: React.FC = () => {
     }
   };
 
+  const getLabel = () => {
+    if (theme === 'system') return 'System';
+    if (theme === 'light') return 'Light';
+    return 'Dark';
+  };
+
   return (
     <button
       onClick={toggleTheme}
-      className="fixed top-6 right-6 z-50 p-3 rounded-full bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg border border-gray-200/50 dark:border-gray-700/50 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110"
+      className="fixed top-6 right-6 z-50 flex items-center gap-1.5 px-3 py-2 rounded-full bg-white/90 dark:bg-gray-800/90 backdrop-blur-lg border border-gray-200/60 dark:border-gray-700/60 shadow-md hover:shadow-lg transition-all duration-200"
       aria-label="Toggle theme"
       title={getTitle()}
     >
       {getIcon()}
+      <span className="text-xs font-semibold" style={{ color: effectiveTheme === 'dark' ? 'white' : '#0B1E3F' }}>
+        {getLabel()}
+      </span>
     </button>
   );
 };

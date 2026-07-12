@@ -46,7 +46,7 @@ const TEACHER_STEPS: Step[] = [
   {
     id: 'payments',
     title: 'Manage payments',
-    body: 'Log and track what students owe you. Keep your own payment records — full payment processing integration is coming soon.',
+    body: 'Set your subscription plan, track student lesson payments, and manage your earnings. Payments are processed securely through Dodo Payments.',
     selector: 'a[href="/payments"]',
   },
   {

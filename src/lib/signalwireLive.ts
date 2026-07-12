@@ -1,12 +1,8 @@
-export type LiveSessionMode = 'free' | 'paid';
-
 export interface SWSessionConfig {
   roomName: string;
   roomToken: string;
   isModerator: boolean;
   userName: string;
-  sessionMode: LiveSessionMode;
-  ticketPriceGBP: number;
   teacherUserId: string | null;
 }
 

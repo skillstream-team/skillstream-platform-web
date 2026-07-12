@@ -63,6 +63,12 @@ Deno.serve(async (req) => {
 
   const supabase = createClient(supabaseUrl, serviceKey);
 
+  // Verify caller is authenticated
+  const jwt = req.headers.get('Authorization')?.replace('Bearer ', '').trim();
+  if (!jwt) return json(401, { error: 'Authentication required.' });
+  const { data: { user: caller }, error: authErr } = await supabase.auth.getUser(jwt);
+  if (authErr || !caller) return json(401, { error: 'Invalid or expired token.' });
+
   let certId: string;
   try {
     ({ certId } = await req.json());
@@ -78,11 +84,23 @@ Deno.serve(async (req) => {
     .single();
 
   if (certErr || !cert) return json(404, { error: 'Certificate not found.' });
+
+  // Verify caller is the certificate owner or a platform/org admin
+  const enrollment = (cert as { course_enrollments: { user_id: string; org_id: string; courses: { title: string }; organizations: { name: string } } }).course_enrollments;
+  const isOwner = enrollment?.user_id === caller.id;
+  if (!isOwner) {
+    const { data: callerProfile } = await supabase.from('profiles').select('role').eq('id', caller.id).single();
+    const isPlatformAdmin = callerProfile?.role === 'admin';
+    const isOrgAdmin = enrollment?.org_id
+      ? (await supabase.from('org_members').select('org_role').eq('org_id', enrollment.org_id).eq('user_id', caller.id).maybeSingle())
+          .data?.org_role === 'admin'
+      : false;
+    if (!isPlatformAdmin && !isOrgAdmin) return json(403, { error: 'Access denied.' });
+  }
+
   if ((cert as { certificate_url: string | null }).certificate_url) {
     return json(200, { url: (cert as { certificate_url: string }).certificate_url });
   }
-
-  const enrollment = (cert as { course_enrollments: { user_id: string; org_id: string; courses: { title: string }; organizations: { name: string } } }).course_enrollments;
   const courseTitle = enrollment?.courses?.title ?? 'Unknown Course';
   const orgName = enrollment?.organizations?.name ?? 'SkillStream';
 

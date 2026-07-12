@@ -77,7 +77,7 @@ export const ClassLessonsTab: React.FC<Props> = ({
                 className="inline-flex items-center gap-2 rounded-full bg-[color:var(--hub-primary)] px-4 py-2.5 text-sm font-semibold text-white"
               >
                 <Video className="h-4 w-4" />
-                {lesson.status === 'cancelled' ? 'Session cancelled' : lesson.status === 'completed' ? 'View session' : 'Start / join lesson'}
+                {lesson.status === 'cancelled' ? 'Session cancelled' : lesson.status === 'completed' ? 'View session' : isStudent ? 'Join lesson' : 'Start lesson'}
               </button>
               {lesson.recordingUrl ? (
                 <button
@@ -121,7 +121,7 @@ export const ClassLessonsTab: React.FC<Props> = ({
 
             {!isStudent ? (
               <div className="mt-4">
-                <button type="button" onClick={() => setAiOpenLessonId(aiOpenLessonId === lesson.id ? null : lesson.id)} className="inline-flex items-center gap-1.5 rounded-full border border-[color:var(--hub-border)] px-3 py-1.5 text-xs font-semibold text-[color:var(--hub-muted)]">
+                <button type="button" onClick={() => setAiOpenLessonId(aiOpenLessonId === lesson.id ? null : lesson.id)} className={cn('inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition', aiOpenLessonId === lesson.id ? 'bg-[color:var(--hub-primary)] text-white shadow-[0_4px_12px_rgba(27,74,128,0.28)]' : 'bg-gradient-to-r from-[color:var(--hub-primary)] to-[#3B7DD8] text-white shadow-[0_4px_12px_rgba(27,74,128,0.22)] hover:shadow-[0_6px_16px_rgba(27,74,128,0.32)]')}>
                   <Sparkles className="h-3.5 w-3.5" />
                   AI tools
                 </button>

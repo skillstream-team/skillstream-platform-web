@@ -109,10 +109,10 @@ export const DashboardPage: React.FC = () => {
 
         <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           {stats.map((item) => (
-            <div key={item.id} className="rounded-[24px] bg-[color:var(--hub-soft)] p-4">
-              <p className="text-sm font-medium text-[color:var(--hub-muted)]">{item.label}</p>
-              <p className="mt-3 text-3xl font-semibold text-[color:var(--hub-accent)]">{item.value}</p>
-              <p className="mt-1 text-sm text-[color:var(--hub-muted)]">{item.note}</p>
+            <div key={item.id} className="rounded-[24px] bg-[color:var(--hub-soft)] p-5">
+              <p className="text-4xl font-bold tracking-tight text-[color:var(--hub-primary)]">{item.value}</p>
+              <p className="mt-2 text-sm font-semibold text-[color:var(--hub-text)]">{item.label}</p>
+              <p className="mt-0.5 text-xs text-[color:var(--hub-muted)]">{item.note}</p>
             </div>
           ))}
         </div>

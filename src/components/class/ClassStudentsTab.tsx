@@ -48,25 +48,12 @@ export const ClassStudentsTab: React.FC<Props> = ({
             ) : null}
           </div>
           <div className="mt-5">
-            <StudentTable students={teacherClass.students} allowProfileLinks={!isStudent} />
+            <StudentTable
+              students={teacherClass.students}
+              allowProfileLinks={!isStudent}
+              onRemove={!isStudent ? (id) => setStudentToRemove(id) : undefined}
+            />
           </div>
-          {!isStudent ? (
-            <div className="mt-5 grid gap-3">
-              {teacherClass.students.map((student) => (
-                <div key={student.id} className="flex items-center justify-between rounded-[22px] bg-[color:var(--hub-soft)] px-4 py-3 text-sm">
-                  <span className="font-medium text-[color:var(--hub-text)]">{student.name}</span>
-                  <button
-                    type="button"
-                    onClick={() => setStudentToRemove(student.id)}
-                    className="font-semibold text-[color:var(--hub-primary)]"
-                    aria-label={`Remove ${student.name}`}
-                  >
-                    Remove
-                  </button>
-                </div>
-              ))}
-            </div>
-          ) : null}
         </section>
       </div>
 

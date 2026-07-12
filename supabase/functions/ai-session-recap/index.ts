@@ -62,11 +62,24 @@ Deno.serve(async (req) => {
   // Fetch lesson data
   const { data: lesson, error: lessonError } = await admin
     .from('lessons')
-    .select('id, title, duration_minutes, ai_recap')
+    .select('id, class_id, title, duration_minutes, ai_recap')
     .eq('id', body.lessonId)
     .maybeSingle();
 
   if (lessonError || !lesson) return json(404, { error: 'Lesson not found' });
+
+  // Verify the requesting teacher actually teaches this lesson's class
+  if (profile.role === 'teacher') {
+    const { data: membership } = await admin
+      .from('class_members')
+      .select('member_role')
+      .eq('class_id', (lesson as { class_id: string }).class_id)
+      .eq('user_id', user.id)
+      .maybeSingle();
+    if (membership?.member_role !== 'teacher') {
+      return json(403, { error: 'You do not teach this lesson' });
+    }
+  }
 
   // Return cached recap if it already exists
   if (lesson.ai_recap) {

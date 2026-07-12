@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ArrowUpRight, Check, Copy, Loader2, Tag, Users } from 'lucide-react';
+import { ArrowUpRight, Check, CheckCircle2, Copy, Loader2, Tag, Users } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { PaymentTable } from '../components/hub/PaymentTable';
 import { useNotifications } from '../components/notifications/NotificationToast';
@@ -67,6 +67,23 @@ const PLAN_TIERS: PlanTier[] = [
 
 const formatMinutes = (value: number) => new Intl.NumberFormat('en-US').format(value);
 
+function formatTokenLimit(n: number): string {
+  if (n >= 1_000_000) return `${parseFloat((n / 1_000_000).toFixed(1))}M`;
+  if (n >= 1_000) return `${Math.round(n / 1_000)}k`;
+  return String(n);
+}
+
+interface BillingPlanRow {
+  code: string;
+  monthly_fee_gbp: number;
+  max_students: number | null;
+  max_live_participants: number;
+  included_participant_minutes: number;
+  overage_per_participant_minute_gbp: number;
+  one_off_platform_fee_percent: number;
+  ai_monthly_token_limit: number | null;
+}
+
 interface SubState {
   planCode: PlanId;
   planName: string;
@@ -92,6 +109,7 @@ export const PaymentsPage: React.FC = () => {
     ? currentStudent ? allPayments.filter((p) => p.studentId === currentStudent.id) : []
     : allPayments;
 
+  const [planTiers, setPlanTiers] = useState<PlanTier[]>(PLAN_TIERS);
   const [sub, setSub] = useState<SubState | null>(null);
   const [subLoading, setSubLoading] = useState(true);
   const [checkingOut, setCheckingOut] = useState<PlanId | null>(null);
@@ -107,6 +125,34 @@ export const PaymentsPage: React.FC = () => {
 
   // Affiliate code for teacher
   const [affiliateCode, setAffiliateCode] = useState<string | null>(null);
+
+  // Load authoritative plan data from the DB and merge into planTiers
+  useEffect(() => {
+    if (!hasSupabaseConfig) return;
+    supabase
+      .from('billing_plans')
+      .select('code, monthly_fee_gbp, max_students, max_live_participants, included_participant_minutes, overage_per_participant_minute_gbp, one_off_platform_fee_percent, ai_monthly_token_limit')
+      .then(({ data }) => {
+        if (!data) return;
+        const rows = data as BillingPlanRow[];
+        setPlanTiers((prev) =>
+          prev.map((tier) => {
+            const row = rows.find((r) => r.code === tier.id);
+            if (!row) return tier;
+            return {
+              ...tier,
+              monthlyFee: Number(row.monthly_fee_gbp),
+              maxStudents: row.max_students,
+              maxLiveParticipants: row.max_live_participants,
+              includedParticipantMinutes: row.included_participant_minutes,
+              overagePerMinute: Number(row.overage_per_participant_minute_gbp),
+              transactionFeePercent: row.one_off_platform_fee_percent,
+              aiTokens: row.ai_monthly_token_limit ? formatTokenLimit(row.ai_monthly_token_limit) : tier.aiTokens,
+            };
+          }),
+        );
+      });
+  }, []);
 
   useEffect(() => {
     if (!isTeacher || !user || !hasSupabaseConfig || isDemoUser) { setSubLoading(false); return; }
@@ -153,7 +199,7 @@ export const PaymentsPage: React.FC = () => {
     .reduce((sum, l) => sum + l.studentCount * l.durationMinutes, 0);
 
   const activePlanId: PlanId = sub?.planCode || (isDemoUser ? demoPlan : 'studio');
-  const activePlan = PLAN_TIERS.find((p) => p.id === activePlanId) || PLAN_TIERS[1];
+  const activePlan = planTiers.find((p) => p.id === activePlanId) || planTiers[1];
   const includedMinutes = activePlan.includedParticipantMinutes;
   const overageMinutes = Math.max(monthlyParticipantMinutes - includedMinutes, 0);
   const overageAmount = overageMinutes * activePlan.overagePerMinute;
@@ -163,7 +209,7 @@ export const PaymentsPage: React.FC = () => {
   const handleCheckout = async (planCode: PlanId) => {
     if (isDemoUser) {
       setDemoPlan(planCode);
-      addNotification({ type: 'success', title: 'Demo: plan switched', message: `Switched to ${PLAN_TIERS.find((p) => p.id === planCode)?.name} (demo only).`, duration: 2200 });
+      addNotification({ type: 'success', title: 'Demo: plan switched', message: `Switched to ${planTiers.find((p) => p.id === planCode)?.name} (demo only).`, duration: 2200 });
       return;
     }
     if (!hasSupabaseConfig) {
@@ -212,7 +258,7 @@ export const PaymentsPage: React.FC = () => {
     }
   };
 
-  const discountedFee = (plan: typeof PLAN_TIERS[0]) => {
+  const discountedFee = (plan: PlanTier) => {
     if (!promoApplied) return plan.monthlyFee;
     if (promoApplied.appliesTo !== 'all' && promoApplied.appliesTo !== plan.id) return plan.monthlyFee;
     return plan.monthlyFee * (1 - promoApplied.discountPercent / 100);
@@ -340,50 +386,57 @@ export const PaymentsPage: React.FC = () => {
               <Users className="h-5 w-5" />
               <p className="text-sm font-semibold uppercase tracking-[0.18em]">Plans</p>
             </div>
-            <div className="mt-5 grid gap-4 lg:grid-cols-3">
-              {PLAN_TIERS.map((plan) => {
+            <div className="mt-6 grid items-stretch gap-5 lg:grid-cols-3">
+              {planTiers.map((plan) => {
                 const active = isActivePlan(plan.id) || (isDemoUser && demoPlan === plan.id);
                 const isLoading = checkingOut === plan.id;
                 return (
                   <div
                     key={plan.id}
-                    className={cn('relative rounded-3xl border p-5 transition', active ? 'border-[color:var(--hub-primary)] bg-[color:var(--hub-soft)]' : 'border-[color:var(--hub-border)]')}
+                    className={cn('relative flex flex-col rounded-3xl border p-6 transition', active ? 'border-2 border-[color:var(--hub-primary)] bg-[color:var(--hub-soft)] shadow-[0_8px_32px_rgba(27,74,128,0.12)]' : 'border-[color:var(--hub-border)] hover:border-[color:var(--hub-primary)]/40')}
                   >
                     {plan.popular ? (
-                      <span className="absolute right-4 top-4 rounded-full bg-[color:var(--hub-primary)] px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
-                        Popular
+                      <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-[color:var(--hub-primary)] px-3 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white shadow-[0_4px_12px_rgba(27,74,128,0.3)]">
+                        Most popular
                       </span>
                     ) : null}
 
-                    <div className="flex items-center justify-between gap-3 pr-16">
-                      <p className="text-lg font-semibold text-[color:var(--hub-text)]">{plan.name}</p>
+                    <div className="flex items-start justify-between gap-3">
+                      <p className="text-lg font-bold text-[color:var(--hub-text)]">{plan.name}</p>
                       {active ? (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-[color:var(--hub-primary)] px-2.5 py-1 text-xs font-semibold text-white">
+                        <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[color:var(--hub-primary)] px-2.5 py-1 text-xs font-semibold text-white">
                           <Check className="h-3.5 w-3.5" />
                           Active
                         </span>
                       ) : null}
                     </div>
 
-                    <p className="mt-1 text-xs text-[color:var(--hub-muted)]">{plan.tagline}</p>
+                    <p className="mt-1 text-xs leading-relaxed text-[color:var(--hub-muted)]">{plan.tagline}</p>
 
-                    <div className="mt-3 flex flex-wrap items-baseline gap-2">
-                      <p className="text-2xl font-semibold text-[color:var(--hub-text)]">
+                    <div className="mt-4 flex flex-wrap items-baseline gap-2">
+                      <p className="text-3xl font-bold text-[color:var(--hub-text)]">
                         {formatMoney(discountedFee(plan))}
-                        <span className="text-sm font-medium text-[color:var(--hub-muted)]"> /month</span>
                       </p>
+                      <span className="text-sm font-medium text-[color:var(--hub-muted)]">/month</span>
                       {promoApplied && discountedFee(plan) < plan.monthlyFee ? (
                         <span className="text-sm text-[color:var(--hub-muted)] line-through">{formatMoney(plan.monthlyFee)}</span>
                       ) : null}
                     </div>
 
-                    <ul className="mt-3 space-y-1.5 text-sm text-[color:var(--hub-muted)]">
-                      <li>{plan.maxStudents !== null ? `Up to ${plan.maxStudents} active students` : 'Unlimited students'}</li>
-                      <li>Up to {plan.maxLiveParticipants} per live session</li>
-                      <li>{formatMinutes(plan.includedParticipantMinutes)} live minutes/month</li>
-                      <li>{formatMoneyPrecise(plan.overagePerMinute)} per extra minute</li>
-                      <li>{plan.transactionFeePercent}% platform fee on paid lessons</li>
-                      <li>{plan.aiTokens} AI tokens / month</li>
+                    <ul className="mt-4 flex-1 space-y-2.5">
+                      {[
+                        plan.maxStudents !== null ? `Up to ${plan.maxStudents} active students` : 'Unlimited students',
+                        `Up to ${plan.maxLiveParticipants} per live session`,
+                        `${formatMinutes(plan.includedParticipantMinutes)} live minutes/month`,
+                        `${formatMoneyPrecise(plan.overagePerMinute)} per extra minute`,
+                        `${plan.transactionFeePercent}% platform fee on paid lessons`,
+                        `${plan.aiTokens} AI tokens / month`,
+                      ].map((feature) => (
+                        <li key={feature} className="flex items-start gap-2 text-sm text-[color:var(--hub-text)]">
+                          <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[color:var(--hub-primary)]" />
+                          <span>{feature}</span>
+                        </li>
+                      ))}
                     </ul>
 
                     {!active ? (
@@ -391,7 +444,7 @@ export const PaymentsPage: React.FC = () => {
                         type="button"
                         disabled={isLoading || Boolean(checkingOut)}
                         onClick={() => void handleCheckout(plan.id)}
-                        className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[color:var(--hub-primary)] px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
+                        className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[color:var(--hub-primary)] px-4 py-3 text-sm font-semibold text-white shadow-[0_4px_14px_rgba(27,74,128,0.22)] disabled:opacity-60"
                       >
                         {isLoading ? (
                           <><Loader2 className="h-4 w-4 animate-spin" /> Redirecting…</>
@@ -400,7 +453,7 @@ export const PaymentsPage: React.FC = () => {
                         )}
                       </button>
                     ) : (
-                      <div className="mt-4 rounded-2xl bg-[color:var(--hub-primary)]/10 px-4 py-2.5 text-center text-sm font-semibold text-[color:var(--hub-primary)]">
+                      <div className="mt-5 rounded-2xl bg-[color:var(--hub-primary)]/10 px-4 py-3 text-center text-sm font-semibold text-[color:var(--hub-primary)]">
                         Your current plan
                       </div>
                     )}

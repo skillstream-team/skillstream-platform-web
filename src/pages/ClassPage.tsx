@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Archive, CalendarDays, Copy, Pencil, Plus } from 'lucide-react';
+import { Archive, Copy, Pencil, Plus } from 'lucide-react';
 import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ActionModal } from '../components/common/ActionModal';
 import { ConfirmDialog } from '../components/common/ConfirmDialog';
@@ -18,10 +18,10 @@ import { useTeacherHubStore } from '../store/teacherHub';
 const tabs = [
   { id: 'students', label: 'Students' },
   { id: 'lessons', label: 'Lessons' },
-  { id: 'homework', label: 'Homework / Assignments' },
+  { id: 'homework', label: 'Homework' },
   { id: 'resources', label: 'Resources' },
   { id: 'progress', label: 'Progress Tracking' },
-  { id: 'messages', label: 'Messages' },
+  { id: 'messages', label: 'Announcements' },
 ] as const;
 
 export const ClassPage: React.FC = () => {
@@ -35,9 +35,11 @@ export const ClassPage: React.FC = () => {
   const setScheduleSelectedClassId = useSessionUiStore((state) => state.setScheduleSelectedClassId);
   const classDraft = useSessionUiStore((state) => state.messageDraftByClassId[id] || '');
   const setDraft = useSessionUiStore((state) => state.setMessageDraft);
-  const activeTab = tabs.some((tab) => tab.id === searchParams.get('tab'))
+  const visibleTabs = isStudent ? tabs.filter((t) => t.id !== 'students' && t.id !== 'progress') : tabs;
+  const studentDefaultTab = 'lessons';
+  const activeTab = visibleTabs.some((tab) => tab.id === searchParams.get('tab'))
     ? (searchParams.get('tab') as (typeof tabs)[number]['id'])
-    : rememberedTab || 'students';
+    : (rememberedTab && visibleTabs.some((t) => t.id === rememberedTab) ? rememberedTab : (isStudent ? studentDefaultTab : 'students'));
   const teacherClass = useTeacherHubStore((state) => state.classes.find((c) => c.id === id));
   const allStudents = useTeacherHubStore((state) => state.students);
   const currentStudent = allStudents.find((s) => s.email.toLowerCase() === (user?.email || '').toLowerCase());
@@ -99,10 +101,12 @@ export const ClassPage: React.FC = () => {
               <p className="text-[color:var(--hub-muted)]">Next session</p>
               <p className="mt-1 font-semibold text-[color:var(--hub-text)]">{formatHubDateTime(teacherClass.nextSessionAt)}</p>
             </div>
-            <div>
-              <p className="text-[color:var(--hub-muted)]">Invite code</p>
-              <p className="mt-1 font-semibold text-[color:var(--hub-text)]">{teacherClass.inviteCode}</p>
-            </div>
+            {!isStudent && (
+              <div>
+                <p className="text-[color:var(--hub-muted)]">Invite code</p>
+                <p className="mt-1 font-semibold text-[color:var(--hub-text)]">{teacherClass.inviteCode}</p>
+              </div>
+            )}
           </div>
         </div>
         <div className="mt-5 flex flex-wrap gap-3">
@@ -144,18 +148,13 @@ export const ClassPage: React.FC = () => {
                 Archive class
               </button>
             </>
-          ) : (
-            <span className="inline-flex items-center gap-2 rounded-full border border-[color:var(--hub-border)] bg-white px-4 py-2.5 text-sm font-semibold text-[color:var(--hub-text)]">
-              <CalendarDays className="h-4 w-4" />
-              Invite code: {teacherClass.inviteCode}
-            </span>
-          )}
+          ) : null}
         </div>
       </section>
 
       {/* Tab bar */}
       <div className="flex flex-wrap gap-2">
-        {tabs.map((tab) => (
+        {visibleTabs.map((tab) => (
           <button
             key={tab.id}
             type="button"
@@ -168,7 +167,7 @@ export const ClassPage: React.FC = () => {
       </div>
 
       {/* Tab panels */}
-      {activeTab === 'students' ? (
+      {activeTab === 'students' && !isStudent ? (
         <ClassStudentsTab
           teacherClass={teacherClass}
           isStudent={isStudent}
@@ -232,7 +231,8 @@ export const ClassPage: React.FC = () => {
           sendClassMessage={sendClassMessage}
           clearDraft={() => setDraft(id, '')}
           showMessageModal={showMessageModal}
-          onCloseMessageModal={() => setShowMessageModal((p) => !p)}
+          onOpenMessageModal={() => setShowMessageModal(true)}
+          onCloseMessageModal={() => setShowMessageModal(false)}
         />
       ) : null}
 

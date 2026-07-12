@@ -156,7 +156,7 @@ const ensureProfile = async (input: { userId: string; email: string; fullName?: 
 // Persist across HMR reloads so the listener is never registered twice.
 const win = window as Window & { __authListenerBound?: boolean };
 let expectedSignOut = false;
-const ENABLE_DEMO_ACCOUNTS = (process.env.REACT_APP_ENABLE_DEMO_ACCOUNTS || 'true').toLowerCase() !== 'false';
+const ENABLE_DEMO_ACCOUNTS = (process.env.REACT_APP_ENABLE_DEMO_ACCOUNTS || 'false').toLowerCase() !== 'false';
 const DEMO_PASSWORD = 'SkillStreamDemo123!';
 const DEMO_STORAGE_KEY = 'skillstream_demo_auth_v1';
 

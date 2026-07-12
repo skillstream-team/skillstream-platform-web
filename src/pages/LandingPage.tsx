@@ -618,7 +618,15 @@ export const LandingPage: React.FC = () => {
             <Link to="/login" className="transition hover:text-white">Sign in</Link>
             <Link to="/register?role=teacher" className="transition hover:text-white">Register</Link>
           </nav>
-          <p className="text-sm" style={{ color: 'rgba(255,255,255,0.25)' }}>© {new Date().getFullYear()} SkillStream</p>
+          <div className="flex flex-col items-center gap-2 sm:items-end">
+            <p className="text-sm" style={{ color: 'rgba(255,255,255,0.25)' }}>© {new Date().getFullYear()} SkillStream</p>
+            <div className="flex gap-4 text-xs font-semibold" style={{ color: 'rgba(255,255,255,0.3)' }}>
+              <Link to="/terms" className="transition hover:text-white">Terms</Link>
+              <Link to="/privacy" className="transition hover:text-white">Privacy</Link>
+              <Link to="/refund-policy" className="transition hover:text-white">Refunds</Link>
+              <Link to="/acceptable-use" className="transition hover:text-white">Acceptable Use</Link>
+            </div>
+          </div>
         </div>
       </footer>
 

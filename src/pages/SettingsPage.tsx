@@ -98,12 +98,14 @@ export const SettingsPage: React.FC = () => {
       </section>
 
       {/* Profile */}
-      <div className="rounded-[28px] border border-[color:var(--hub-border)] bg-white p-5 shadow-[0_18px_48px_rgba(15,23,42,0.05)]">
-        <div className="flex items-center gap-3">
-          <UserCircle2 className="h-5 w-5 text-[color:var(--hub-primary)]" />
+      <div className="rounded-[28px] border border-[color:var(--hub-border)] bg-white p-6 shadow-[0_18px_48px_rgba(15,23,42,0.05)]">
+        <div className="flex items-center gap-3 border-b border-[color:var(--hub-border)] pb-4">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[color:var(--hub-soft)]">
+            <UserCircle2 className="h-4.5 w-4.5 text-[color:var(--hub-primary)]" />
+          </div>
           <div>
-            <p className="text-sm font-semibold text-[color:var(--hub-text)]">Profile</p>
-            <p className="text-sm text-[color:var(--hub-muted)]">Your public-facing name, bio, and details.</p>
+            <p className="text-base font-semibold text-[color:var(--hub-text)]">Profile</p>
+            <p className="text-xs text-[color:var(--hub-muted)]">Your public-facing name, bio, and details.</p>
           </div>
         </div>
 
@@ -274,12 +276,14 @@ export const SettingsPage: React.FC = () => {
       </div>
 
       {/* Account security */}
-      <div className="rounded-[28px] border border-[color:var(--hub-border)] bg-white p-5 shadow-[0_18px_48px_rgba(15,23,42,0.05)]">
-        <div className="flex items-center gap-3">
-          <KeyRound className="h-5 w-5 text-[color:var(--hub-primary)]" />
+      <div className="rounded-[28px] border border-[color:var(--hub-border)] bg-white p-6 shadow-[0_18px_48px_rgba(15,23,42,0.05)]">
+        <div className="flex items-center gap-3 border-b border-[color:var(--hub-border)] pb-4">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[color:var(--hub-soft)]">
+            <KeyRound className="h-4.5 w-4.5 text-[color:var(--hub-primary)]" />
+          </div>
           <div>
-            <p className="text-sm font-semibold text-[color:var(--hub-text)]">Account security</p>
-            <p className="text-sm text-[color:var(--hub-muted)]">Update your email address or password.</p>
+            <p className="text-base font-semibold text-[color:var(--hub-text)]">Account security</p>
+            <p className="text-xs text-[color:var(--hub-muted)]">Update your email address or password.</p>
           </div>
         </div>
 
@@ -434,12 +438,14 @@ export const SettingsPage: React.FC = () => {
       </div>
 
       <div className="grid gap-4">
-        <div className="rounded-[28px] border border-[color:var(--hub-border)] bg-white p-5 shadow-[0_18px_48px_rgba(15,23,42,0.05)]">
-          <div className="flex items-center gap-3">
-            <BellRing className="h-5 w-5 text-[color:var(--hub-primary)]" />
+        <div className="rounded-[28px] border border-[color:var(--hub-border)] bg-white p-6 shadow-[0_18px_48px_rgba(15,23,42,0.05)]">
+          <div className="flex items-center gap-3 border-b border-[color:var(--hub-border)] pb-4">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[color:var(--hub-soft)]">
+              <BellRing className="h-4.5 w-4.5 text-[color:var(--hub-primary)]" />
+            </div>
             <div>
-              <p className="text-sm font-semibold text-[color:var(--hub-text)]">Message and homework alerts</p>
-              <p className="text-sm text-[color:var(--hub-muted)]">Keep urgent items visible without noise.</p>
+              <p className="text-base font-semibold text-[color:var(--hub-text)]">Notifications</p>
+              <p className="text-xs text-[color:var(--hub-muted)]">Keep urgent items visible without noise.</p>
             </div>
           </div>
           <div className="mt-4 grid gap-3">
@@ -464,12 +470,14 @@ export const SettingsPage: React.FC = () => {
           </div>
         </div>
 
-        <div className="rounded-[28px] border border-[color:var(--hub-border)] bg-white p-5 shadow-[0_18px_48px_rgba(15,23,42,0.05)]">
-          <div className="flex items-center gap-3">
-            <Tag className="h-5 w-5 text-[color:var(--hub-primary)]" />
+        <div className="rounded-[28px] border border-[color:var(--hub-border)] bg-white p-6 shadow-[0_18px_48px_rgba(15,23,42,0.05)]">
+          <div className="flex items-center gap-3 border-b border-[color:var(--hub-border)] pb-4">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[color:var(--hub-soft)]">
+              <Tag className="h-4.5 w-4.5 text-[color:var(--hub-primary)]" />
+            </div>
             <div>
-              <p className="text-sm font-semibold text-[color:var(--hub-text)]">{isStudent ? 'Private learning workspace' : 'Private teaching workspace'}</p>
-              <p className="text-sm text-[color:var(--hub-muted)]">No public ranking or social feed noise.</p>
+              <p className="text-base font-semibold text-[color:var(--hub-text)]">{isStudent ? 'Privacy' : 'Workspace privacy'}</p>
+              <p className="text-xs text-[color:var(--hub-muted)]">No public ranking or social feed noise.</p>
             </div>
           </div>
           <div className="mt-4">

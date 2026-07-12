@@ -450,9 +450,9 @@ const buildDemoWorkspace = (_user: NonNullable<ReturnType<typeof getCurrentUser>
     messages: [
       {
         id: 'demo-msg-1',
-        sender: 'Ava Thompson',
-        role: 'student',
-        body: 'Could we recap the discriminant method in the next lesson?',
+        sender: 'Demo Teacher',
+        role: 'teacher',
+        body: 'Great work this week everyone — remember to review your factorisation notes before Tuesday\'s session.',
         sentAt: new Date(now.getTime() - 2 * 60 * 60 * 1000).toISOString(),
         syncStatus: 'synced',
       },

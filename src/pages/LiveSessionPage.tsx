@@ -1,11 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  BarChart2, ChevronLeft, Circle, CreditCard, DoorOpen,
+  BarChart2, ChevronLeft, Circle, DoorOpen,
   Hand, LayoutGrid, Lock, Unlock, Maximize2,
   MessageSquare, Mic, MicOff, Radio,
   Users, Video, VideoOff,
 } from 'lucide-react';
-import { Link, Navigate, useParams, useSearchParams } from 'react-router-dom';
+import { Link, Navigate, useParams } from 'react-router-dom';
 import { BreakoutPanel } from '../components/live/BreakoutPanel';
 import { ChatPanel } from '../components/live/ChatPanel';
 import { LiveControlsBar } from '../components/live/LiveControlsBar';
@@ -15,20 +15,16 @@ import { PollPanel } from '../components/live/PollPanel';
 import { VideoGrid } from '../components/live/VideoGrid';
 import { useNotifications } from '../components/notifications/NotificationToast';
 import { BreakoutRoom, ChatMessage, Poll, PollResults, RaisedHand, SidePanelId } from '../lib/liveFeatures';
-import { LiveSessionMode, SWParticipant, SWSessionConfig } from '../lib/signalwireLive';
+import { SWParticipant, SWSessionConfig } from '../lib/signalwireLive';
 import type { VideoRoomSession, RoomSessionScreenShare } from '@signalwire/js';
 import { hasSupabaseConfig, supabase } from '../lib/supabase';
 import { cn, formatDateTime, getInitials } from '../lib/utils';
 import { useAuthStore } from '../store/auth';
 import { useTeacherHubStore } from '../store/teacherHub';
-import { useCurrencyFormatter } from '../lib/currency';
-import { useCurrencyStore } from '../store/currency';
 
 export const LiveSessionPage: React.FC = () => {
   const { id = '', lessonId = '' } = useParams();
   const { addNotification } = useNotifications();
-  const { format: formatMoney } = useCurrencyFormatter();
-  const currency = useCurrencyStore((state) => state.currency);
   const user = useAuthStore((state) => state.user);
   const isTeacher = user?.role === 'TEACHER';
   const isStudent = user?.role === 'STUDENT';
@@ -57,8 +53,6 @@ export const LiveSessionPage: React.FC = () => {
 
   // ─── Core session state ───────────────────────────────────────────────────
   const [sessionConfig, setSessionConfig] = useState<SWSessionConfig | null>(null);
-  const [sessionMode, setSessionMode] = useState<LiveSessionMode>('free');
-  const [ticketPriceGBP, setTicketPriceGBP] = useState(0);
   const [notes, setNotes] = useState('');
   const [isJoined, setIsJoined] = useState(false);
   const [isJoining, setIsJoining] = useState(false);
@@ -70,10 +64,6 @@ export const LiveSessionPage: React.FC = () => {
   const [participants, setParticipants] = useState<SWParticipant[]>([]);
   const [sessionError, setSessionError] = useState<string | null>(null);
   const [pinnedId, setPinnedId] = useState<string | null>(null);
-  const [paymentRequired, setPaymentRequired] = useState<{ ticketPriceGBP: number } | null>(null);
-  const [isPayingForLesson, setIsPayingForLesson] = useState(false);
-  const [searchParams] = useSearchParams();
-  const paymentSuccess = searchParams.get('payment_success') === '1';
 
   // ─── Layout + room controls ───────────────────────────────────────────────
   const [sessionLayout, setSessionLayout] = useState<'grid' | 'spotlight'>('grid');
@@ -276,38 +266,15 @@ export const LiveSessionPage: React.FC = () => {
     if (!hasSupabaseConfig) throw new Error('Live sessions are not configured yet.');
     const body: Record<string, unknown> = { lessonId: lesson.id };
     if (isTeacher) {
-      body.sessionMode = sessionMode;
-      body.ticketPriceGBP = sessionMode === 'paid' ? Math.max(1, ticketPriceGBP) : 0;
       body.notes = notes.trim();
     }
     const { data, error } = await supabase.functions.invoke('signalwire-token', { body });
     if (error) {
-      const errBody = await (error as { context?: { json?: () => Promise<Record<string, unknown>> } }).context?.json?.().catch(() => null);
-      if (errBody?.error === 'Payment required') {
-        setPaymentRequired({ ticketPriceGBP: Number(errBody.ticketPriceGBP || 0) });
-        return null;
-      }
       throw new Error((error as { message?: string }).message || 'Could not prepare this live lesson.');
     }
     const p = data as SWSessionConfig & { error?: string; message?: string };
     if (!p?.roomToken) throw new Error(p?.message || p?.error || 'Live setup is not ready.');
     return p;
-  };
-
-  const handlePayForLesson = async () => {
-    if (!hasSupabaseConfig || !paymentRequired) return;
-    setIsPayingForLesson(true);
-    try {
-      const returnUrl = `${window.location.origin}/class/${id}/live/${lessonId}?payment_success=1`;
-      const { data, error } = await supabase.functions.invoke('dodo-checkout', {
-        body: { type: 'lesson', lessonId: lesson.id, classId: id, returnUrl, cancelUrl: `${window.location.origin}/class/${id}/live/${lessonId}` },
-      });
-      if (error || !data?.checkoutUrl) throw error || new Error('No checkout URL');
-      window.location.href = data.checkoutUrl as string;
-    } catch {
-      setIsPayingForLesson(false);
-      setSessionError('Could not start payment. Please try again.');
-    }
   };
 
   const handleJoin = async () => {
@@ -333,7 +300,6 @@ export const LiveSessionPage: React.FC = () => {
       const config = await fetchJoinToken();
       if (!config) { setIsJoining(false); return; }
       setSessionConfig(config);
-      setSessionMode(config.sessionMode);
       teacherUserIdRef.current = config.teacherUserId;
 
       const sw = await import('@signalwire/js');
@@ -1004,50 +970,14 @@ export const LiveSessionPage: React.FC = () => {
             <div className="rounded-2xl border border-white/10 bg-white/5 px-5 py-4 text-center">
               <p className="font-semibold text-white">{lesson.title}</p>
               <p className="mt-1 text-sm text-white/40">{teacherClass.name} · {formatDateTime(lesson.scheduledAt)}</p>
-              {sessionMode === 'paid' && ticketPriceGBP > 0 && (
-                <p className="mt-1.5 text-xs font-semibold text-emerald-400">Paid session · {currency} {ticketPriceGBP}</p>
-              )}
             </div>
 
-            {paymentSuccess && (
-              <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm font-semibold text-emerald-400">
-                Payment confirmed — click Join lesson below to enter.
-              </div>
-            )}
-
-            {paymentRequired ? (
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
-                <p className="text-xs font-semibold uppercase tracking-widest text-white/40">Paid session</p>
-                <p className="mt-2 text-2xl font-bold text-white">{formatMoney(paymentRequired.ticketPriceGBP)}</p>
-                <p className="mt-1 text-sm text-white/50">A one-off ticket is required to join this lesson.</p>
-                <div className="mt-4 flex gap-3">
-                  <button type="button" onClick={() => void handlePayForLesson()} disabled={isPayingForLesson || !hasSupabaseConfig}
-                    className="inline-flex flex-1 items-center justify-center gap-2 rounded-full bg-[color:var(--hub-primary)] py-2.5 text-sm font-semibold text-white disabled:opacity-60">
-                    <CreditCard className="h-4 w-4" />
-                    {isPayingForLesson ? 'Redirecting…' : `Pay ${formatMoney(paymentRequired.ticketPriceGBP)}`}
-                  </button>
-                  <button type="button" onClick={() => setPaymentRequired(null)}
-                    className="rounded-full border border-white/15 px-4 py-2.5 text-sm font-semibold text-white/60 transition hover:border-white/30 hover:text-white">
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            ) : null}
-
-            {isTeacher && !paymentRequired && (
+            {isTeacher && (
               <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
                 <p className="mb-4 text-xs font-semibold uppercase tracking-widest text-white/40">Session settings</p>
                 <LiveSetupPanel
                   isTeacher={isTeacher}
-                  sessionMode={sessionMode}
-                  ticketPriceGBP={ticketPriceGBP}
                   notes={notes}
-                  onSessionModeChange={(mode) => {
-                    setSessionMode(mode);
-                    if (mode === 'paid' && ticketPriceGBP < 1) setTicketPriceGBP(15);
-                    if (mode === 'free') setTicketPriceGBP(0);
-                  }}
-                  onTicketPriceChange={setTicketPriceGBP}
                   onNotesChange={setNotes}
                   onJoin={() => void handleJoin()}
                   isJoining={isJoining}
@@ -1062,7 +992,7 @@ export const LiveSessionPage: React.FC = () => {
               </div>
             )}
 
-            {!paymentRequired && !isTeacher && (
+            {!isTeacher && (
               <button type="button" disabled={isJoining} onClick={() => void handleJoin()}
                 className="w-full rounded-full bg-[color:var(--hub-primary)] py-3.5 text-sm font-semibold text-white shadow-[0_8px_24px_rgba(27,74,128,0.35)] transition hover:opacity-90 disabled:opacity-60">
                 {isJoining ? 'Connecting…' : 'Join lesson'}

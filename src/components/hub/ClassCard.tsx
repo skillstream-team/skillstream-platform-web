@@ -1,6 +1,7 @@
 import React from 'react';
-import { ArrowRight, Calendar, Link2, Users } from 'lucide-react';
+import { ArrowRight, Calendar, Link2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useAuthStore } from '../../store/auth';
 import { TeacherClass } from '../../data/teacherHub';
 import { cn } from '../../lib/utils';
 
@@ -14,6 +15,7 @@ const formatSessionTime = (dateString: string) =>
   }).format(new Date(dateString));
 
 export const ClassCard: React.FC<{ teacherClass: TeacherClass }> = ({ teacherClass }) => {
+  const isStudent = useAuthStore((state) => state.user?.role === 'STUDENT');
   return (
     <Link
       to={`/class/${teacherClass.id}`}
@@ -37,14 +39,12 @@ export const ClassCard: React.FC<{ teacherClass: TeacherClass }> = ({ teacherCla
           <Calendar className="h-4 w-4 text-[color:var(--hub-primary)]" />
           <span>Next session {formatSessionTime(teacherClass.nextSessionAt)}</span>
         </div>
-        <div className="flex items-center gap-2 text-sm text-[color:var(--hub-muted)]">
-          <Users className="h-4 w-4 text-[color:var(--hub-primary)]" />
-          <span>{teacherClass.studentCount} active learners</span>
-        </div>
-        <div className="flex items-center gap-2 text-sm text-[color:var(--hub-muted)]">
-          <Link2 className="h-4 w-4 text-[color:var(--hub-success)]" />
-          <span>Invite code {teacherClass.inviteCode}</span>
-        </div>
+        {!isStudent && (
+          <div className="flex items-center gap-2 text-sm text-[color:var(--hub-muted)]">
+            <Link2 className="h-4 w-4 text-[color:var(--hub-success)]" />
+            <span>Invite code {teacherClass.inviteCode}</span>
+          </div>
+        )}
       </div>
 
       <div className="mt-5 flex items-center justify-between text-sm font-semibold text-[color:var(--hub-primary)]">

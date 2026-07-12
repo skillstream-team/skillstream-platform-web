@@ -43,6 +43,8 @@ import { LandingPage } from './pages/LandingPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { PrivacyPolicyPage } from './pages/legal/PrivacyPolicyPage';
 import { TermsPage } from './pages/legal/TermsPage';
+import { RefundPolicyPage } from './pages/legal/RefundPolicyPage';
+import { AcceptableUsePolicyPage } from './pages/legal/AcceptableUsePolicyPage';
 import { InviteRedirectPage } from './pages/InviteRedirectPage';
 import { LearnPage } from './pages/learn/LearnPage';
 import { CoursePlayerPage } from './pages/learn/CoursePlayerPage';
@@ -60,27 +62,34 @@ const homeRoute = (user: AuthUser | null) => {
   return '/dashboard';
 };
 
+const PageCrashFallback = (
+  <div className="flex min-h-screen flex-col items-center justify-center gap-4 p-8 bg-[color:var(--hub-bg)]">
+    <p className="text-lg font-semibold text-[color:var(--hub-text)]">This page ran into a problem.</p>
+    <a href="/dashboard" className="text-sm text-[color:var(--hub-primary)] underline">Go to dashboard</a>
+  </div>
+);
+
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuthStore();
-  return user ? <>{children}</> : <Navigate to="/login" replace />;
+  return user ? <ErrorBoundary fallback={PageCrashFallback}>{children}</ErrorBoundary> : <Navigate to="/login" replace />;
 };
 
 const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuthStore();
-  return user ? <Navigate to={homeRoute(user)} replace /> : <>{children}</>;
+  return user ? <Navigate to={homeRoute(user)} replace /> : <ErrorBoundary fallback={PageCrashFallback}>{children}</ErrorBoundary>;
 };
 
 const RoleRoute: React.FC<{ children: React.ReactNode; allow: Array<'TEACHER' | 'STUDENT' | 'ADMIN'> }> = ({ children, allow }) => {
   const { user } = useAuthStore();
   if (!user) return <Navigate to="/login" replace />;
-  return allow.includes(user.role) ? <>{children}</> : <Navigate to="/dashboard" replace />;
+  return allow.includes(user.role) ? <ErrorBoundary fallback={PageCrashFallback}>{children}</ErrorBoundary> : <Navigate to="/dashboard" replace />;
 };
 
 const OrgRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuthStore();
   if (!user) return <Navigate to="/login" replace />;
   if (!user.activeOrgId) return <Navigate to="/dashboard" replace />;
-  return <>{children}</>;
+  return <ErrorBoundary fallback={PageCrashFallback}>{children}</ErrorBoundary>;
 };
 
 const OAuthDisabledPage: React.FC = () => {
@@ -329,6 +338,8 @@ function App() {
             />
             <Route path="/privacy" element={<PrivacyPolicyPage />} />
             <Route path="/terms" element={<TermsPage />} />
+            <Route path="/refund-policy" element={<RefundPolicyPage />} />
+            <Route path="/acceptable-use" element={<AcceptableUsePolicyPage />} />
 
             <Route path="/home" element={<Navigate to="/dashboard" replace />} />
             <Route path="/calendar" element={<Navigate to="/schedule" replace />} />

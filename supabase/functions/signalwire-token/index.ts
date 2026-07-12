@@ -131,6 +131,44 @@ Deno.serve(async (req) => {
     return json(500, { error: 'Live lesson room is not available' });
   }
 
+  // Participant limit gate: check teacher's plan capacity before admitting a student
+  if (isStudent && !isAdmin) {
+    const { data: classTeacher } = await supabaseAdmin
+      .from('class_members')
+      .select('user_id')
+      .eq('class_id', lesson.class_id)
+      .eq('member_role', 'teacher')
+      .maybeSingle();
+
+    if (classTeacher?.user_id) {
+      const { data: sub } = await supabaseAdmin
+        .from('teacher_subscriptions')
+        .select('billing_plans(max_live_participants)')
+        .eq('teacher_user_id', classTeacher.user_id)
+        .eq('status', 'active')
+        .maybeSingle();
+
+      const planData = sub?.billing_plans as { max_live_participants?: number } | null;
+      const maxParticipants = planData?.max_live_participants ?? null;
+
+      if (maxParticipants !== null) {
+        // Count participants currently in session (joined but not yet left)
+        const { count } = await supabaseAdmin
+          .from('live_attendance_events')
+          .select('id', { count: 'exact', head: true })
+          .eq('lesson_id', lesson.id)
+          .is('left_at', null);
+
+        if ((count ?? 0) >= maxParticipants) {
+          return json(403, {
+            error: 'Session is full',
+            message: `This session has reached its maximum of ${maxParticipants} participants.`,
+          });
+        }
+      }
+    }
+  }
+
   // Payment gate for paid sessions
   if (liveConfig.session_mode === 'paid' && isStudent && !isAdmin) {
     const { data: purchase } = await supabaseAdmin

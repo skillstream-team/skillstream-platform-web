@@ -70,11 +70,43 @@ export const RegisterPage: React.FC = () => {
     classId: invitedClassId,
   });
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [parentalConsent, setParentalConsent] = useState(false);
+  const [birthDate, setBirthDate] = useState('');
   const [formError, setFormError] = useState('');
+
+  const getAge = (dob: string): number | null => {
+    if (!dob) return null;
+    const birth = new Date(dob);
+    if (isNaN(birth.getTime())) return null;
+    const today = new Date();
+    let age = today.getFullYear() - birth.getFullYear();
+    const m = today.getMonth() - birth.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+    return age;
+  };
+
+  const age = getAge(birthDate);
+  const isMinorStudent = formData.role === 'STUDENT' && age !== null && age >= 13 && age < 18;
 
   const validateStep1 = (): boolean => {
     if (!formData.name.trim() || !formData.email.trim() || !formData.password.trim()) {
       setFormError('Complete all required fields before continuing.');
+      return false;
+    }
+    if (!birthDate) {
+      setFormError('Please enter your date of birth.');
+      return false;
+    }
+    if (age === null) {
+      setFormError('Please enter a valid date of birth.');
+      return false;
+    }
+    if (age < 13) {
+      setFormError('You must be at least 13 years old to register. If you are under 13, please ask a parent or guardian to contact us at legal@skillstream.app.');
+      return false;
+    }
+    if (formData.role === 'TEACHER' && age < 18) {
+      setFormError('Teachers must be at least 18 years old to register.');
       return false;
     }
     if (formData.password.length < 8) {
@@ -91,6 +123,10 @@ export const RegisterPage: React.FC = () => {
     }
     if (!agreedToTerms) {
       setFormError('You must agree to the Terms of Service and Privacy Policy to continue.');
+      return false;
+    }
+    if (isMinorStudent && !parentalConsent) {
+      setFormError('You must confirm that a parent or guardian has given their consent for you to create this account.');
       return false;
     }
     return true;
@@ -279,6 +315,24 @@ export const RegisterPage: React.FC = () => {
           </div>
         </div>
 
+        <div className="space-y-2">
+          <label className="text-sm font-semibold text-[color:var(--edu-text)]">Date of birth</label>
+          <input
+            type="date"
+            className="edu-input"
+            value={birthDate}
+            max={new Date().toISOString().split('T')[0]}
+            min="1920-01-01"
+            onChange={(e) => { setBirthDate(e.target.value); if (formError?.includes('birth') || formError?.includes('13') || formError?.includes('18')) setFormError(''); }}
+          />
+          {age !== null && age < 13 ? (
+            <p className="text-xs text-[color:var(--edu-danger)]">You must be at least 13 years old to use SkillStream.</p>
+          ) : null}
+          {age !== null && formData.role === 'TEACHER' && age < 18 ? (
+            <p className="text-xs text-[color:var(--edu-danger)]">Teachers must be at least 18 years old.</p>
+          ) : null}
+        </div>
+
         <div className="grid gap-3 sm:grid-cols-2">
           {([
             { id: 'STUDENT' as Role, title: 'Student', description: 'Join classes and complete lessons.', icon: BookOpen },
@@ -343,6 +397,21 @@ export const RegisterPage: React.FC = () => {
             onChange={(e) => setFormData((c) => ({ ...c, confirmPassword: e.target.value }))}
           />
         </div>
+
+        {isMinorStudent ? (
+          <label className="flex items-start gap-3 rounded-[20px] border border-amber-200 bg-amber-50 px-4 py-3 text-sm dark:border-amber-900/40 dark:bg-amber-950/30">
+            <input
+              type="checkbox"
+              checked={parentalConsent}
+              onChange={(e) => { setParentalConsent(e.target.checked); if (formError?.includes('parent')) setFormError(''); }}
+              className="mt-0.5 h-4 w-4 shrink-0 rounded border-[color:var(--edu-border-strong)] accent-[color:var(--edu-primary)]"
+            />
+            <span className="leading-relaxed text-amber-800 dark:text-amber-200">
+              I confirm that a parent or guardian is aware I am creating this account and has given their consent as required by the{' '}
+              <Link to="/terms" target="_blank" rel="noreferrer" className="font-semibold underline underline-offset-2">Terms of Service</Link>.
+            </span>
+          </label>
+        ) : null}
 
         <label className="flex items-start gap-3 rounded-[20px] border border-[color:var(--edu-border)] bg-[rgba(27,74,128,0.03)] px-4 py-3 text-sm">
           <input

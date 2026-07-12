@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.2';
+import { isTimestampFresh, isValidUuid } from './helpers.js';
 
 const json = (status: number, body: Record<string, unknown>) =>
   new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
@@ -52,6 +53,10 @@ Deno.serve(async (req) => {
   const valid = await verifySignature(rawBody, webhookId, webhookTimestamp, webhookSignature, webhookSecret);
   if (!valid) return json(401, { error: 'Invalid webhook signature' });
 
+  if (!isTimestampFresh(webhookTimestamp)) {
+    return json(401, { error: 'Webhook timestamp too old — possible replay attack' });
+  }
+
   let event: { type: string; data: Record<string, unknown> };
   try {
     event = JSON.parse(rawBody) as typeof event;
@@ -70,6 +75,7 @@ Deno.serve(async (req) => {
     const dodoPaymentId = String(data.payment_id || '');
 
     if (!lessonId || !studentUserId) return json(400, { error: 'Missing metadata' });
+    if (!isValidUuid(lessonId) || !isValidUuid(studentUserId)) return json(400, { error: 'Invalid metadata: expected UUIDs' });
 
     // Upsert lesson_live_purchases to paid
     const { data: existing } = await supabaseAdmin
@@ -125,6 +131,7 @@ Deno.serve(async (req) => {
     const dodoSubscriptionId = String(data.subscription_id || '');
 
     if (!teacherUserId || !planCode) return json(400, { error: 'Missing metadata' });
+    if (!isValidUuid(teacherUserId)) return json(400, { error: 'Invalid metadata: teacher_user_id must be a UUID' });
 
     // Look up billing plan
     const { data: plan } = await supabaseAdmin
@@ -164,6 +171,7 @@ Deno.serve(async (req) => {
   if (type === 'subscription.cancelled' && metadata.type === 'subscription') {
     const teacherUserId = metadata.teacher_user_id;
     if (!teacherUserId) return json(400, { error: 'Missing metadata' });
+    if (!isValidUuid(teacherUserId)) return json(400, { error: 'Invalid metadata: teacher_user_id must be a UUID' });
 
     await supabaseAdmin
       .from('teacher_subscriptions')
@@ -177,6 +185,7 @@ Deno.serve(async (req) => {
   if (type === 'subscription.renewed' && metadata.type === 'subscription') {
     const teacherUserId = metadata.teacher_user_id;
     if (!teacherUserId) return json(400, { error: 'Missing metadata' });
+    if (!isValidUuid(teacherUserId)) return json(400, { error: 'Invalid metadata: teacher_user_id must be a UUID' });
 
     await supabaseAdmin
       .from('teacher_subscriptions')
