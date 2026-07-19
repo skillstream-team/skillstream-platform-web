@@ -6,6 +6,9 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./src/test/setup.ts'],
+    env: {
+      REACT_APP_ENABLE_DEMO_ACCOUNTS: 'true',
+    },
     include: ['src/**/*.test.{ts,tsx}'],
     coverage: {
       provider: 'v8',
