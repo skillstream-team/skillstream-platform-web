@@ -46,6 +46,7 @@ import { TermsPage } from './pages/legal/TermsPage';
 import { RefundPolicyPage } from './pages/legal/RefundPolicyPage';
 import { AcceptableUsePolicyPage } from './pages/legal/AcceptableUsePolicyPage';
 import { InviteRedirectPage } from './pages/InviteRedirectPage';
+import { IosInstallBanner } from './components/pwa/IosInstallBanner';
 import { LearnPage } from './pages/learn/LearnPage';
 import { CoursePlayerPage } from './pages/learn/CoursePlayerPage';
 import { CertificatesPage } from './pages/learn/CertificatesPage';
@@ -350,6 +351,7 @@ function App() {
           </Routes>
         </Router>
       </NotificationManager>
+      <IosInstallBanner />
     </ErrorBoundary>
   );
 }

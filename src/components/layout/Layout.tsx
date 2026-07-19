@@ -75,7 +75,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, className }) => {
   return (
     <>
     <div className="min-h-screen bg-[color:var(--hub-bg)] text-[color:var(--hub-text)]">
-      <div className="mx-auto flex min-h-screen max-w-[1440px] gap-0 lg:px-6 lg:py-6">
+      <div className="flex min-h-screen gap-0 lg:px-6 lg:py-6">
         <aside className="hidden w-[280px] shrink-0 lg:flex lg:flex-col">
           <div className="flex h-full flex-col rounded-[32px] border border-[color:var(--hub-border)] bg-[color:var(--hub-panel)] p-5 shadow-[0_18px_48px_rgba(15,23,42,0.06)]">
             <SkillStreamLogo to="/dashboard" hideMark />

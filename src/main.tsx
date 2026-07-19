@@ -1,5 +1,11 @@
 // CSS is processed separately and loaded via <link> in index.html
 import * as Sentry from '@sentry/react';
+
+if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production') {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js');
+  });
+}
 import ReactDOM from 'react-dom/client';
 import App from './App';
 
