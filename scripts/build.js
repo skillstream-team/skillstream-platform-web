@@ -62,11 +62,21 @@ const updatedHtml = indexHtml
   .replace(/src="\/dist\//g, 'src="/');
 fs.writeFileSync(path.join(distDir, 'index.html'), updatedHtml);
 
-// Copy public/ assets to dist/ (favicon, _redirects, etc.)
+// Copy public/ assets to dist/ (handles nested directories like icons/)
 const publicDir = path.join(__dirname, '../public');
+const copyRecursive = (src, dest) => {
+  if (fs.statSync(src).isDirectory()) {
+    fs.mkdirSync(dest, { recursive: true });
+    for (const entry of fs.readdirSync(src)) {
+      copyRecursive(path.join(src, entry), path.join(dest, entry));
+    }
+  } else {
+    fs.copyFileSync(src, dest);
+  }
+};
 if (fs.existsSync(publicDir)) {
   for (const file of fs.readdirSync(publicDir)) {
-    fs.copyFileSync(path.join(publicDir, file), path.join(distDir, file));
+    copyRecursive(path.join(publicDir, file), path.join(distDir, file));
   }
 } else {
   // Fallback: write a default _redirects for SPA routing
