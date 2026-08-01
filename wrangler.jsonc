@@ -1,4 +1,5 @@
 {
+  // Custom domain: skillstream.world
   "name": "skillstream-platform-web",
   "compatibility_date": "2026-08-01",
   "assets": {
