@@ -235,124 +235,279 @@ export const LandingPage: React.FC = () => {
 
         </div>
 
-        {/* Platform preview */}
-        <div
-          className="relative mx-auto max-w-5xl overflow-hidden rounded-2xl"
-          style={{ marginTop: '3rem', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 40px 100px rgba(0,0,0,0.6)' }}
-        >
-          {/* Browser bar */}
-          <div className="flex items-center gap-2 px-5 py-3" style={{ background: '#1a1f2e', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-            <div className="h-3 w-3 rounded-full" style={{ background: '#ff5f57' }} />
-            <div className="h-3 w-3 rounded-full" style={{ background: '#ffbd2e' }} />
-            <div className="h-3 w-3 rounded-full" style={{ background: '#27c93f' }} />
-            <div className="mx-auto rounded-lg px-8 py-1 text-xs font-medium" style={{ background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.3)' }}>
-              skillstream.app/dashboard
-            </div>
-          </div>
+        {/* Platform preview — swaps device mockup by breakpoint to match how the real app lays out at that size */}
+        <div className="relative mx-auto" style={{ marginTop: '3rem' }}>
 
-          {/* App shell — matches real platform layout */}
-          <div className="flex" style={{ background: '#f0f2f5', minHeight: '380px' }}>
-
-            {/* Sidebar — white rounded panel */}
-            <div className="flex flex-col p-3" style={{ width: '188px', background: '#f0f2f5', flexShrink: 0 }}>
+          {/* Phone mockup — below md (real app: logo header + bottom tab bar, single-column stats) */}
+          <div className="block md:hidden">
+            <div
+              className="relative mx-auto overflow-hidden"
+              style={{ width: '280px', borderRadius: '36px', border: '10px solid #111827', boxShadow: '0 30px 80px rgba(0,0,0,0.6)' }}
+            >
               <div
-                className="flex flex-1 flex-col rounded-[22px] p-3"
-                style={{ background: 'white', boxShadow: '0 2px 12px rgba(15,23,42,0.07)' }}
-              >
-                {/* Logo area */}
-                <div className="mb-4 px-2 pt-1">
-                  <span className="text-sm font-extrabold tracking-tight" style={{ color: '#1b4a80', fontFamily: 'serif' }}>SkillStream</span>
+                className="pointer-events-none absolute left-1/2 top-0 z-10 -translate-x-1/2 rounded-b-2xl"
+                style={{ width: '110px', height: '20px', background: '#111827' }}
+              />
+              <div className="relative overflow-hidden" style={{ background: '#f0f2f5', height: '540px' }}>
+                {/* Top header — extra top padding clears the notch above it */}
+                <div className="flex items-end justify-center px-4 pb-2" style={{ paddingTop: '24px', background: 'white', borderBottom: '1px solid rgba(15,23,42,0.06)' }}>
+                  <span className="text-xs font-extrabold tracking-tight" style={{ color: '#1b4a80', fontFamily: 'serif' }}>SkillStream</span>
                 </div>
 
-                {/* Nav items */}
-                <nav className="flex flex-1 flex-col gap-0.5">
+                {/* Content */}
+                <div className="p-3" style={{ paddingBottom: '68px' }}>
+                  <p className="text-sm font-extrabold" style={{ color: '#162033' }}>Dashboard</p>
+                  <p className="mb-3 text-[10px]" style={{ color: '#627086' }}>Welcome back, James</p>
+
+                  {/* Stat cards — single column, matches real dashboard's grid-cols-1 below md */}
+                  <div className="mb-3 grid grid-cols-1 gap-2">
+                    {[
+                      { label: 'Total students', value: '24', color: '#1b4a80' },
+                      { label: 'Active classes', value: '3', color: '#0891b2' },
+                    ].map(({ label, value, color }) => (
+                      <div key={label} className="rounded-xl p-2.5" style={{ background: 'white', boxShadow: '0 1px 6px rgba(15,23,42,0.06)' }}>
+                        <p className="text-[9px] font-semibold" style={{ color: '#627086' }}>{label}</p>
+                        <p className="mt-0.5 text-lg font-extrabold" style={{ color, letterSpacing: '-0.03em' }}>{value}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="rounded-xl p-3" style={{ background: 'white', boxShadow: '0 1px 6px rgba(15,23,42,0.06)' }}>
+                    <p className="mb-2 text-[9px] font-bold uppercase tracking-wider" style={{ color: '#627086' }}>Your Classes</p>
+                    {[
+                      { name: 'Advanced English', students: 12, next: 'Today 4:00 PM', live: true },
+                      { name: 'IELTS Preparation', students: 8, next: 'Thu 2:00 PM', live: false },
+                    ].map(({ name, students, next, live }) => (
+                      <div key={name} className="flex items-center justify-between border-b py-2 last:border-0" style={{ borderColor: 'rgba(15,23,42,0.06)' }}>
+                        <div>
+                          <p className="text-[10px] font-bold" style={{ color: '#162033' }}>{name}</p>
+                          <p className="text-[9px]" style={{ color: '#627086' }}>{students} students · {next}</p>
+                        </div>
+                        {live ? (
+                          <span className="flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[8px] font-bold" style={{ background: 'rgba(34,197,94,0.12)', color: '#16a34a' }}>
+                            <span className="h-1 w-1 rounded-full bg-green-500 animate-pulse" /> Live
+                          </span>
+                        ) : (
+                          <span className="rounded-full px-1.5 py-0.5 text-[8px] font-semibold" style={{ background: '#f0f2f5', color: '#627086' }}>Scheduled</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Bottom tab bar — real app has no sidebar below lg, just this */}
+                <div className="absolute inset-x-0 bottom-0 flex items-center justify-around" style={{ height: '56px', background: 'white', borderTop: '1px solid rgba(15,23,42,0.06)' }}>
                   {[
-                    { Icon: Home, label: 'Dashboard', active: true },
+                    { Icon: Home, label: 'Home', active: true },
                     { Icon: BookOpen, label: 'Classes', active: false },
                     { Icon: Users, label: 'Students', active: false },
                     { Icon: CalendarDays, label: 'Schedule', active: false },
-                    { Icon: MessageSquare, label: 'Messages', active: false },
-                    { Icon: CreditCard, label: 'Payments', active: false },
+                    { Icon: Menu, label: 'More', active: false },
                   ].map(({ Icon, label, active }) => (
-                    <div
-                      key={label}
-                      className="flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-[11px] font-semibold"
-                      style={{
-                        background: active ? '#1b4a80' : 'transparent',
-                        color: active ? 'white' : '#627086',
-                      }}
-                    >
-                      <Icon style={{ width: 13, height: 13, flexShrink: 0 }} />
-                      {label}
+                    <div key={label} className="flex flex-col items-center gap-0.5">
+                      <Icon style={{ width: 15, height: 15, color: active ? '#1b4a80' : '#9aa5b1' }} />
+                      <span className="text-[7px] font-semibold" style={{ color: active ? '#1b4a80' : '#9aa5b1' }}>{label}</span>
                     </div>
                   ))}
-                </nav>
+                </div>
+              </div>
+            </div>
+          </div>
 
-                {/* Bottom settings + user */}
-                <div className="mt-3 border-t pt-2" style={{ borderColor: 'rgba(15,23,42,0.07)' }}>
-                  <div className="mb-2 flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-[11px] font-semibold" style={{ color: '#627086' }}>
-                    <Settings style={{ width: 13, height: 13 }} /> Settings
+          {/* Tablet mockup — md to lg (real app uses the same header + tab-bar nav as phone here, just a wider 2-col stat grid) */}
+          <div className="hidden md:block lg:hidden">
+            <div
+              className="relative mx-auto overflow-hidden"
+              style={{ width: '560px', borderRadius: '26px', border: '14px solid #111827', boxShadow: '0 30px 80px rgba(0,0,0,0.6)' }}
+            >
+              <div className="relative overflow-hidden" style={{ background: '#f0f2f5', height: '440px' }}>
+                {/* Top header */}
+                <div className="flex items-center justify-center px-4 py-3" style={{ background: 'white', borderBottom: '1px solid rgba(15,23,42,0.06)' }}>
+                  <span className="text-sm font-extrabold tracking-tight" style={{ color: '#1b4a80', fontFamily: 'serif' }}>SkillStream</span>
+                </div>
+
+                {/* Content */}
+                <div className="p-5" style={{ paddingBottom: '76px' }}>
+                  <p className="text-base font-extrabold" style={{ color: '#162033' }}>Dashboard</p>
+                  <p className="mb-4 text-[11px]" style={{ color: '#627086' }}>Welcome back, James</p>
+
+                  {/* Stat cards — 2 columns, matches real dashboard's md:grid-cols-2 */}
+                  <div className="mb-4 grid grid-cols-2 gap-3">
+                    {[
+                      { label: 'Total students', value: '24', color: '#1b4a80' },
+                      { label: 'Active classes', value: '3', color: '#0891b2' },
+                      { label: 'Upcoming lessons', value: '5', color: '#7c3aed' },
+                      { label: 'Pending tasks', value: '2', color: '#d97706' },
+                    ].map(({ label, value, color }) => (
+                      <div key={label} className="rounded-2xl p-3" style={{ background: 'white', boxShadow: '0 1px 6px rgba(15,23,42,0.06)' }}>
+                        <p className="text-[10px] font-semibold" style={{ color: '#627086' }}>{label}</p>
+                        <p className="mt-1 text-xl font-extrabold" style={{ color, letterSpacing: '-0.03em' }}>{value}</p>
+                      </div>
+                    ))}
                   </div>
-                  <div className="flex items-center gap-2 rounded-xl px-2 py-2" style={{ background: '#f4f6f8' }}>
-                    <div className="flex h-7 w-7 items-center justify-center rounded-full text-[10px] font-bold text-white flex-shrink-0" style={{ background: '#1b4a80' }}>JD</div>
-                    <div className="min-w-0">
-                      <p className="truncate text-[10px] font-bold" style={{ color: '#162033' }}>James Doe</p>
-                      <p className="truncate text-[9px]" style={{ color: '#627086' }}>Teacher</p>
+
+                  <div className="rounded-2xl p-4" style={{ background: 'white', boxShadow: '0 1px 6px rgba(15,23,42,0.06)' }}>
+                    <p className="mb-3 text-[10px] font-bold uppercase tracking-wider" style={{ color: '#627086' }}>Your Classes</p>
+                    {[
+                      { name: 'Advanced English', students: 12, next: 'Today 4:00 PM', live: true },
+                      { name: 'IELTS Preparation', students: 8, next: 'Thu 2:00 PM', live: false },
+                      { name: 'Business Writing', students: 4, next: 'Fri 11:00 AM', live: false },
+                    ].map(({ name, students, next, live }) => (
+                      <div key={name} className="flex items-center justify-between border-b py-2.5 last:border-0" style={{ borderColor: 'rgba(15,23,42,0.06)' }}>
+                        <div>
+                          <p className="text-[11px] font-bold" style={{ color: '#162033' }}>{name}</p>
+                          <p className="text-[10px]" style={{ color: '#627086' }}>{students} students · {next}</p>
+                        </div>
+                        {live ? (
+                          <span className="flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-bold" style={{ background: 'rgba(34,197,94,0.12)', color: '#16a34a' }}>
+                            <span className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" /> Live
+                          </span>
+                        ) : (
+                          <span className="rounded-full px-2 py-0.5 text-[9px] font-semibold" style={{ background: '#f0f2f5', color: '#627086' }}>Scheduled</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Bottom tab bar */}
+                <div className="absolute inset-x-0 bottom-0 flex items-center justify-around" style={{ height: '60px', background: 'white', borderTop: '1px solid rgba(15,23,42,0.06)' }}>
+                  {[
+                    { Icon: Home, label: 'Home', active: true },
+                    { Icon: BookOpen, label: 'Classes', active: false },
+                    { Icon: Users, label: 'Students', active: false },
+                    { Icon: CalendarDays, label: 'Schedule', active: false },
+                    { Icon: Menu, label: 'More', active: false },
+                  ].map(({ Icon, label, active }) => (
+                    <div key={label} className="flex flex-col items-center gap-1">
+                      <Icon style={{ width: 17, height: 17, color: active ? '#1b4a80' : '#9aa5b1' }} />
+                      <span className="text-[9px] font-semibold" style={{ color: active ? '#1b4a80' : '#9aa5b1' }}>{label}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Desktop mockup — lg and up (real app: fixed sidebar, no bottom bar, 4-col stat grid) */}
+          <div
+            className="relative mx-auto hidden max-w-5xl overflow-hidden rounded-2xl lg:block"
+            style={{ border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 40px 100px rgba(0,0,0,0.6)' }}
+          >
+            {/* Browser bar */}
+            <div className="flex items-center gap-2 px-5 py-3" style={{ background: '#1a1f2e', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+              <div className="h-3 w-3 rounded-full" style={{ background: '#ff5f57' }} />
+              <div className="h-3 w-3 rounded-full" style={{ background: '#ffbd2e' }} />
+              <div className="h-3 w-3 rounded-full" style={{ background: '#27c93f' }} />
+              <div className="mx-auto rounded-lg px-8 py-1 text-xs font-medium" style={{ background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.3)' }}>
+                skillstream.app/dashboard
+              </div>
+            </div>
+
+            {/* App shell — matches real platform layout */}
+            <div className="flex" style={{ background: '#f0f2f5', minHeight: '380px' }}>
+
+              {/* Sidebar — white rounded panel */}
+              <div className="flex flex-col p-3" style={{ width: '188px', background: '#f0f2f5', flexShrink: 0 }}>
+                <div
+                  className="flex flex-1 flex-col rounded-[22px] p-3"
+                  style={{ background: 'white', boxShadow: '0 2px 12px rgba(15,23,42,0.07)' }}
+                >
+                  {/* Logo area */}
+                  <div className="mb-4 px-2 pt-1">
+                    <span className="text-sm font-extrabold tracking-tight" style={{ color: '#1b4a80', fontFamily: 'serif' }}>SkillStream</span>
+                  </div>
+
+                  {/* Nav items */}
+                  <nav className="flex flex-1 flex-col gap-0.5">
+                    {[
+                      { Icon: Home, label: 'Dashboard', active: true },
+                      { Icon: BookOpen, label: 'Classes', active: false },
+                      { Icon: Users, label: 'Students', active: false },
+                      { Icon: CalendarDays, label: 'Schedule', active: false },
+                      { Icon: MessageSquare, label: 'Messages', active: false },
+                      { Icon: CreditCard, label: 'Payments', active: false },
+                    ].map(({ Icon, label, active }) => (
+                      <div
+                        key={label}
+                        className="flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-[11px] font-semibold"
+                        style={{
+                          background: active ? '#1b4a80' : 'transparent',
+                          color: active ? 'white' : '#627086',
+                        }}
+                      >
+                        <Icon style={{ width: 13, height: 13, flexShrink: 0 }} />
+                        {label}
+                      </div>
+                    ))}
+                  </nav>
+
+                  {/* Bottom settings + user */}
+                  <div className="mt-3 border-t pt-2" style={{ borderColor: 'rgba(15,23,42,0.07)' }}>
+                    <div className="mb-2 flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-[11px] font-semibold" style={{ color: '#627086' }}>
+                      <Settings style={{ width: 13, height: 13 }} /> Settings
+                    </div>
+                    <div className="flex items-center gap-2 rounded-xl px-2 py-2" style={{ background: '#f4f6f8' }}>
+                      <div className="flex h-7 w-7 items-center justify-center rounded-full text-[10px] font-bold text-white flex-shrink-0" style={{ background: '#1b4a80' }}>JD</div>
+                      <div className="min-w-0">
+                        <p className="truncate text-[10px] font-bold" style={{ color: '#162033' }}>James Doe</p>
+                        <p className="truncate text-[9px]" style={{ color: '#627086' }}>Teacher</p>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
 
-            {/* Main content */}
-            <div className="flex-1 p-4" style={{ background: '#f0f2f5' }}>
-              {/* Page header */}
-              <div className="mb-4">
-                <p className="text-base font-extrabold" style={{ color: '#162033' }}>Dashboard</p>
-                <p className="text-[11px]" style={{ color: '#627086' }}>Welcome back, James</p>
-              </div>
+              {/* Main content */}
+              <div className="flex-1 p-4" style={{ background: '#f0f2f5' }}>
+                {/* Page header */}
+                <div className="mb-4">
+                  <p className="text-base font-extrabold" style={{ color: '#162033' }}>Dashboard</p>
+                  <p className="text-[11px]" style={{ color: '#627086' }}>Welcome back, James</p>
+                </div>
 
-              {/* Stat cards */}
-              <div className="mb-4 grid grid-cols-4 gap-3">
-                {[
-                  { label: 'Total students', value: '24', color: '#1b4a80' },
-                  { label: 'Active classes', value: '3', color: '#0891b2' },
-                  { label: 'Upcoming lessons', value: '5', color: '#7c3aed' },
-                  { label: 'Pending tasks', value: '2', color: '#d97706' },
-                ].map(({ label, value, color }) => (
-                  <div
-                    key={label}
-                    className="rounded-2xl p-3.5"
-                    style={{ background: 'white', boxShadow: '0 1px 6px rgba(15,23,42,0.06)' }}
-                  >
-                    <p className="text-[10px] font-semibold" style={{ color: '#627086' }}>{label}</p>
-                    <p className="mt-1 text-2xl font-extrabold" style={{ color, letterSpacing: '-0.03em' }}>{value}</p>
-                  </div>
-                ))}
-              </div>
-
-              {/* Class list */}
-              <div className="rounded-2xl p-4" style={{ background: 'white', boxShadow: '0 1px 6px rgba(15,23,42,0.06)' }}>
-                <p className="mb-3 text-[11px] font-bold uppercase tracking-wider" style={{ color: '#627086' }}>Your Classes</p>
-                {[
-                  { name: 'Advanced English', students: 12, next: 'Today 4:00 PM', live: true },
-                  { name: 'IELTS Preparation', students: 8, next: 'Thu 2:00 PM', live: false },
-                  { name: 'Business Writing', students: 4, next: 'Fri 11:00 AM', live: false },
-                ].map(({ name, students, next, live }) => (
-                  <div key={name} className="flex items-center justify-between border-b py-2.5 last:border-0" style={{ borderColor: 'rgba(15,23,42,0.06)' }}>
-                    <div>
-                      <p className="text-[11px] font-bold" style={{ color: '#162033' }}>{name}</p>
-                      <p className="text-[10px]" style={{ color: '#627086' }}>{students} students · {next}</p>
+                {/* Stat cards */}
+                <div className="mb-4 grid grid-cols-4 gap-3">
+                  {[
+                    { label: 'Total students', value: '24', color: '#1b4a80' },
+                    { label: 'Active classes', value: '3', color: '#0891b2' },
+                    { label: 'Upcoming lessons', value: '5', color: '#7c3aed' },
+                    { label: 'Pending tasks', value: '2', color: '#d97706' },
+                  ].map(({ label, value, color }) => (
+                    <div
+                      key={label}
+                      className="rounded-2xl p-3.5"
+                      style={{ background: 'white', boxShadow: '0 1px 6px rgba(15,23,42,0.06)' }}
+                    >
+                      <p className="text-[10px] font-semibold" style={{ color: '#627086' }}>{label}</p>
+                      <p className="mt-1 text-2xl font-extrabold" style={{ color, letterSpacing: '-0.03em' }}>{value}</p>
                     </div>
-                    {live ? (
-                      <span className="flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-bold" style={{ background: 'rgba(34,197,94,0.12)', color: '#16a34a' }}>
-                        <span className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" /> Live
-                      </span>
-                    ) : (
-                      <span className="rounded-full px-2 py-0.5 text-[9px] font-semibold" style={{ background: '#f0f2f5', color: '#627086' }}>Scheduled</span>
-                    )}
-                  </div>
-                ))}
+                  ))}
+                </div>
+
+                {/* Class list */}
+                <div className="rounded-2xl p-4" style={{ background: 'white', boxShadow: '0 1px 6px rgba(15,23,42,0.06)' }}>
+                  <p className="mb-3 text-[11px] font-bold uppercase tracking-wider" style={{ color: '#627086' }}>Your Classes</p>
+                  {[
+                    { name: 'Advanced English', students: 12, next: 'Today 4:00 PM', live: true },
+                    { name: 'IELTS Preparation', students: 8, next: 'Thu 2:00 PM', live: false },
+                    { name: 'Business Writing', students: 4, next: 'Fri 11:00 AM', live: false },
+                  ].map(({ name, students, next, live }) => (
+                    <div key={name} className="flex items-center justify-between border-b py-2.5 last:border-0" style={{ borderColor: 'rgba(15,23,42,0.06)' }}>
+                      <div>
+                        <p className="text-[11px] font-bold" style={{ color: '#162033' }}>{name}</p>
+                        <p className="text-[10px]" style={{ color: '#627086' }}>{students} students · {next}</p>
+                      </div>
+                      {live ? (
+                        <span className="flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-bold" style={{ background: 'rgba(34,197,94,0.12)', color: '#16a34a' }}>
+                          <span className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" /> Live
+                        </span>
+                      ) : (
+                        <span className="rounded-full px-2 py-0.5 text-[9px] font-semibold" style={{ background: '#f0f2f5', color: '#627086' }}>Scheduled</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
