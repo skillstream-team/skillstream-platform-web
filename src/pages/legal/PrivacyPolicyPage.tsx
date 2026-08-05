@@ -27,7 +27,7 @@ export const PrivacyPolicyPage: React.FC = () => (
 
       <Section title="1. Who we are">
         <p>SkillStream ("we", "us", "our") is an online platform that enables educators to host live lessons, manage students, and receive payments. We are a data controller as defined under the Cyber and Data Protection Act [Chapter 12:07] of Zimbabwe (the "Act"). References to "you" mean teachers, students, and administrators using the platform.</p>
-        <p>For data protection queries, contact us at: <strong className="text-[color:var(--hub-text)]">privacy@skillstream.app</strong></p>
+        <p>For data protection queries, contact us at: <strong className="text-[color:var(--hub-text)]">privacy@skillstream.world</strong></p>
       </Section>
 
       <Section title="2. Information we collect">
@@ -82,7 +82,7 @@ export const PrivacyPolicyPage: React.FC = () => (
         <p><strong className="text-[color:var(--hub-text)]">Right to object:</strong> Object to processing based on our legitimate interests, including profiling.</p>
         <p><strong className="text-[color:var(--hub-text)]">Right to withdraw consent:</strong> Where we rely on your consent (e.g. for AI features), you may withdraw it at any time without affecting the lawfulness of prior processing.</p>
         <p><strong className="text-[color:var(--hub-text)]">Right not to be subject to automated decisions:</strong> We do not make decisions about you that have legal or significant effects based solely on automated processing.</p>
-        <p>To exercise any of these rights, contact us at <strong className="text-[color:var(--hub-text)]">privacy@skillstream.app</strong>. We will respond within 30 days. If we are unable to meet the deadline we will notify you and give reasons.</p>
+        <p>To exercise any of these rights, contact us at <strong className="text-[color:var(--hub-text)]">privacy@skillstream.world</strong>. We will respond within 30 days. If we are unable to meet the deadline we will notify you and give reasons.</p>
         <p>If you are not satisfied with our response, you have the right to lodge a complaint with the <strong className="text-[color:var(--hub-text)]">Zimbabwe Data Protection Authority (ZDPA)</strong>, the national supervisory authority for data protection in Zimbabwe.</p>
       </Section>
 
@@ -93,7 +93,7 @@ export const PrivacyPolicyPage: React.FC = () => (
       </Section>
 
       <Section title="9. Children and young people">
-        <p>SkillStream is not directed at children under 13. We do not knowingly collect personal data from children under 13 without verifiable parental consent. If you believe a child under 13 has created an account without consent, please contact us at <strong className="text-[color:var(--hub-text)]">privacy@skillstream.app</strong> immediately and we will delete the account.</p>
+        <p>SkillStream is not directed at children under 13. We do not knowingly collect personal data from children under 13 without verifiable parental consent. If you believe a child under 13 has created an account without consent, please contact us at <strong className="text-[color:var(--hub-text)]">privacy@skillstream.world</strong> immediately and we will delete the account.</p>
         <p>Students aged 13 to 17 may use the platform with the consent of a parent or legal guardian as described in our Terms of Service. We apply the same data protections to all users regardless of age. Teachers are responsible for ensuring that any recording of a lesson involving a minor is done with appropriate parental consent.</p>
       </Section>
 
@@ -102,7 +102,7 @@ export const PrivacyPolicyPage: React.FC = () => (
       </Section>
 
       <Section title="11. Contact and complaints">
-        <p>For privacy-related questions or to exercise your data rights, contact us at: <strong className="text-[color:var(--hub-text)]">privacy@skillstream.app</strong></p>
+        <p>For privacy-related questions or to exercise your data rights, contact us at: <strong className="text-[color:var(--hub-text)]">privacy@skillstream.world</strong></p>
         <p>If you are not satisfied with how we have handled your request, you may lodge a complaint with the Zimbabwe Data Protection Authority (ZDPA), the body responsible for enforcing the Cyber and Data Protection Act in Zimbabwe.</p>
       </Section>
 

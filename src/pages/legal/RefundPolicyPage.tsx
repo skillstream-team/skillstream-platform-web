@@ -31,20 +31,20 @@ export const RefundPolicyPage: React.FC = () => (
       </Section>
 
       <Section title="2. Teacher subscriptions">
-        <p><strong className="text-[color:var(--hub-text)]">7-day cooling-off period:</strong> If you are a new subscriber and you cancel within 7 days of your first payment, and you have not yet hosted any paid lessons during that period, you are entitled to a full refund of your first month's subscription fee. To claim this, email <strong className="text-[color:var(--hub-text)]">legal@skillstream.app</strong> from your registered email address within the 7-day window.</p>
+        <p><strong className="text-[color:var(--hub-text)]">7-day cooling-off period:</strong> If you are a new subscriber and you cancel within 7 days of your first payment, and you have not yet hosted any paid lessons during that period, you are entitled to a full refund of your first month's subscription fee. To claim this, email <strong className="text-[color:var(--hub-text)]">legal@skillstream.world</strong> from your registered email address within the 7-day window.</p>
         <p><strong className="text-[color:var(--hub-text)]">Renewals and ongoing subscriptions:</strong> Subscription fees are non-refundable after the cooling-off period has passed or after you have hosted a paid lesson. If you cancel a subscription renewal, your access continues until the end of the current paid billing period. No pro-rata refund is issued for unused days.</p>
         <p><strong className="text-[color:var(--hub-text)]">Plan changes:</strong> If you upgrade your plan mid-cycle, you will be charged only the difference for the remaining days. Downgrades take effect at the next renewal date.</p>
       </Section>
 
       <Section title="3. Student lesson purchases">
         <p><strong className="text-[color:var(--hub-text)]">Completed lessons:</strong> Payments for lessons that have taken place are not refundable, except in the circumstances described below.</p>
-        <p><strong className="text-[color:var(--hub-text)]">Teacher-cancelled lessons:</strong> If a teacher cancels a paid lesson and does not reschedule it within a reasonable time (generally 7 days), you are automatically entitled to a full refund of that lesson's payment. Contact <strong className="text-[color:var(--hub-text)]">legal@skillstream.app</strong> with the lesson details if a refund has not been processed within 5 business days.</p>
+        <p><strong className="text-[color:var(--hub-text)]">Teacher-cancelled lessons:</strong> If a teacher cancels a paid lesson and does not reschedule it within a reasonable time (generally 7 days), you are automatically entitled to a full refund of that lesson's payment. Contact <strong className="text-[color:var(--hub-text)]">legal@skillstream.world</strong> with the lesson details if a refund has not been processed within 5 business days.</p>
         <p><strong className="text-[color:var(--hub-text)]">Technical failure:</strong> If a serious technical fault on SkillStream's side prevented a lesson from taking place (e.g. platform outage, not a connectivity issue on your end), you may request a refund or lesson credit within 48 hours of the scheduled start time. We will investigate and respond within 3 business days.</p>
         <p><strong className="text-[color:var(--hub-text)]">No-show:</strong> If you miss a lesson without notifying the teacher in advance, no refund is issued. This is at the teacher's discretion if they have their own cancellation policy.</p>
       </Section>
 
       <Section title="4. How to request a refund">
-        <p>Email <strong className="text-[color:var(--hub-text)]">legal@skillstream.app</strong> with the following:</p>
+        <p>Email <strong className="text-[color:var(--hub-text)]">legal@skillstream.world</strong> with the following:</p>
         <ul className="ml-4 list-disc space-y-1">
           <li>Your registered email address</li>
           <li>The date and amount of the payment in question</li>
@@ -62,7 +62,7 @@ export const RefundPolicyPage: React.FC = () => (
       </Section>
 
       <Section title="7. Contact">
-        <p>For refund requests and payment questions: <strong className="text-[color:var(--hub-text)]">legal@skillstream.app</strong></p>
+        <p>For refund requests and payment questions: <strong className="text-[color:var(--hub-text)]">legal@skillstream.world</strong></p>
       </Section>
 
       <div className="mt-12 border-t border-[color:var(--hub-border)] pt-8 text-sm text-[color:var(--hub-muted)]">

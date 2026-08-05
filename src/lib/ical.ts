@@ -32,7 +32,7 @@ export function buildIcal(lessons: LessonSummary[]): string {
     const end = new Date(new Date(start).getTime() + lesson.durationMinutes * 60 * 1000).toISOString();
     lines.push(
       'BEGIN:VEVENT',
-      `UID:${lesson.id}@skillstream.app`,
+      `UID:${lesson.id}@skillstream.world`,
       `DTSTART:${toIcalDate(start)}`,
       `DTEND:${toIcalDate(end)}`,
       `SUMMARY:${escapeIcal(lesson.title)}`,
