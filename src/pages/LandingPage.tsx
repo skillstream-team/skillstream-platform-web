@@ -400,7 +400,7 @@ export const LandingPage: React.FC = () => {
               <div className="h-3 w-3 rounded-full" style={{ background: '#ffbd2e' }} />
               <div className="h-3 w-3 rounded-full" style={{ background: '#27c93f' }} />
               <div className="mx-auto rounded-lg px-8 py-1 text-xs font-medium" style={{ background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.3)' }}>
-                skillstream.app/dashboard
+                skillstream.world/dashboard
               </div>
             </div>
 

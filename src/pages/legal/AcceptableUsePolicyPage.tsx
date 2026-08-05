@@ -90,7 +90,7 @@ export const AcceptableUsePolicyPage: React.FC = () => (
       </Section>
 
       <Section title="7. Reporting violations">
-        <p>If you believe someone is violating this policy, report it by emailing <strong className="text-[color:var(--hub-text)]">report@skillstream.app</strong> with a description of the issue and, where possible, supporting evidence (screenshots, message content). We treat all reports confidentially.</p>
+        <p>If you believe someone is violating this policy, report it by emailing <strong className="text-[color:var(--hub-text)]">report@skillstream.world</strong> with a description of the issue and, where possible, supporting evidence (screenshots, message content). We treat all reports confidentially.</p>
         <p>Teachers can also remove students from their classes immediately using the class management tools if a student is being disruptive.</p>
       </Section>
 
@@ -111,8 +111,8 @@ export const AcceptableUsePolicyPage: React.FC = () => (
       </Section>
 
       <Section title="10. Contact">
-        <p>To report a violation: <strong className="text-[color:var(--hub-text)]">report@skillstream.app</strong></p>
-        <p>For general policy questions: <strong className="text-[color:var(--hub-text)]">legal@skillstream.app</strong></p>
+        <p>To report a violation: <strong className="text-[color:var(--hub-text)]">report@skillstream.world</strong></p>
+        <p>For general policy questions: <strong className="text-[color:var(--hub-text)]">legal@skillstream.world</strong></p>
       </Section>
 
       <div className="mt-12 border-t border-[color:var(--hub-border)] pt-8 text-sm text-[color:var(--hub-muted)]">

@@ -102,7 +102,7 @@ export const RegisterPage: React.FC = () => {
       return false;
     }
     if (age < 13) {
-      setFormError('You must be at least 13 years old to register. If you are under 13, please ask a parent or guardian to contact us at legal@skillstream.app.');
+      setFormError('You must be at least 13 years old to register. If you are under 13, please ask a parent or guardian to contact us at legal@skillstream.world.');
       return false;
     }
     if (formData.role === 'TEACHER' && age < 18) {
