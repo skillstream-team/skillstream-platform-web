@@ -50,7 +50,7 @@ const DEMO_ORG: Organization = {
 };
 
 const DEMO_MEMBERS: OrgMember[] = [
-  { userId: 'demo-orgadmin', name: 'Demo Admin', email: 'orgadmin@skillstream.demo', orgRole: 'admin', joinedAt: '2026-01-01T09:00:00.000Z', teamIds: [], jobTitle: 'L&D Manager', department: 'HR' },
+  { userId: 'demo-orgadmin', name: 'Demo Org Admin', email: 'orgadmin@skillstream.demo', orgRole: 'admin', joinedAt: '2026-01-01T09:00:00.000Z', teamIds: [], jobTitle: 'L&D Manager', department: 'HR' },
   { userId: 'demo-learner', name: 'Demo Learner', email: 'learner@skillstream.demo', orgRole: 'learner', joinedAt: '2026-01-15T09:00:00.000Z', teamIds: ['demo-team-1'], jobTitle: 'Software Engineer', department: 'Engineering' },
   { userId: 'demo-learner-2', name: 'Alex Johnson', email: 'alex@acme.example', orgRole: 'manager', joinedAt: '2026-02-01T09:00:00.000Z', teamIds: ['demo-team-1'], jobTitle: 'Engineering Manager', department: 'Engineering', managedUserIds: ['demo-learner', 'demo-learner-5'] },
   { userId: 'demo-learner-3', name: 'Priya Sharma', email: 'priya@acme.example', orgRole: 'learner', joinedAt: '2026-02-10T09:00:00.000Z', teamIds: ['demo-team-2'], jobTitle: 'Operations Lead', department: 'Operations' },
@@ -159,16 +159,16 @@ const DEMO_QUIZ_STATS: QuizStat[] = [
 ];
 
 const DEMO_AUDIT_EVENTS: OrgAuditEvent[] = [
-  { id: 'demo-audit-1', orgId: 'demo-org', actorId: 'demo-orgadmin', actorName: 'Demo Admin', action: 'invite', targetType: 'member', targetId: 'demo-learner-2', targetName: 'Alex Johnson', createdAt: '2026-02-01T09:15:00.000Z' },
-  { id: 'demo-audit-2', orgId: 'demo-org', actorId: 'demo-orgadmin', actorName: 'Demo Admin', action: 'invite', targetType: 'member', targetId: 'demo-learner-3', targetName: 'Priya Sharma', createdAt: '2026-02-10T10:00:00.000Z' },
-  { id: 'demo-audit-3', orgId: 'demo-org', actorId: 'demo-orgadmin', actorName: 'Demo Admin', action: 'create_course', targetType: 'course', targetId: 'demo-course-1', targetName: 'Workplace Safety Fundamentals', createdAt: '2026-02-01T09:00:00.000Z' },
-  { id: 'demo-audit-4', orgId: 'demo-org', actorId: 'demo-orgadmin', actorName: 'Demo Admin', action: 'publish_course', targetType: 'course', targetId: 'demo-course-1', targetName: 'Workplace Safety Fundamentals', createdAt: '2026-02-01T09:05:00.000Z' },
-  { id: 'demo-audit-5', orgId: 'demo-org', actorId: 'demo-orgadmin', actorName: 'Demo Admin', action: 'enroll', targetType: 'enrollment', targetId: 'demo-enroll-1', targetName: 'Demo Learner → Workplace Safety Fundamentals', createdAt: '2026-03-01T09:00:00.000Z' },
-  { id: 'demo-audit-6', orgId: 'demo-org', actorId: 'demo-orgadmin', actorName: 'Demo Admin', action: 'enroll', targetType: 'enrollment', targetId: 'demo-enroll-3', targetName: 'Alex Johnson → Workplace Safety Fundamentals', createdAt: '2026-03-15T09:00:00.000Z' },
-  { id: 'demo-audit-7', orgId: 'demo-org', actorId: 'demo-orgadmin', actorName: 'Demo Admin', action: 'create_team', targetType: 'team', targetId: 'demo-team-1', targetName: 'Engineering', createdAt: '2026-01-10T09:00:00.000Z' },
-  { id: 'demo-audit-8', orgId: 'demo-org', actorId: 'demo-orgadmin', actorName: 'Demo Admin', action: 'create_path', targetType: 'path', targetId: 'demo-path-1', targetName: 'New Employee Onboarding', createdAt: '2026-02-15T09:00:00.000Z' },
-  { id: 'demo-audit-9', orgId: 'demo-org', actorId: 'demo-orgadmin', actorName: 'Demo Admin', action: 'update_org', targetType: 'org', targetId: 'demo-org', targetName: 'Acme Corp', createdAt: '2026-01-01T09:30:00.000Z' },
-  { id: 'demo-audit-10', orgId: 'demo-org', actorId: 'demo-orgadmin', actorName: 'Demo Admin', action: 'invite', targetType: 'member', targetId: 'demo-learner-4', targetName: 'Marcus Webb', createdAt: '2026-03-01T11:00:00.000Z' },
+  { id: 'demo-audit-1', orgId: 'demo-org', actorId: 'demo-orgadmin', actorName: 'Demo Org Admin', action: 'invite', targetType: 'member', targetId: 'demo-learner-2', targetName: 'Alex Johnson', createdAt: '2026-02-01T09:15:00.000Z' },
+  { id: 'demo-audit-2', orgId: 'demo-org', actorId: 'demo-orgadmin', actorName: 'Demo Org Admin', action: 'invite', targetType: 'member', targetId: 'demo-learner-3', targetName: 'Priya Sharma', createdAt: '2026-02-10T10:00:00.000Z' },
+  { id: 'demo-audit-3', orgId: 'demo-org', actorId: 'demo-orgadmin', actorName: 'Demo Org Admin', action: 'create_course', targetType: 'course', targetId: 'demo-course-1', targetName: 'Workplace Safety Fundamentals', createdAt: '2026-02-01T09:00:00.000Z' },
+  { id: 'demo-audit-4', orgId: 'demo-org', actorId: 'demo-orgadmin', actorName: 'Demo Org Admin', action: 'publish_course', targetType: 'course', targetId: 'demo-course-1', targetName: 'Workplace Safety Fundamentals', createdAt: '2026-02-01T09:05:00.000Z' },
+  { id: 'demo-audit-5', orgId: 'demo-org', actorId: 'demo-orgadmin', actorName: 'Demo Org Admin', action: 'enroll', targetType: 'enrollment', targetId: 'demo-enroll-1', targetName: 'Demo Learner → Workplace Safety Fundamentals', createdAt: '2026-03-01T09:00:00.000Z' },
+  { id: 'demo-audit-6', orgId: 'demo-org', actorId: 'demo-orgadmin', actorName: 'Demo Org Admin', action: 'enroll', targetType: 'enrollment', targetId: 'demo-enroll-3', targetName: 'Alex Johnson → Workplace Safety Fundamentals', createdAt: '2026-03-15T09:00:00.000Z' },
+  { id: 'demo-audit-7', orgId: 'demo-org', actorId: 'demo-orgadmin', actorName: 'Demo Org Admin', action: 'create_team', targetType: 'team', targetId: 'demo-team-1', targetName: 'Engineering', createdAt: '2026-01-10T09:00:00.000Z' },
+  { id: 'demo-audit-8', orgId: 'demo-org', actorId: 'demo-orgadmin', actorName: 'Demo Org Admin', action: 'create_path', targetType: 'path', targetId: 'demo-path-1', targetName: 'New Employee Onboarding', createdAt: '2026-02-15T09:00:00.000Z' },
+  { id: 'demo-audit-9', orgId: 'demo-org', actorId: 'demo-orgadmin', actorName: 'Demo Org Admin', action: 'update_org', targetType: 'org', targetId: 'demo-org', targetName: 'Acme Corp', createdAt: '2026-01-01T09:30:00.000Z' },
+  { id: 'demo-audit-10', orgId: 'demo-org', actorId: 'demo-orgadmin', actorName: 'Demo Org Admin', action: 'invite', targetType: 'member', targetId: 'demo-learner-4', targetName: 'Marcus Webb', createdAt: '2026-03-01T11:00:00.000Z' },
 ];
 
 const DEMO_ANNOUNCEMENTS: OrgAnnouncement[] = [
