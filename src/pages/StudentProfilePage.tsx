@@ -99,7 +99,7 @@ export const StudentProfilePage: React.FC = () => {
         ) : null}
       </section>
 
-      <section className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
+      <section className={`grid gap-6 ${isStudent ? '' : 'xl:grid-cols-[0.9fr_1.1fr]'}`}>
         <div className="space-y-6">
           {/* Progress stats */}
           <div className="rounded-[32px] border border-[color:var(--hub-border)] bg-white p-6 shadow-[0_18px_48px_rgba(15,23,42,0.05)]">
@@ -156,22 +156,10 @@ export const StudentProfilePage: React.FC = () => {
           </div>
         </div>
 
-        {/* Teacher notes */}
-        <div className="rounded-[32px] border border-[color:var(--hub-border)] bg-white p-6 shadow-[0_18px_48px_rgba(15,23,42,0.05)]">
-          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[color:var(--hub-primary)]">Teacher notes</p>
-          {isStudent ? (
-            <div className="mt-4">
-              {student.note ? (
-                <div className="rounded-[24px] bg-[color:var(--hub-soft)] p-5">
-                  <p className="text-sm leading-relaxed text-[color:var(--hub-text)]">{student.note}</p>
-                </div>
-              ) : (
-                <div className="rounded-[24px] bg-[color:var(--hub-soft)] p-5 text-sm text-[color:var(--hub-muted)]">
-                  No notes from your teacher yet.
-                </div>
-              )}
-            </div>
-          ) : (
+        {/* Teacher notes — internal, not shown on the student's own profile view */}
+        {!isStudent ? (
+          <div className="rounded-[32px] border border-[color:var(--hub-border)] bg-white p-6 shadow-[0_18px_48px_rgba(15,23,42,0.05)]">
+            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[color:var(--hub-primary)]">Teacher notes</p>
             <form
               className="mt-4 grid gap-3"
               onSubmit={async (event) => {
@@ -205,8 +193,8 @@ export const StudentProfilePage: React.FC = () => {
                 {isSavingNote ? 'Saving...' : 'Save note'}
               </button>
             </form>
-          )}
-        </div>
+          </div>
+        ) : null}
       </section>
     </div>
   );

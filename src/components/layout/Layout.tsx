@@ -102,8 +102,8 @@ export const Layout: React.FC<LayoutProps> = ({ children, className }) => {
                   {getInitials(user.name || user.email)}
                 </div>
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold">{user.name || 'SkillStream User'}</p>
-                  <p className="truncate text-xs text-[color:var(--hub-muted)]">{user.email}</p>
+                  <p className="truncate text-sm font-semibold" title={user.name || 'SkillStream User'}>{user.name || 'SkillStream User'}</p>
+                  <p className="truncate text-xs text-[color:var(--hub-muted)]" title={user.email}>{user.email}</p>
                 </div>
               </div>
               <div className="mt-4 flex gap-2">
@@ -152,7 +152,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, className }) => {
             </header>
           ) : null}
 
-          <main className={cn('flex-1 px-4 pb-24 pt-6 sm:px-6 lg:px-8 lg:pb-10', className)}>{children}</main>
+          <main className={cn('flex-1 px-4 pb-[calc(7rem+env(safe-area-inset-bottom))] pt-6 sm:px-6 lg:px-8 lg:pb-10', className)}>{children}</main>
 
           <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-[color:var(--hub-border)] bg-[color:var(--hub-panel)] px-3 pb-[calc(0.85rem+env(safe-area-inset-bottom))] pt-3 backdrop-blur-xl lg:hidden">
             {showMobileMore ? (
