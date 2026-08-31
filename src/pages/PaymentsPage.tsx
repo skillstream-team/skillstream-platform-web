@@ -177,7 +177,7 @@ export const PaymentsPage: React.FC = () => {
 
   useEffect(() => {
     if (!isTeacher || !user) return;
-    if (isDemoUser) { setAffiliateCode('DEMO-TEACHER'); return; }
+    if (isDemoUser) { setAffiliateCode('SS-DEMO-TCH'); return; }
     if (!hasSupabaseConfig) return;
     supabase
       .from('affiliate_codes')

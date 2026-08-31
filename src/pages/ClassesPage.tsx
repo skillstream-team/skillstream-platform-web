@@ -60,7 +60,7 @@ export const ClassesPage: React.FC = () => {
         </div>
       </section>
 
-      <section className="grid gap-4 xl:grid-cols-2">
+      <section className={cn('grid gap-4', classes.length > 1 ? 'xl:grid-cols-2' : 'mx-auto w-full max-w-xl')}>
         {classes.length > 0 ? (
           classes.map((teacherClass) => (
             <ClassCard key={teacherClass.id} teacherClass={teacherClass} />

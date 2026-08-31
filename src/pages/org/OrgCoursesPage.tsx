@@ -134,6 +134,7 @@ export const OrgCoursesPage: React.FC = () => {
                     onClick={() => handleTogglePublish(course)}
                     className="shrink-0 text-[color:var(--hub-muted)] hover:text-[color:var(--hub-text)]"
                     aria-label={course.isPublished ? 'Unpublish' : 'Publish'}
+                    title={course.isPublished ? 'Unpublish' : 'Publish'}
                   >
                     {course.isPublished ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>

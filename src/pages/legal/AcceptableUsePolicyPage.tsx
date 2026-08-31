@@ -118,6 +118,8 @@ export const AcceptableUsePolicyPage: React.FC = () => (
       <div className="mt-12 border-t border-[color:var(--hub-border)] pt-8 text-sm text-[color:var(--hub-muted)]">
         <Link to="/terms" className="font-semibold text-[color:var(--hub-primary)] hover:underline">Terms of Service</Link>
         <span className="mx-3">·</span>
+        <Link to="/privacy" className="font-semibold text-[color:var(--hub-primary)] hover:underline">Privacy Policy</Link>
+        <span className="mx-3">·</span>
         <Link to="/refund-policy" className="font-semibold text-[color:var(--hub-primary)] hover:underline">Refund Policy</Link>
         <span className="mx-3">·</span>
         <Link to="/" className="hover:underline">Back to home</Link>
